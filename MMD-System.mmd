@@ -1,0 +1,55 @@
+graph TB
+    subgraph Client Layer
+        WebClient[Web Browser - React/Next.js]
+        VpnClient[OpenVPN / WireGuard Client]
+    end
+
+    subgraph Edge & Gateway
+        Cloudflare[Cloudflare WAF / CDN]
+        Traefik[Traefik / Nginx API & WebSocket Gateway]
+    end
+
+    subgraph Core Platform Services
+        AuthSvc[Auth & IAM Service - OAuth2/JWT]
+        LmsSvc[LMS & Content Engine]
+        CtfSvc[CTF & KotH Game Engine]
+        CertSvc[Cert & Verification Service]
+        ScoreSvc[Scoreboard & Realtime Service]
+    end
+
+    subgraph Lab Orchestration & Sandbox
+        LabController[Lab Orchestrator Service]
+        GuacProxy[Apache Guacamole Cluster]
+        VpnServer[WireGuard / OpenVPN Gateway]
+        K8sCluster[K8s + KubeVirt / Firecracker Nodes]
+        DockerNodes[Docker/Podman Sandbox Pool]
+    end
+
+    subgraph Data & Storage
+        Postgres[(PostgreSQL - Primary DB)]
+        Redis[(Redis - Cache, Pub/Sub, Queues)]
+        MinIO[(MinIO / S3 - VM Images, Assets, Certs)]
+    end
+
+    WebClient --> Cloudflare --> Traefik
+    VpnClient --> VpnServer
+
+    Traefik --> AuthSvc
+    Traefik --> LmsSvc
+    Traefik --> CtfSvc
+    Traefik --> CertSvc
+    Traefik --> ScoreSvc
+    Traefik --> GuacProxy
+
+    GuacProxy -.->|Internal VNC/SSH| K8sCluster
+    VpnServer -.->|Overlay Subnet| K8sCluster
+    VpnServer -.->|Overlay Subnet| DockerNodes
+
+    LabController --> K8sCluster
+    LabController --> DockerNodes
+
+    LmsSvc --> Postgres
+    CtfSvc --> Redis
+    ScoreSvc --> Redis
+    LabController --> Redis
+    CertSvc --> MinIO
