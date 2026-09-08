@@ -217,6 +217,13 @@ Feature: One-Click Authentication
     Then Hệ thống tạo tài khoản mới với vai trò "Student"
     And Tự động khởi tạo hồ sơ học viên (Rank: Novice, EXP: 0, Streak: 1 ngày)
     And Đăng nhập thành công và điều hướng đến Dashboard
+
+  Scenario: Xử lý trùng Email từ nhà cung cấp OAuth khác
+    Given Người dùng đã có tài khoản trên hệ thống liên kết với email "quocbao@example.com" qua Google
+    When Người dùng nhấn "Continue with GitHub" và GitHub trả về cùng email "quocbao@example.com"
+    Then Hệ thống KHÔNG tự động gộp tài khoản
+    And Hiển thị thông báo yêu cầu xác thực thủ công để liên kết tài khoản (Manual Account Linking)
+    And Sau khi người dùng xác nhận thành công qua mật khẩu hoặc mã OTP email, hai định danh được liên kết vào cùng một User ID
 ```
 
 ##### User Story 1.2: Hồ sơ Năng lực Cá nhân (Public Profile)
@@ -233,6 +240,21 @@ Feature: Public Profile
     Then Trang hiển thị Avatar, Cấp bậc (Rank Tier), Tổng điểm EXP
     And Hiển thị Biểu đồ Radar năng lực 8 trục
     And Hiển thị danh sách Huy hiệu (Badges) và Chứng chỉ đã đạt được
+```
+
+##### User Story 1.3: Quản lý Phân quyền & Xét duyệt Creator (Granular RBAC)
+
+> **Là một** Quản trị viên (Admin),  
+> **Tôi muốn** duyệt các yêu cầu cấp quyền Creator thông qua Admin Dashboard,  
+> **Để** kiểm soát chất lượng nội dung bài lab và tránh việc người dùng tự ý tạo máy ảo gây quá tải hạ tầng.
+
+```
+Feature: Creator Role Approval
+  Scenario: Admin phê duyệt thủ công quyền Creator cho học viên
+    Given Học viên gửi yêu cầu trở thành Creator kèm thông tin hồ sơ
+    When Admin truy cập "Admin Dashboard > Role Requests" và nhấn "Approve"
+    Then Vai trò của tài khoản được cập nhật từ "Student" sang "Creator"
+    And Hệ thống gửi thông báo kích hoạt quyền tạo lab cho người dùng
 ```
 
 ---
@@ -258,6 +280,13 @@ Feature: Learning Path Progress
     When Học viên quay lại trang Lộ trình "Linux Fundamentals"
     Then Trạng thái Room "Linux Basics 2" chuyển từ "Locked" sang "Available"
     And Thanh tiến độ của Lộ trình tăng tương ứng theo tỷ lệ trọng số
+
+  Scenario: Xử lý tiến độ khi Lộ trình được cập nhật thêm nội dung mới
+    Given Học viên đã đạt trạng thái "Completed" (100%) của Lộ trình trước đó
+    When Tác giả/Admin bổ sung thêm Room hoặc Task mới vào Lộ trình
+    Then Trạng thái của Lộ trình chuyển từ "Completed" sang "Update Available"
+    And Thanh tiến độ được tự động tính toán lại dựa trên tổng số Task mới (ví dụ: giảm về 85%)
+    And Học viên nhận được thông báo về nội dung kiến thức mới cần hoàn thành
 ```
 
 ##### User Story 2.2: Hệ thống Gợi ý Bậc thang (Tiered Hint System)
@@ -289,17 +318,24 @@ Cung cấp môi trường thực hành ảo hóa cô lập, khởi tạo tức t
 ##### User Story 3.1: Khởi chạy Máy mục tiêu tức thì (Instant Target Spawner)
 
 > **Là một** học viên đang làm bài thực hành,  
-> **Tôi muốn** nhấn nút "Start Machine" và có máy mục tiêu sẵn sàng trong vòng dưới 3 giây,  
-> **Để** tôi bắt đầu thao tác tấn công/khám phá ngay lập tức.
+> **Tôi muốn** nhấn nút "Start Machine" và có máy mục tiêu sẵn sàng nhanh chóng theo SLA chuẩn hóa (Container $< 3$s, Virtual Machine $< 60$s),  
+> **Để** tôi bắt đầu thao tác tấn công/khám phá ngay lập tức mà không phải chờ đợi lâu.
 
 ```
 Feature: Instant Target Spawner
-  Scenario: Khởi chạy thành công máy mục tiêu
-    Given Học viên đang ở phòng lab "Web SQL Injection"
+  Scenario: Khởi chạy thành công máy mục tiêu dạng Linux Container
+    Given Học viên đang ở phòng lab "Web SQL Injection" (sử dụng Docker Container)
     When Nhấn nút "Start Machine"
     Then Nút chuyển sang trạng thái "Starting..." và hoàn tất trong $< 3$ giây
-    And Giao diện hiển thị: Địa chỉ IP nội bộ của máy (ví dụ: `10.10.24.5`), thời gian thuê còn lại `60:00`
+    And Giao diện hiển thị: Địa chỉ IP nội bộ của máy (thuộc dải `100.64.0.0/10`), thời gian thuê còn lại `60:00`
     And Nút "Start Machine" chuyển thành "Stop Machine" và xuất hiện nút "+1 Hour"
+
+  Scenario: Khởi chạy thành công máy mục tiêu dạng Virtual Machine (Windows/Kernel Lab)
+    Given Học viên đang ở phòng lab yêu cầu máy ảo chuyên sâu (MicroVM/Windows VM)
+    When Nhấn nút "Start Machine"
+    Then Nút chuyển sang trạng thái "Provisioning VM..." kèm thanh tiến trình trực quan
+    And Quá trình khởi tạo hoàn tất trong $< 60$ giây
+    And Giao diện hiển thị IP nội bộ và đồng hồ đếm ngược thuê máy
 ```
 
 ##### User Story 3.2: Kali Linux AttackBox trên Trình duyệt
@@ -340,7 +376,8 @@ Feature: VPN Profile Download
     When Nhấn "Download WireGuard Config"
     Then Trình duyệt tự động tải về file `cyberforce-user.conf`
     And Trạng thái trên web hiển thị hướng dẫn kết nối
-    And Khi học viên kích hoạt VPN trên máy cá nhân, biểu tượng trạng thái trên web chuyển sang màu xanh lá "Connected (10.8.0.42)"
+    And Dải IP VPN và Lab mục tiêu được chuẩn hóa trên subnet chuyên biệt `100.64.0.0/10` (CGNAT RFC 6598) để triệt tiêu hoàn toàn xung đột với dải mạng LAN gia đình/văn phòng (`192.168.x.x` hoặc `10.x.x.x`)
+    And Khi học viên kích hoạt VPN trên máy cá nhân, biểu tượng trạng thái trên web chuyển sang màu xanh lá "Connected (100.64.10.42)"
 ```
 
 ---
@@ -368,6 +405,13 @@ Feature: King of the Hill Match Lifecycle
     Then Hệ thống xác thực "ZeroDay" đang giữ vị trí King và dịch vụ máy chủ vẫn sống
     And Bảng điểm trực tiếp cộng 10 điểm cho "ZeroDay"
     And Phát thông báo âm thanh và hiệu ứng visual "ZeroDay is the King!" tới tất cả người chơi
+
+  Scenario: Chống phá hoại (Anti-Sabotage) và Tự động phục hồi dịch vụ (Service Auto-heal)
+    Given Trận đấu KotH đang diễn ra và người chơi cố tình phá hoại OS (vd: xoá binary cốt lõi, tắt firewall cấm cửa, chattr bất tử file king.txt)
+    When Daemon KotH Arbiter phát hiện dịch vụ bị gián đoạn trái quy chế hoặc file king.txt bị khóa quyền
+    Then Hệ thống kích hoạt "Service Auto-heal" khôi phục dịch vụ và quyền file về mặc định trong vòng 15 giây
+    And Đánh dấu vi phạm quy chế thi đấu của người chơi gây lỗi
+    And Áp dụng hình phạt: Trừ điểm tick hiện tại và tự động khóa tài khoản (Block Account) trong 3 ngày sau khi trận đấu kết thúc nếu tái phạm
 ```
 
 ##### User Story 5.2: Tính điểm Động (Dynamic Decay Scoring) trong Jeopardy CTF
@@ -398,17 +442,18 @@ Tổ chức kỳ thi thực hành toàn diện và cấp chứng chỉ số có 
 ##### User Story 6.1: Tham gia Kỳ thi Thực hành Độc lập (Hands-on Capstone Exam)
 
 > **Là một** học viên chuẩn bị tốt nghiệp lộ trình,  
-> **Tôi muốn** tham gia kỳ thi thực hành 12 tiếng trong môi trường mạng cô lập gồm nhiều máy mục tiêu,  
-> **Để** tôi kiểm tra năng lực tổng hợp (Pivoting, Active Directory, Privilege Escalation).
+> **Tôi muốn** tham gia kỳ thi thực hành với thời lượng được cấu hình linh hoạt bởi Admin (ví dụ: 6h, 12h hoặc 24h) trong môi trường mạng cô lập gồm nhiều máy mục tiêu,  
+> **Để** tôi kiểm tra năng lực tổng hợp (Pivoting, Active Directory, Privilege Escalation) và nhận kết quả tức thì qua hệ thống chấm cờ tự động.
 
 ```
 Feature: Hands-on Capstone Exam
   Scenario: Học viên bắt đầu kỳ thi Capstone
     Given Học viên đã hoàn thành 100% các phòng học bắt buộc trong Lộ trình
     When Nhấn "Start Capstone Exam" và đồng ý với Quy chế thi
-    Then Hệ thống cấp phát mạng thi riêng biệt gồm 3 máy mục tiêu
-    And Bắt đầu đếm ngược thời gian làm bài 12:00:00
+    Then Hệ thống cấp phát mạng thi riêng biệt gồm các máy mục tiêu của đề thi
+    And Bắt đầu đếm ngược thời gian làm bài theo cấu hình của kỳ thi đó (Admin Setting, ví dụ: 12:00:00)
     And Khóa tính năng xem gợi ý và thảo luận công cộng trong suốt thời gian thi
+    And Kết quả thi được chấm HOÀN TOÀN TỰ ĐỘNG qua việc nộp Flag (100% Automated Flag Grading), cấp chứng chỉ ngay khi đạt điểm chuẩn mà không cần nộp báo cáo thủ công
 ```
 
 ##### User Story 6.2: Cấp & Tra cứu Chứng chỉ Kỹ thuật số
@@ -440,23 +485,28 @@ Tạo động lực học tập liên tục thông qua cơ chế trò chơi hóa
 ##### User Story 7.1: Chuỗi Ngày Học Liên tục (Daily Streak & Multiplier)
 
 > **Là một** học viên,  
-> **Tôi muốn** được ghi nhận Streak mỗi ngày khi giải ít nhất một Task,  
-> **Để** tôi duy trì thói quen học tập và nhận hệ số nhân điểm EXP.
+> **Tôi muốn** được ghi nhận Streak mỗi ngày khi giải thành công ít nhất một Task mới lần đầu tiên theo múi giờ địa phương của tôi,  
+> **Để** tôi duy trì thói quen học tập liên tục và nhận hệ số nhân điểm EXP mà không bị tính sai lệch múi giờ.
 
 ```
 Feature: Daily Streak System
   Scenario: Học viên học liên tục ngày thứ 7
     Given Học viên đang có chuỗi Streak 6 ngày
-    When Học viên hoàn thành ít nhất 1 Task hợp lệ trong ngày hôm nay
+    When Học viên hoàn thành ít nhất 1 Task mới (chưa từng giải trước đó) trước 23:59:59 theo múi giờ địa phương (Local Timezone)
     Then Chuỗi Streak tăng lên 7 ngày
     And Mở khóa Huy hiệu "7-Day Warrior"
     And Kích hoạt hệ số thưởng "1.2x EXP Multiplier" cho tất cả bài tập trong 24 giờ tiếp theo
+
+  Scenario: Học viên giải lại task cũ đã hoàn thành
+    Given Học viên đã hoàn thành Task "Linux File Permissions" từ tuần trước
+    When Học viên giải lại Task này trong ngày hôm nay
+    Then Hệ thống cộng EXP ôn tập (nếu có) nhưng KHÔNG tính điểm duy trì chuỗi Streak mới
 ```
 
 ##### User Story 7.2: Biểu đồ Năng lực 8 Trục (8-Axis Cyber Radar)
 
 > **Là một** học viên,  
-> **Tôi muốn** theo dõi điểm số năng lực phân bổ trên 8 trục chuyên môn:
+> **Tôi muốn** theo dõi điểm số năng lực phân bổ trên 8 trục chuyên môn bằng **điểm tích lũy tuyệt đối (Absolute Cumulative EXP)** và hỗ trợ **cộng điểm song song đa kỹ năng (Multi-tag Parallel Scoring)**:
 >
 > 1. Web Application Security
 > 2. Network Penetration Testing
@@ -466,15 +516,28 @@ Feature: Daily Streak System
 > 6. Windows & Active Directory Attacks
 > 7. Defensive & Blue Team / SOC
 > 8. Cloud & DevSecOps
->    **Để** tôi biết rõ điểm mạnh và điểm yếu cần bổ sung của mình.
+>
+> **Để** tôi biết rõ điểm mạnh và điểm yếu thực tế của mình (ví dụ: giải 1 task Cloud Pentest được cộng song song điểm cho cả trục Cloud & DevSecOps lẫn Network Pentest).
+
+```
+Feature: Multi-Tag Parallel Skill Radar
+  Scenario: Cộng điểm song song vào nhiều trục radar khi giải task tích hợp
+    Given Task "AWS IAM Privilege Escalation" được gán 2 tag kỹ năng: "Cloud & DevSecOps" (100 EXP) và "Network Penetration Testing" (100 EXP)
+    When Học viên nộp cờ thành công Task này
+    Then Điểm tích lũy tuyệt đối trên trục "Cloud & DevSecOps" tăng +100 điểm
+    And Điểm tích lũy tuyệt đối trên trục "Network Penetration Testing" tăng +100 điểm
+    And Biểu đồ Radar 8 trục tự động mở rộng vùng hiển thị tương ứng
+```
 
 ---
 
-### Epic 8: Lab Creator Studio & University/Enterprise Analytics
+### Epic 8: Lab Creator Studio & University/Enterprise Analytics (Phase 2 & Phase 3)
+
+> ⚠️ **Scope Lock:** Tính năng này **chính thức nằm ngoài phạm vi MVP (Phase 1)** để tập trung nguồn lực phát hành ngày 15/10/2026. Trong Phase 1, toàn bộ nội dung phòng lab và lộ trình học được quản trị viên khởi tạo và biên tập tập trung qua **Admin CMS**. Epic 8 sẽ được triển khai chi tiết từ Giai đoạn 2 (Creator Studio) và Giai đoạn 3 (B2B Portal).
 
 #### 8.1. Mục tiêu
 
-Cung cấp công cụ cho giảng viên biên soạn bài lab và bảng điều khiển cho doanh nghiệp/trường học quản lý học viên theo tổ chức.
+Cung cấp công cụ cho giảng viên biên soạn bài lab (Giai đoạn 2) và bảng điều khiển cho doanh nghiệp/trường học quản lý học viên theo tổ chức (Giai đoạn 3).
 
 #### 8.2. Danh sách User Stories & Tiêu chuẩn Nghiệm thu
 
@@ -502,8 +565,10 @@ Cung cấp công cụ cho giảng viên biên soạn bài lab và bảng điều
 │ 2. REAPER RULE:    Hết hạn -> Grace period 3 phút -> Auto kill instance │
 │ 3. ANTI-CHEAT:     1 tài khoản chỉ mở tối đa 1 máy lab tại một thời điểm│
 │ 4. SUBMIT RATE:    Tối đa 5 lần nộp flag sai / 60 giây (Chống bruteforce│
-│ 5. EXAM RULE:      Trong kỳ thi Capstone -> Khóa gợi ý, cấm đổi IP VPN │
-│ 6. KOTH RULE:      Tick 60 giây -> Phải Pass SLA Service mới được điểm │
+│ 5. EXAM RULE:      Thời lượng do Admin set, chấm 100% Flag tự động      │
+│ 6. KOTH RULE:      Auto-heal dịch vụ; Khóa account nếu cố tình phá hoại │
+│ 7. STREAK RULE:    Chốt theo Local Timezone, chỉ tính Task mới giải đầu │
+│ 8. RADAR RULE:     Điểm tích lũy tuyệt đối, cộng song song nhiều tag    │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -514,7 +579,7 @@ Cung cấp công cụ cho giảng viên biên soạn bài lab và bảng điều
    - Mặc định mỗi máy cấp phát thời gian sống ban đầu là **60 phút**.
    - Người dùng có thể nhấn nút "+1 Hour" để gia hạn thời gian tối đa **3 lần** (tổng thời gian tối đa cho 1 phiên liên tục là 4 giờ).
 3. **Cơ chế Thu hồi (Reaper Policy):**
-   - Khi đồng hồ đếm ngược về `00:00`, máy chuyển sang trạng thái cảnh báo trong vòng **3 phút (Grace Period)**.
+   - Khi đồng hồ đếm ngược về `00:00`, máy chuyển sang trạng thái cảnh báo trong vòng **3 phút (Grace Period)**. Hệ thống hiển thị popup cảnh báo kèm âm thanh thông báo.
    - Nếu không có thao tác gia hạn, hệ thống tự động tiêu hủy máy và giải phóng tài nguyên.
 
 ### 8.2. Quy tắc Chấm điểm & Gợi ý (Scoring & Hint Policy)
@@ -533,8 +598,22 @@ Cung cấp công cụ cho giảng viên biên soạn bài lab và bảng điều
 2. **Quy tắc Tính điểm:**
    - Hệ thống Tick Engine kích hoạt mỗi **60 giây**.
    - Người chơi có tên hợp lệ trong `/root/king.txt` nhận được **+10 điểm / tick**.
-3. **Quy tắc Duy trì Dịch vụ (SLA Check):**
+3. **Quy tắc Duy trì Dịch vụ (SLA Check) & Chống Phá hoại (Anti-Sabotage):**
    - Nếu người chơi phòng thủ làm sập các dịch vụ thiết yếu (ví dụ: tắt SSH, tắt Web server, chặn toàn bộ cổng mạng bằng firewall sai quy định), Tick đó bị coi là **SLA FAILED** $\rightarrow$ Không ai nhận được điểm trong tick đó.
+   - **Tự phục hồi dịch vụ (Service Auto-heal):** Daemon KotH Arbiter tự động kiểm tra và cưỡng chế phục hồi dịch vụ thiết yếu và quyền truy cập file `/root/king.txt` về trạng thái chuẩn trong vòng 15 giây.
+   - **Xử lý vi phạm (Disciplinary Action):** Người chơi cố tình phá hoại môi trường máy chủ OS (xoá binary hệ thống, khoá file bất tử `chattr +i`, phá hoại hạ tầng) sẽ bị trừ toàn bộ điểm tick đó và **tự động khóa tài khoản (Block Account) trong 3 ngày**.
+
+### 8.4. Quy tắc Khảo thí Kỳ thi Capstone (Capstone Exam Policy)
+
+1. **Thời lượng linh hoạt:** Thời lượng làm bài được cấu hình linh động bởi Admin theo từng kỳ thi cụ thể (ví dụ: 6h, 12h hoặc 24h).
+2. **Chấm điểm tự động 100%:** Kỳ thi được chấm hoàn toàn tự động thông qua Flag nộp lên hệ thống. Không yêu cầu nộp file báo cáo thẩm định (Report) để chấm thủ công ở phiên bản MVP.
+3. **Kỷ luật phòng thi:** Khóa toàn bộ tính năng gợi ý (Hints) và diễn đàn thảo luận; cấm thay đổi IP VPN trong suốt thời gian làm bài thi.
+
+### 8.5. Quy tắc Chuỗi Ngày học (Streak) & Radar Kỹ năng
+
+1. **Tính Streak theo Múi giờ địa phương (Local Timezone):** Chu kỳ 1 ngày học được tính từ 00:00:00 đến 23:59:59 theo múi giờ đã lưu trong hồ sơ tài khoản của người học.
+2. **Tiêu chí giữ Streak:** Chỉ tính khi người học giải thành công **ít nhất 01 Task mới lần đầu tiên** (giải lại Task cũ chỉ nhận EXP ôn tập, không tính streak).
+3. **Thang điểm Radar 8 trục:** Tính bằng **điểm tích lũy tuyệt đối (Absolute Cumulative EXP)**. Một Task mang nhiều nhãn kỹ năng sẽ được cộng điểm song song cho tất cả các trục tương ứng.
 
 ---
 
@@ -570,14 +649,14 @@ graph TD
 
 ## 10. Non-Functional Requirements (Product & User Perspective)
 
-| Tiêu chuẩn NFR                           | Yêu cầu từ góc độ Trải nghiệm Người dùng                                                                   | Mức độ Ưu tiên    |
-| :--------------------------------------- | :--------------------------------------------------------------------------------------------------------- | :---------------- |
-| **Độ trễ Khởi động (Speed)**             | Người dùng không phải chờ quá 3 giây để máy lab Docker sẵn sàng hoạt động.                                 | **P0 (Critical)** |
-| **Độ mượt Màn hình (Smoothness)**        | AttackBox stream qua trình duyệt không bị giật, phản hồi chuột và bàn phím tức thì ($< 80\text{ms}$).      | **P0 (Critical)** |
-| **Độ sẵn sàng (Availability)**           | Nền tảng hoạt động ổn định với thời gian Uptime tối thiểu **99.9%** (không gián đoạn giữa các giải đấu).   | **P0 (Critical)** |
-| **Bảo mật & Cô lập (Safety)**            | Tuyệt đối không cho phép học viên can thiệp vào máy lab của học viên khác hoặc tấn công ra ngoài Internet. | **P0 (Critical)** |
-| **Khả năng Tương thích (Compatibility)** | Chạy mượt mà trên tất cả trình duyệt hiện đại (Chrome, Firefox, Safari, Edge) trên Windows, macOS, Linux.  | **P1 (High)**     |
-| **Trợ năng & Trực quan (Accessibility)** | Tuân thủ độ tương phản WCAG 2.1 AA, hỗ trợ đầy đủ phím tắt thao tác nhanh trong phòng lab.                 | **P2 (Medium)**   |
+| Tiêu chuẩn NFR                           | Yêu cầu từ góc độ Trải nghiệm Người dùng                                                                                         | Mức độ Ưu tiên    |
+| :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- | :---------------- |
+| **Độ trễ Khởi động (Speed)**             | Phân tách SLA: Máy lab Docker Linux khởi động trong $< 3$ giây; Máy ảo chuyên sâu (VM/Windows) $< 60$ giây.                      | **P0 (Critical)** |
+| **Độ mượt Màn hình (Smoothness)**        | AttackBox stream qua trình duyệt không bị giật, phản hồi chuột và bàn phím tức thì ($< 80\text{ms}$).                            | **P0 (Critical)** |
+| **Độ sẵn sàng (Availability)**           | Nền tảng hoạt động ổn định với thời gian Uptime tối thiểu **99.9%** (không gián đoạn giữa các giải đấu).                         | **P0 (Critical)** |
+| **Bảo mật & Cô lập (Safety)**            | Cô lập mạng tuyệt đối giữa các học viên, chuẩn hóa subnet `100.64.0.0/10` (RFC 6598), chặn 100% ra ngoài Internet (Zero Egress). | **P0 (Critical)** |
+| **Khả năng Tương thích (Compatibility)** | Chạy mượt mà trên tất cả trình duyệt hiện đại (Chrome, Firefox, Safari, Edge) trên Windows, macOS, Linux.                        | **P1 (High)**     |
+| **Trợ năng & Trực quan (Accessibility)** | Tuân thủ độ tương phản WCAG 2.1 AA, hỗ trợ đầy đủ phím tắt thao tác nhanh trong phòng lab.                                       | **P2 (Medium)**   |
 
 ---
 
@@ -601,11 +680,13 @@ graph TD
 
 ### 12.2. Rủi ro Sản phẩm & Biện pháp Xử lý
 
-| Rủi ro Sản phẩm                                             |  Khả năng  |    Mức độ    | Biện pháp Phòng ngừa & Xử lý                                                            |
-| :---------------------------------------------------------- | :--------: | :----------: | :-------------------------------------------------------------------------------------- |
-| **Học viên chia sẻ Flag đề thi lên mạng**                   |    Cao     |     Cao      | Áp dụng **Dynamic Flag Engine** sinh mã cờ riêng theo từng phiên người dùng.            |
-| **Chi phí hạ tầng máy chủ tăng vọt do người dùng treo máy** |    Cao     |     Cao      | Triển khai **Reaper Worker** tự động tắt máy sau 60 phút nếu không có hoạt động.        |
-| **Hacker lợi dụng máy lab để tấn công mạng ngoài**          | Trung bình | Nghiêm trọng | Thiết lập chính sách mạng **Zero Outbound Egress** chặn 100% traffic ra ngoài Internet. |
+| Rủi ro Sản phẩm                                             |  Khả năng  |    Mức độ    | Biện pháp Phòng ngừa & Xử lý                                                                     |
+| :---------------------------------------------------------- | :--------: | :----------: | :----------------------------------------------------------------------------------------------- |
+| **Học viên chia sẻ Flag đề thi lên mạng**                   |    Cao     |     Cao      | Áp dụng **Dynamic Flag Engine** sinh mã cờ riêng theo từng phiên người dùng.                     |
+| **Chi phí hạ tầng máy chủ tăng vọt do người dùng treo máy** |    Cao     |     Cao      | Triển khai **Reaper Worker** tự động tắt máy sau 60 phút nếu không có hoạt động.                 |
+| **Hacker lợi dụng máy lab để tấn công mạng ngoài**          | Trung bình | Nghiêm trọng | Thiết lập chính sách mạng **Zero Outbound Egress** chặn 100% traffic ra ngoài Internet.          |
+| **Người chơi cố tình phá hoại máy chủ trong KotH Arena**    |    Cao     |     Cao      | Tích hợp **Service Auto-heal Daemon** (khôi phục trong 15s) và áp dụng **Block Account 3 ngày**. |
+| **Xung đột bảng định tuyến VPN với mạng LAN gia đình/cty**  | Trung bình |     Cao      | Chuẩn hóa dải mạng VPN/Lab trên subnet chuyên dụng **`100.64.0.0/10` (RFC 6598)**.               |
 
 ---
 
