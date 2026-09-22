@@ -9,6 +9,7 @@ out/
 dist/
 build/
 bin/
+*.tsbuildinfo
 
 # Logs & Diagnostics
 *.log
