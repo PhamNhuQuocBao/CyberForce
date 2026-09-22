@@ -1,0 +1,17 @@
+Summary,Issue Type,Start Date,Due Date,Description
+Monorepo & Docker Dev Environment,Task,2026-09-23,2026-09-28,Phase 0: Foundations
+Database Schema & Redis Ingress Setup,Task,2026-09-28,2026-10-02,Phase 0: Foundations
+Design Tokens & Layout Shell,Task,2026-10-02,2026-10-06,Phase 0: Foundations
+Identity Profiles & Granular RBAC,Epic,2026-10-06,2026-10-12,Phase 1: MVP Core (Oct 2026)
+Learning Paths & Split-Pane Rooms,Epic,2026-10-12,2026-10-19,Phase 1: MVP Core (Oct 2026)
+Docker Sandbox & Web Terminal,Epic,2026-10-19,2026-10-26,Phase 1: MVP Core (Oct 2026)
+Daily Streak & Level Ranks,Epic,2026-10-26,2026-10-30,Phase 1: MVP Core (Oct 2026)
+Admin CMS Management Portal,Epic,2026-10-30,2026-11-03,Phase 1: MVP Core (Oct 2026)
+WireGuard VPN Gateway & Isolation,Epic,2026-11-05,2026-11-13,Phase 2: Cloud Range (Dec 2026)
+Guacamole Web AttackBox (Kali),Epic,2026-11-13,2026-11-20,Phase 2: Cloud Range (Dec 2026)
+Jeopardy CTF & Dynamic Decay,Epic,2026-11-20,2026-11-26,Phase 2: Cloud Range (Dec 2026)
+8-Axis Multi-Tag Skill Radar,Epic,2026-11-26,2026-12-01,Phase 2: Cloud Range (Dec 2026)
+KotH Tick Engine & Auto-Heal,Epic,2026-12-01,2026-12-11,Phase 3: Arena & Certs (Mar 2027)
+Capstone Exams & Signed Certs,Epic,2026-12-11,2026-12-21,Phase 3: Arena & Certs (Mar 2027)
+Creator Studio & B2B Analytics,Epic,2026-12-21,2026-12-31,Phase 4: Creator & Enterprise
+End-to-End Auditing & Security Hardening,Task,2027-01-05,2027-01-12,Phase X: Verification

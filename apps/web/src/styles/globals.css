@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 
+     * Tactical Cyber-Minimalism Color Tokens (RGB channels for opacity support)
+     * Values map strictly to DESIGN.md
+     */
+    --background: 7 10 15; /* #070A0F (Obsidian Canvas) */
+    --foreground: 248 250 252; /* #F8FAFC (Primary Text) */
+
+    --card: 14 19 31; /* #0E131F (Surface Layer) */
+    --card-foreground: 248 250 252;
+    --card-hover: 20 28 46; /* #141C2E */
+
+    --primary: 0 240 255; /* #00F0FF (Electric Cyan - Strict Purple Ban) */
+    --primary-foreground: 7 10 15; /* #070A0F */
+    --primary-hover: 0 210 224; /* #00D2E0 */
+
+    --secondary: 16 185 129; /* #10B981 (Cyber Emerald) */
+    --secondary-foreground: 7 10 15;
+
+    --muted: 30 41 59; /* #1E293B */
+    --muted-foreground: 148 163 184; /* #94A3B8 */
+
+    --accent: 20 28 46; /* #141C2E */
+    --accent-foreground: 0 240 255;
+
+    --warning: 245 158 11; /* #F59E0B (Amber Alert) */
+    --warning-foreground: 7 10 15;
+
+    --destructive: 239 68 68; /* #EF4444 (Crimson Breach) */
+    --destructive-foreground: 248 250 252;
+
+    --border: 30 41 59; /* #1E293B */
+    --border-active: 51 65 85; /* #334155 */
+
+    --ring: 0 240 255; /* #00F0FF */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+/* Custom Sleek Tactical Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border-active));
+}
+
+/* Cyber Technical Grid Pattern */
+.bg-cyber-grid {
+  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.35) 1px, transparent 1px);
+  background-size: 32px 32px;
+}

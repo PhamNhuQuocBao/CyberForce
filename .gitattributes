@@ -1,0 +1,14 @@
+# Tự động chuẩn hóa toàn bộ file text về LF khi lưu vào Git
+* text=auto eol=lf
+
+# Khai báo file nhị phân không bị can thiệp
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.docx binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
