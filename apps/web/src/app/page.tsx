@@ -1,5 +1,8 @@
 import React from 'react';
-import { CYBER_CLASSES } from '@/styles/theme';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function HomePage() {
   return (
@@ -7,18 +10,18 @@ export default function HomePage() {
       <div className="max-w-4xl w-full space-y-10">
         {/* Status Header Badge */}
         <div className="flex justify-center">
-          <div className={CYBER_CLASSES.badge.emerald}>
-            <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+          <Badge variant="emerald">
+            <span className="h-2 w-2 rounded-full bg-secondary animate-pulse" />
             CYBERFORCE ENGINE READY &bull; ZERO-SETUP PRACTICE
-          </div>
+          </Badge>
         </div>
 
         {/* Hero Section */}
         <div className="text-center space-y-4">
-          <h1 className={CYBER_CLASSES.typography.h1}>
-            Hands-on <span className="text-[#00F0FF]">Cyber Range</span> & Real-Time Arena
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-foreground tracking-tight">
+            Hands-on <span className="text-primary">Cyber Range</span> & Real-Time Arena
           </h1>
-          <p className="text-base sm:text-lg text-[#94A3B8] max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Zero-friction in-browser Kali Linux, 1-Click isolated Docker sandboxes, WireGuard VPN
             access, and cryptographically verifiable digital certificates.
           </p>
@@ -26,51 +29,67 @@ export default function HomePage() {
 
         {/* Action Button Row */}
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <button type="button" className={CYBER_CLASSES.button.primary}>
-            Start Free Practice
-          </button>
-          <button type="button" className={CYBER_CLASSES.button.secondary}>
-            Browse Learning Paths
-          </button>
+          <Button variant="default">Start Free Practice</Button>
+          <Button variant="secondary">Browse Learning Paths</Button>
         </div>
 
-        {/* Tactical Panels Showcase (Theme Demonstration) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
-          {/* Card 1: Practice */}
-          <div className={CYBER_CLASSES.panel.interactive}>
-            <div className="flex items-center justify-between mb-3">
-              <span className={CYBER_CLASSES.typography.monoLabel}>LAB-01</span>
-              <span className={CYBER_CLASSES.badge.cyan}>Active</span>
-            </div>
-            <h3 className={CYBER_CLASSES.typography.h3}>Instant Sandbox</h3>
-            <p className="text-xs text-[#94A3B8] mt-2 leading-relaxed">
-              Spawn target Linux/Docker containers in &lt; 3s with zero local setup friction.
-            </p>
+        {/* Interactive Flag Submission Demo */}
+        <Card className="max-w-md mx-auto w-full p-4 space-y-3 bg-card/80 backdrop-blur border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-muted-foreground uppercase">
+              Target Sandbox
+            </span>
+            <Badge variant="cyan">100.64.10.42</Badge>
           </div>
+          <div className="flex gap-2">
+            <Input placeholder="flag{e83921bf7a8109dca8721094}" mono />
+            <Button size="sm">Submit</Button>
+          </div>
+        </Card>
+
+        {/* Tactical Panels Showcase */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          {/* Card 1: Practice */}
+          <Card interactive>
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs text-muted-foreground uppercase">LAB-01</span>
+                <Badge variant="cyan">Active</Badge>
+              </div>
+              <CardTitle>Instant Sandbox</CardTitle>
+              <CardDescription>
+                Spawn target Linux/Docker containers in &lt; 3s with zero local setup friction.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           {/* Card 2: KotH Arena */}
-          <div className={CYBER_CLASSES.panel.interactive}>
-            <div className="flex items-center justify-between mb-3">
-              <span className={CYBER_CLASSES.typography.monoLabel}>ARENA-60S</span>
-              <span className={CYBER_CLASSES.badge.amber}>Live Tick</span>
-            </div>
-            <h3 className={CYBER_CLASSES.typography.h3}>King of the Hill</h3>
-            <p className="text-xs text-[#94A3B8] mt-2 leading-relaxed">
-              Defend your root token and gain +10 EXP per 60-second tick with service auto-heal.
-            </p>
-          </div>
+          <Card interactive>
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs text-muted-foreground uppercase">ARENA-60S</span>
+                <Badge variant="amber">Live Tick</Badge>
+              </div>
+              <CardTitle>King of the Hill</CardTitle>
+              <CardDescription>
+                Defend your root token and gain +10 EXP per 60-second tick with service auto-heal.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           {/* Card 3: Capstone */}
-          <div className={CYBER_CLASSES.panel.interactive}>
-            <div className="flex items-center justify-between mb-3">
-              <span className={CYBER_CLASSES.typography.monoLabel}>EXAM-CERT</span>
-              <span className={CYBER_CLASSES.badge.emerald}>Verified</span>
-            </div>
-            <h3 className={CYBER_CLASSES.typography.h3}>Verifiable Certs</h3>
-            <p className="text-xs text-[#94A3B8] mt-2 leading-relaxed">
-              RSA-4096 cryptographically signed PDF certificates shareable directly to LinkedIn.
-            </p>
-          </div>
+          <Card interactive>
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs text-muted-foreground uppercase">EXAM-CERT</span>
+                <Badge variant="emerald">Verified</Badge>
+              </div>
+              <CardTitle>Verifiable Certs</CardTitle>
+              <CardDescription>
+                RSA-4096 cryptographically signed PDF certificates shareable directly to LinkedIn.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
       </div>
     </main>

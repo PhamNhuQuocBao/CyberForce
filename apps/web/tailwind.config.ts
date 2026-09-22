@@ -6,56 +6,65 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/styles/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        canvas: 'var(--cf-canvas)',
-        surface: {
-          DEFAULT: 'var(--cf-surface)',
-          hover: 'var(--cf-surface-hover)',
+        background: 'rgb(var(--background) / <alpha-value>)',
+        foreground: 'rgb(var(--foreground) / <alpha-value>)',
+        card: {
+          DEFAULT: 'rgb(var(--card) / <alpha-value>)',
+          foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
+          hover: 'rgb(var(--card-hover) / <alpha-value>)',
+        },
+        primary: {
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
+          hover: 'rgb(var(--primary-hover) / <alpha-value>)',
+        },
+        secondary: {
+          DEFAULT: 'rgb(var(--secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'rgb(var(--muted) / <alpha-value>)',
+          foreground: 'rgb(var(--muted-foreground) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          foreground: 'rgb(var(--accent-foreground) / <alpha-value>)',
+        },
+        destructive: {
+          DEFAULT: 'rgb(var(--destructive) / <alpha-value>)',
+          foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
+        },
+        warning: {
+          DEFAULT: 'rgb(var(--warning) / <alpha-value>)',
+          foreground: 'rgb(var(--warning-foreground) / <alpha-value>)',
         },
         border: {
-          DEFAULT: 'var(--cf-border)',
-          active: 'var(--cf-border-active)',
+          DEFAULT: 'rgb(var(--border) / <alpha-value>)',
+          active: 'rgb(var(--border-active) / <alpha-value>)',
         },
-        cyber: {
-          cyan: {
-            DEFAULT: 'var(--cf-primary)',
-            hover: 'var(--cf-primary-hover)',
-          },
-          emerald: {
-            DEFAULT: 'var(--cf-secondary)',
-            hover: 'var(--cf-secondary-hover)',
-          },
-          amber: 'var(--cf-warning)',
-          crimson: 'var(--cf-error)',
-        },
-        slate: {
-          950: '#070A0F',
-          900: '#0E131F',
-          850: '#141C2E',
-          800: '#1E293B',
-          700: '#334155',
-        },
+        ring: 'rgb(var(--ring) / <alpha-value>)',
+      },
+      borderRadius: {
+        none: '0px',
+        sm: '2px',
+        DEFAULT: '4px',
+        md: '4px',
+        lg: '6px',
+        full: '9999px',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
-      borderRadius: {
-        none: '0px',
-        sm: '2px',
-        md: '4px',
-        lg: '6px',
-        full: '9999px',
-      },
       boxShadow: {
-        'glow-cyan': '0 0 14px rgba(0, 240, 255, 0.25)',
-        'glow-emerald': '0 0 14px rgba(16, 185, 129, 0.25)',
-        'glow-amber': '0 0 14px rgba(245, 158, 11, 0.25)',
-        'glow-crimson': '0 0 14px rgba(239, 68, 68, 0.25)',
+        'glow-primary': '0 0 14px rgb(var(--primary) / 0.3)',
+        'glow-secondary': '0 0 14px rgb(var(--secondary) / 0.3)',
+        'glow-warning': '0 0 14px rgb(var(--warning) / 0.3)',
+        'glow-destructive': '0 0 14px rgb(var(--destructive) / 0.3)',
       },
     },
   },
