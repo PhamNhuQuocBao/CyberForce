@@ -7,8 +7,9 @@ updated: 2026-07-12
 # Project Conventions
 
 ## Git Workflow
-- Always create a new dedicated branch for major code changes.
-- Branch name format should follow: `feature/[task-slug]` or `fix/[bug-slug]`.
+- **STRICT MANDATORY RULE (NEVER VIOLATE):** NEVER push directly to `main` under ANY circumstances, regardless of whether changes are large, small, documentation, or trivial fixes.
+- ALWAYS checkout a dedicated branch (`docs/[slug]`, `feature/CF-[id]-[slug]`, `fix/[slug]`), commit on that branch, and push the feature/doc branch to origin following GitFlow.
+- Merges to `main` must only occur via GitHub Pull Requests.
 
 ## Supported AI platforms (AG Kit)
 - AG Kit **only supports Gemini CLI and Google Antigravity**.
