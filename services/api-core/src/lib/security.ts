@@ -1,6 +1,6 @@
 import type { UserRole } from '@prisma/client';
 import argon2 from 'argon2';
-import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { env } from '../config/env.js';
 import { redis } from './redis.js';
@@ -150,5 +150,67 @@ export async function isTokenBlacklisted(jti: string): Promise<boolean> {
     return val === '1';
   } catch {
     return false;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 5. PKCE & OAUTH STATE (RFC 7636)
+// -----------------------------------------------------------------------------
+export interface OAuthStateData {
+  provider: 'github' | 'google' | string;
+  codeVerifier?: string;
+  redirectUri?: string;
+  target?: string;
+}
+
+export function generateOAuthState(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+export function generatePKCE(): {
+  codeVerifier: string;
+  codeChallenge: string;
+  codeChallengeMethod: 'S256';
+} {
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  return {
+    codeVerifier,
+    codeChallenge,
+    codeChallengeMethod: 'S256',
+  };
+}
+
+export function verifyPKCE(codeVerifier: string, codeChallenge: string): boolean {
+  try {
+    const calculated = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    return crypto.timingSafeEqual(Buffer.from(calculated), Buffer.from(codeChallenge));
+  } catch {
+    return false;
+  }
+}
+
+export async function storeOAuthState(
+  state: string,
+  data: OAuthStateData,
+  ttlSeconds: number = 600,
+): Promise<void> {
+  try {
+    await redis.set(`oauth:state:${state}`, JSON.stringify(data), 'EX', ttlSeconds);
+  } catch (error) {
+    console.error('Redis store OAuth state error:', error);
+  }
+}
+
+export async function consumeOAuthState(state: string): Promise<OAuthStateData | null> {
+  try {
+    const key = `oauth:state:${state}`;
+    const data = await redis.get(key);
+    if (!data) return null;
+    await redis.del(key); // atomic one-time consume to prevent replay
+    return JSON.parse(data) as OAuthStateData;
+  } catch (error) {
+    console.error('Redis consume OAuth state error:', error);
+    return null;
   }
 }

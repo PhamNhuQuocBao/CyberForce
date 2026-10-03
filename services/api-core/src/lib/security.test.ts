@@ -11,6 +11,11 @@ import {
   clearFailedLogins,
   blacklistToken,
   isTokenBlacklisted,
+  generateOAuthState,
+  generatePKCE,
+  verifyPKCE,
+  storeOAuthState,
+  consumeOAuthState,
 } from './security.js';
 import { redis } from './redis.js';
 
@@ -158,6 +163,51 @@ describe('Security Utility Module', () => {
       await blacklistToken(testJti, 60); // 60 seconds TTL
       const isBlacklisted = await isTokenBlacklisted(testJti);
       expect(isBlacklisted).toBe(true);
+    });
+  });
+
+  describe('5. PKCE (RFC 7636) & OAuth State Management', () => {
+    it('should generate high-entropy random state strings', () => {
+      const state1 = generateOAuthState();
+      const state2 = generateOAuthState();
+      expect(state1).toBeDefined();
+      expect(state2).toBeDefined();
+      expect(state1).not.toBe(state2);
+      expect(state1.length).toBeGreaterThanOrEqual(40);
+    });
+
+    it('should generate valid PKCE codeVerifier and codeChallenge (S256)', () => {
+      const pkce = generatePKCE();
+      expect(pkce.codeVerifier).toBeDefined();
+      expect(pkce.codeChallenge).toBeDefined();
+      expect(pkce.codeChallengeMethod).toBe('S256');
+
+      // Verification succeeds
+      const isValid = verifyPKCE(pkce.codeVerifier, pkce.codeChallenge);
+      expect(isValid).toBe(true);
+
+      // Verification fails for tampered verifier
+      const isTampered = verifyPKCE('tampered-verifier-code', pkce.codeChallenge);
+      expect(isTampered).toBe(false);
+    });
+
+    it('should store and atomically consume OAuth state in Redis (preventing replay attacks)', async () => {
+      const state = generateOAuthState();
+      await storeOAuthState(state, {
+        provider: 'google',
+        codeVerifier: 'mock_verifier_123',
+        redirectUri: 'http://localhost:3000/callback',
+      });
+
+      // First consume succeeds
+      const consumed = await consumeOAuthState(state);
+      expect(consumed).not.toBeNull();
+      expect(consumed?.provider).toBe('google');
+      expect(consumed?.codeVerifier).toBe('mock_verifier_123');
+
+      // Second consume returns null (one-time use, prevents CSRF replay)
+      const replayed = await consumeOAuthState(state);
+      expect(replayed).toBeNull();
     });
   });
 });

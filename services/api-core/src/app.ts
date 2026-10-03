@@ -42,21 +42,21 @@ export function buildApp() {
   // 2. HEALTHCHECK (Liveness & Readiness probe)
   // ---------------------------------------------------------------------------
   app.get('/health', async (_req, reply) => {
-    let dbStatus = 'down';
-    let redisStatus = 'down';
+    let dbStatus: string;
+    let redisStatus: string;
 
     try {
       await prisma.$queryRaw`SELECT 1`;
       dbStatus = 'healthy';
-    } catch (e: any) {
-      dbStatus = `unhealthy: ${e.message}`;
+    } catch (e: unknown) {
+      dbStatus = `unhealthy: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     try {
       const ping = await redis.ping();
       redisStatus = ping === 'PONG' ? 'healthy' : 'unhealthy';
-    } catch (e: any) {
-      redisStatus = `unhealthy: ${e.message}`;
+    } catch (e: unknown) {
+      redisStatus = `unhealthy: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     const isHealthy = dbStatus === 'healthy' && redisStatus === 'healthy';
