@@ -22,7 +22,7 @@ redis.on('error', (err: Error) => {
 
 redis.on('connect', () => {
   if (env.NODE_ENV === 'development') {
-    console.log('⚡ Connected to Redis successfully');
+    console.info('⚡ Connected to Redis successfully');
   }
 });
 

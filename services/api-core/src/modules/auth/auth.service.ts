@@ -12,6 +12,7 @@ import {
   blacklistToken,
 } from '../../lib/security.js';
 import type { RegisterInput, LoginInput, UserProfile } from './auth.schemas.js';
+import type { NormalizedOAuthProfile } from './oauth.provider.js';
 
 export class AuthError extends Error {
   constructor(
@@ -283,6 +284,135 @@ export class AuthService {
     }
 
     return toUserProfile(user);
+  }
+
+  /**
+   * Helper to issue JWT access & refresh tokens and persist refresh token hash
+   */
+  async issueSessionTokens(user: { id: string; email: string; role: UserRole | string }) {
+    const tokens = generateTokens(user);
+    const tokenHash = hashToken(tokens.refreshToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    return tokens;
+  }
+
+  /**
+   * 1-Click OAuth2 Login or Registration (GitHub / Google)
+   * Complies with US-01.01:
+   * - Automatic student role, Novice rank tier, 0 EXP, Streak: 1 day.
+   * - Prevents account takeover by rejecting auto-merge on email collision with different provider.
+   */
+  async handleOAuthLoginOrRegister(profile: NormalizedOAuthProfile) {
+    const emailKey = profile.email.toLowerCase();
+
+    // 1. Check if OAuth identity is already linked
+    const existingOAuth = await prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: profile.provider,
+          providerAccountId: profile.providerAccountId,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (existingOAuth) {
+      // Existing user logging in with linked OAuth provider
+      const updatedUser = await prisma.user.update({
+        where: { id: existingOAuth.userId },
+        data: {
+          lastActiveAt: new Date(),
+          ...(profile.avatarUrl && !existingOAuth.user.avatarUrl
+            ? { avatarUrl: profile.avatarUrl }
+            : {}),
+        },
+      });
+
+      const tokens = await this.issueSessionTokens(updatedUser);
+      return {
+        user: toUserProfile(updatedUser),
+        tokens,
+        isNewUser: false,
+      };
+    }
+
+    // 2. Check if a user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: emailKey },
+      include: { oauthAccounts: true },
+    });
+
+    if (existingUser) {
+      // Email exists with password or a different OAuth provider
+      // Per US-01.01 Scenario 2: Refuse automatic merge to prevent Account Takeover
+      throw new AuthError(
+        409,
+        `An account with email "${profile.email}" already exists with a different login method. Please authenticate with your existing account to link your ${profile.provider} identity.`,
+        'ACCOUNT_EXISTS_DIFFERENT_PROVIDER',
+        {
+          email: profile.email,
+          attemptedProvider: profile.provider,
+        },
+      );
+    }
+
+    // 3. Register brand new user via 1-Click OAuth2
+    let chosenUsername = profile.username.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+    if (!chosenUsername || chosenUsername.length < 3) {
+      chosenUsername = `${profile.provider}_user_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const usernameConflict = await prisma.user.findUnique({
+      where: { username: chosenUsername },
+      select: { id: true },
+    });
+
+    if (usernameConflict) {
+      chosenUsername = `${chosenUsername.slice(0, 35)}_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: emailKey,
+          username: chosenUsername,
+          passwordHash: null,
+          avatarUrl: profile.avatarUrl,
+          role: UserRole.student,
+          expPoints: 0,
+          rankTier: 'Novice',
+          streakDays: 1, // Story US-01.01: Streak: 1 ngày
+        },
+      });
+
+      await tx.oAuthAccount.create({
+        data: {
+          userId: user.id,
+          provider: profile.provider,
+          providerAccountId: profile.providerAccountId,
+        },
+      });
+
+      return user;
+    });
+
+    const tokens = await this.issueSessionTokens(newUser);
+    return {
+      user: toUserProfile(newUser),
+      tokens,
+      isNewUser: true,
+    };
   }
 }
 

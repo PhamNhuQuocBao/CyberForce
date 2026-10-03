@@ -1,8 +1,12 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAuthStore } from '@/lib/auth-store';
 import {
   Terminal,
   ShieldCheck,
@@ -12,22 +16,31 @@ import {
   Award,
   Swords,
   ChevronRight,
+  LogOut,
+  Flame,
+  UserCheck,
 } from 'lucide-react';
 
 export default function HomePage() {
+  const { user, isAuthenticated, initialize, logout } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
       {/* Top Navigation */}
       <header className="border-b border-brand-dark/15 dark:border-white/10 bg-canvas/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-primary border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm font-extrabold text-primary-foreground">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="h-10 w-10 bg-primary border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm font-extrabold text-primary-foreground group-hover:-translate-y-0.5 transition-transform">
               CF
             </div>
             <span className="font-extrabold text-2xl tracking-tight text-brand-dark dark:text-white">
               CyberForce
             </span>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-6 font-bold text-sm">
             <a
@@ -51,10 +64,38 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              Sign In
-            </Button>
-            <Button size="sm">Get Started</Button>
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-2.5">
+                <Badge variant="lime" className="hidden sm:inline-flex gap-1 font-bold">
+                  <Flame className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+                  <span>{user.streakDays}d Streak</span>
+                </Badge>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-gray border border-brand-dark rounded-btn shadow-neo-sm font-mono text-xs font-bold text-brand-dark">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{user.username}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logout()}
+                  title="Logout"
+                  className="h-9 px-2.5"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="sm">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

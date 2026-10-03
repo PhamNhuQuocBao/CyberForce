@@ -1,6 +1,28 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { authService, AuthError } from './auth.service.js';
-import { registerSchema, loginSchema, refreshTokenSchema } from './auth.schemas.js';
+import {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  oauthParamsSchema,
+  oauthUrlQuerySchema,
+  oauthCallbackQuerySchema,
+  oauthCallbackBodySchema,
+} from './auth.schemas.js';
+import {
+  generateOAuthState,
+  generatePKCE,
+  storeOAuthState,
+  consumeOAuthState,
+} from '../../lib/security.js';
+import { defaultOAuthClient, type IOAuthProviderClient } from './oauth.provider.js';
+import { env } from '../../config/env.js';
+
+let currentOAuthClient: IOAuthProviderClient = defaultOAuthClient;
+
+export function setOAuthClient(client: IOAuthProviderClient) {
+  currentOAuthClient = client;
+}
 
 const REFRESH_COOKIE_NAME = 'cyberforce_refresh';
 const COOKIE_PATH = '/api/v1/auth';
@@ -117,5 +139,111 @@ export async function meHandler(request: FastifyRequest, reply: FastifyReply) {
   return reply.status(200).send({
     success: true,
     data: profile,
+  });
+}
+
+/**
+ * Generate authorization URL with secure state and PKCE (RFC 7636)
+ */
+export async function getOAuthUrlHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { provider } = oauthParamsSchema.parse(request.params);
+  const query = oauthUrlQuerySchema.parse(request.query);
+
+  const state = generateOAuthState();
+  const pkce = provider === 'google' ? generatePKCE() : undefined;
+
+  await storeOAuthState(state, {
+    provider,
+    codeVerifier: pkce?.codeVerifier,
+    redirectUri: query.redirect_uri,
+    target: query.target,
+  });
+
+  const url = currentOAuthClient.getAuthorizationUrl({
+    provider,
+    state,
+    codeChallenge: pkce?.codeChallenge,
+    redirectUri: query.redirect_uri,
+  });
+
+  return reply.status(200).send({
+    success: true,
+    data: {
+      url,
+      state,
+      provider,
+    },
+  });
+}
+
+/**
+ * Handle OAuth callback from browser redirect (GET) or SPA client (POST)
+ */
+export async function oauthCallbackHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { provider } = oauthParamsSchema.parse(request.params);
+
+  let code: string;
+  let state: string;
+  let clientVerifier: string | undefined;
+  let redirectUri: string | undefined;
+
+  if (request.method === 'POST') {
+    const body = oauthCallbackBodySchema.parse(request.body);
+    code = body.code;
+    state = body.state;
+    clientVerifier = body.codeVerifier;
+    redirectUri = body.redirectUri;
+  } else {
+    const query = oauthCallbackQuerySchema.parse(request.query);
+    code = query.code;
+    state = query.state;
+  }
+
+  // 1. Consume state from Redis (one-time use, prevents CSRF & replay)
+  const storedState = await consumeOAuthState(state);
+  if (!storedState || storedState.provider !== provider) {
+    throw new AuthError(
+      400,
+      'Invalid, expired, or already used OAuth state',
+      'INVALID_OAUTH_STATE',
+    );
+  }
+
+  const effectiveVerifier = storedState.codeVerifier || clientVerifier;
+  const effectiveRedirectUri = storedState.redirectUri || redirectUri;
+
+  // 2. Exchange authorization code with provider for verified profile
+  const profile = await currentOAuthClient.exchangeCodeForProfile({
+    provider,
+    code,
+    codeVerifier: effectiveVerifier,
+    redirectUri: effectiveRedirectUri,
+  });
+
+  // 3. Authenticate existing user or register new student
+  const result = await authService.handleOAuthLoginOrRegister(profile);
+
+  // 4. Set secure HTTP-only refresh cookie
+  setAuthCookie(reply, result.tokens.refreshToken);
+
+  // If browser GET redirect, redirect to frontend web callback
+  if (request.method === 'GET') {
+    const targetUrl = new URL('/auth/callback', env.WEB_ORIGIN);
+    targetUrl.searchParams.set('token', result.tokens.accessToken);
+    targetUrl.searchParams.set('new_user', String(result.isNewUser));
+    return reply.redirect(targetUrl.toString());
+  }
+
+  // If JSON POST request, return structured payload
+  return reply.status(200).send({
+    success: true,
+    message: result.isNewUser
+      ? 'User registered successfully via OAuth'
+      : 'OAuth authentication successful',
+    data: {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+      isNewUser: result.isNewUser,
+    },
   });
 }

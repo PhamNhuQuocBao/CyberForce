@@ -8,7 +8,7 @@ declare module 'fastify' {
   }
 }
 
-export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
+export async function authenticate(request: FastifyRequest, _reply: FastifyReply) {
   const authHeader = request.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,11 +26,12 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     }
 
     request.user = payload;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       throw error;
     }
-    if (error.name === 'TokenExpiredError') {
+    const err = error as { name?: string };
+    if (err.name === 'TokenExpiredError') {
       throw new AuthError(401, 'Token has expired', 'TOKEN_EXPIRED');
     }
     throw new AuthError(401, 'Invalid authentication token', 'INVALID_TOKEN');

@@ -32,9 +32,34 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().optional(),
 });
 
+export const oauthParamsSchema = z.object({
+  provider: z.enum(['github', 'google']),
+});
+
+export const oauthUrlQuerySchema = z.object({
+  redirect_uri: z.string().url().optional(),
+  target: z.string().optional(),
+});
+
+export const oauthCallbackQuerySchema = z.object({
+  code: z.string().min(1, 'Authorization code is required'),
+  state: z.string().min(1, 'State is required'),
+});
+
+export const oauthCallbackBodySchema = z.object({
+  code: z.string().min(1, 'Authorization code is required'),
+  state: z.string().min(1, 'State is required'),
+  codeVerifier: z.string().optional(),
+  redirectUri: z.string().url().optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type OAuthParamsInput = z.infer<typeof oauthParamsSchema>;
+export type OAuthUrlQueryInput = z.infer<typeof oauthUrlQuerySchema>;
+export type OAuthCallbackQueryInput = z.infer<typeof oauthCallbackQuerySchema>;
+export type OAuthCallbackBodyInput = z.infer<typeof oauthCallbackBodySchema>;
 
 export interface UserProfile {
   id: string;

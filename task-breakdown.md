@@ -166,13 +166,13 @@ gantt
 
 ### 👤 PHASE 1 - EPIC 1: USER IDENTITY, PROFILES & GRANULAR RBAC
 
-#### Task CF-101: Triển khai Đăng nhập & Đăng ký 1-Click OAuth2 (Google & GitHub)
+#### [x] Task CF-101: Triển khai Đăng nhập & Đăng ký 1-Click OAuth2 (Google & GitHub) (Hoàn thành)
 * **Agent:** `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-003
-* **Mô tả:** Xây dựng luồng OAuth2 Authorization Code với PKCE cho GitHub & Google. Xử lý logic tạo mới tài khoản với vai trò `Student`, khởi tạo hồ sơ (Novice, 0 EXP, 1 ngày Streak) theo Story `US-01.01`.
+* **Mô tả:** Xây dựng luồng OAuth2 Authorization Code với PKCE (RFC 7636) cho GitHub & Google. Xử lý logic tạo mới tài khoản với vai trò `Student`, khởi tạo hồ sơ (Novice, 0 EXP, 1 ngày Streak) theo Story `US-01.01`. Xử lý chặn tự động merge khi trùng email để phòng chống Account Takeover.
 * **INPUT:** `docs/05-epics/EPIC_01_USER_IDENTITY_PROFILES_RBAC.md` (US-01.01).
-* **OUTPUT:** Endpoint `/api/v1/auth/oauth/github`, `/api/v1/auth/oauth/google`, `/api/v1/auth/callback`.
-* **VERIFY:** Gửi code OAuth mock từ test suite, kiểm tra bản ghi được tạo trong bảng `users` và trả về cặp JWT Access/Refresh Token.
+* **OUTPUT:** Endpoints `/api/v1/auth/oauth/:provider/url`, `/api/v1/auth/oauth/:provider/callback` (hỗ trợ cả GET browser redirect và POST JSON API), bảng CSDL `oauth_accounts`.
+* **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core test src/modules/auth/auth.api.test.ts` pass 100% (URL gen, PKCE S256 challenge, CSRF state, đăng ký mới student, đăng nhập identity có sẵn, chặn trùng email với HTTP 409).
 
 #### Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking)
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `frontend-architecture`
@@ -496,7 +496,7 @@ gantt
 | **CF-002** | Foundation | Docker Compose Dev Infrastructure | `devops-engineer` | P0 |
 | **CF-003** | Foundation | PostgreSQL Schema & Migrations | `database-architect` | P0 |
 | **CF-004** | Foundation | Cyber-Minimalism Design System | `frontend-specialist` | P1 |
-| **CF-101** | Epic 1 | US-01.01: 1-Click OAuth2 (Google/GitHub) | `backend-specialist` | P0 |
+| **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) | `backend-specialist` | P0 |
 | **CF-102** | Epic 1 | US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
 | **CF-103** | Epic 1 | US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
 | **CF-104** | Epic 1 | US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |

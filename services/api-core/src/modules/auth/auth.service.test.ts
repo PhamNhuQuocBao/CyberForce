@@ -34,7 +34,7 @@ describe('Auth Service Helpers & Errors', () => {
       createdAt: dbUser.createdAt,
     });
 
-    expect((profile as any).passwordHash).toBeUndefined();
+    expect('passwordHash' in profile).toBe(false);
   });
 
   it('AuthError should encapsulate statusCode, error code, and metadata details', () => {
