@@ -6,7 +6,7 @@
 ---
 
 ### 🎓 THÔNG TIN ĐỒ ÁN & TÁC GIẢ
-* **Sinh viên thực hiện:** **Phạm Như Quốc Như**
+* **Sinh viên thực hiện:** **Phạm Như Quốc Bảo**
 * **Mã sinh viên:** **21IT531**
 * **Học phần:** **Đồ án môn học Chuyên đề 4**
 * **Đề tài:** Nghiên cứu, thiết kế và xây dựng nền tảng Cyber Range thực hành an ninh mạng đám mây (*Cloud-native Cyber Range Platform*)
@@ -21,10 +21,11 @@
 4. [Kiến trúc Kỹ thuật & Công nghệ (Architecture & Tech Stack)](#-kiến-trúc-kỹ-thuật--công-nghệ-architecture--tech-stack)
 5. [Cơ chế Bảo mật & Cách ly Mạng (Security & Anti-Abuse)](#-cơ-chế-bảo-mật--cách-ly-mạng-security--anti-abuse)
 6. [Cấu trúc Thư mục Dự án (Project Structure)](#-cấu-trúc-thư-mục-dự-án-project-structure)
-7. [Hướng dẫn Cài đặt & Chạy Cục bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ-getting-started)
-8. [Hệ thống Tài liệu Kỹ thuật (Documentation Hub)](#-hệ-thống-tài-liệu-kỹ-thuật-documentation-hub)
-9. [Quy chuẩn Đóng góp & Phát triển (Contributing)](#-quy-chuẩn-đóng-góp--phát-triển-contributing)
-10. [Giấy phép (License)](#-giấy-phép-license)
+7. [Tiến độ Triển khai Dự án (Implementation Progress & Milestones)](#-tiến-độ-triển-khai-dự-án-implementation-progress--milestones)
+8. [Hướng dẫn Cài đặt & Chạy Cục bộ (Getting Started)](#-hướng-dẫn-cài-đặt--chạy-cục-bộ-getting-started)
+9. [Hệ thống Tài liệu Kỹ thuật (Documentation Hub)](#-hệ-thống-tài-liệu-kỹ-thuật-documentation-hub)
+10. [Quy chuẩn Đóng góp & Phát triển GitFlow (Contributing & Git Guidelines)](#-quy-chuẩn-đóng-góp--phát-triển-gitflow-contributing--git-guidelines)
+11. [Giấy phép (License)](#-giấy-phép-license)
 
 ---
 
@@ -287,6 +288,31 @@ CyberForge/
 
 ---
 
+## 📊 Tiến độ Triển khai Dự án (Implementation Progress & Milestones)
+
+Dự án hiện đang trong giai đoạn triển khai **Phase 1: Core MVP** theo tài liệu phân rã công việc [`task-breakdown.md`](task-breakdown.md):
+
+### 🏁 Các Hạng mục Đã Hoàn thành (Completed Milestones)
+
+#### 1. Hạ tầng Nền tảng (Phase 0 - Foundations):
+- **Monorepo & Workspace (`CF-001`):** Cấu trúc pnpm workspaces tách biệt rõ ràng giữa `apps/web` (Next.js 14) và `services/api-core` (Fastify + Prisma), cấu hình chuẩn TypeScript, ESLint, Prettier, Husky và Commitlint.
+- **Docker Compose Stack (`CF-002`):** Cụm hạ tầng gồm PostgreSQL 16, Redis 7.2, MinIO, Apache Guacamole `guacd`, Traefik v3.
+- **CSDL & Seed Data (`CF-003`):** Lược đồ Prisma 9 bảng thực thể cốt lõi (`users`, `refresh_tokens`, `learning_paths`, `rooms`, `tasks`, `questions`, `lab_instances`, `submissions`, `certificates`) kèm seed script nạp dữ liệu mẫu ban đầu.
+- **Design System Neo-Brutalism (`CF-004`):** Triển khai toàn diện theo phong cách **Neo-Brutalism / Soft Brutalism (Positivus Theme)** tại [`DESIGN.md`](DESIGN.md) với bảng màu `#B9FF66` Electric Lime, `#191A23` Charcoal Ink Black, bo góc `40px` cho Card, `14px` cho Button/Input, đổ bóng phẳng `shadow-neo` (0 blur).
+
+#### 2. Phân hệ Định danh & Xác thực (Phase 1 - Epic 1: Identity & RBAC):
+- **1-Click OAuth2 PKCE (`CF-101`):** Hỗ trợ đăng nhập nhanh bằng **Google** và **GitHub** theo chuẩn RFC 7636 (Authorization Code Flow với PKCE `code_challenge`, `code_verifier`, CSRF `state`).
+- **Xác thực Mật khẩu & Chống Brute-force (`CF-103`):** Băm mật khẩu bằng Argon2id, quản lý phiên làm việc bằng HTTP-only Refresh Cookie, tích hợp Redis Rate Limiting tự động khóa tài khoản 15 phút nếu nhập sai 5 lần liên tiếp (HTTP 429).
+- **Bộ Giao diện Authentication Hoàn chỉnh (Next.js 14 Web App):**
+  - **Auth Layout:** Bố cục Asymmetric Split (40% Telemetry Card Cyber Range trực quan, 60% Form Neo-Brutalist).
+  - **Trang Đăng nhập (`/login`):** Tích hợp nút 1-Click OAuth2 Google & GitHub, form Email/Password kèm bộ đếm ngược thời gian thực (Live Countdown Timer) khi tài khoản bị tạm khóa.
+  - **Trang Đăng ký (`/register`):** Đăng ký định danh `@handle` và thanh kiểm tra tiêu chuẩn bảo mật mật khẩu trực quan 4 tiêu chí.
+  - **Trang OAuth Callback (`/auth/callback`):** Bọc trong `Suspense`, tự động nhận diện JWT và xác thực người dùng.
+  - **Navbar Trang chủ:** Hiển thị thẻ người dùng (`@handle`, rank badge `Novice`, chuỗi streak).
+- **Kiểm thử Tự động:** Đạt **38/38 tests passing** cho toàn bộ API xác thực (`api-core`), typecheck & build Next.js thành công 100%.
+
+---
+
 ## ⚡ Hướng dẫn Cài đặt & Chạy Cục bộ (Getting Started)
 
 ### 1. Yêu cầu Tiên quyết (Prerequisites)
@@ -319,8 +345,37 @@ docker compose ps
 | :--- | :--- | :--- |
 | **Traefik Gateway** | `80`, `443`, `8080` (Dashboard) | Điểm tiếp nhận API, định tuyến WebSockets và SSL |
 | **PostgreSQL 16** | `5432` | Cơ sở dữ liệu chính |
-| **Redis 7.2** | `6379` | Quản lý Pub/Sub, Khóa phân tán và Điểm đấu trường |
+| **Redis 7.2** | `6379` | Quản lý Pub/Sub, Khóa phân tán và Rate Limiting |
 | **MinIO Console** | `9000` (API), `9001` (Web Console) | Lưu trữ tệp ảnh lab và chứng chỉ số PDF |
+
+### 3. Cài đặt Dependencies & Khởi tạo CSDL
+```bash
+# Cài đặt toàn bộ thư viện trong monorepo
+pnpm install
+
+# Đẩy schema Prisma vào PostgreSQL
+pnpm --filter @cyberforce/api-core run db:push
+
+# Nạp dữ liệu mẫu ban đầu (admin, student, sample path)
+pnpm --filter @cyberforce/api-core run db:seed
+```
+
+### 4. Khởi chạy Ứng dụng Phát triển (Development Servers)
+Khởi chạy đồng thời 2 dịch vụ phát triển:
+
+```bash
+# Terminal 1: Chạy Fastify Backend API Core (Cổng 4000)
+pnpm --filter @cyberforce/api-core dev
+
+# Terminal 2: Chạy Next.js Frontend Web App (Cổng 3000)
+pnpm --filter @cyberforce/web dev
+```
+
+Truy cập giao diện:
+* **Trang chủ Web:** [http://localhost:3000](http://localhost:3000)
+* **Đăng nhập:** [http://localhost:3000/login](http://localhost:3000/login)
+* **Đăng ký:** [http://localhost:3000/register](http://localhost:3000/register)
+* **API Core Health Check:** [http://localhost:4000/health](http://localhost:4000/health)
 
 ---
 
@@ -330,6 +385,8 @@ docker compose ps
 
 * **Tài liệu Yêu cầu Sản phẩm (PRD):** [`docs/01-product/PRD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/01-product/PRD_CYBERFORCE.md)
 * **Tài liệu Thiết kế Kỹ thuật (TDD):** [`docs/02-architecture/TDD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/02-architecture/TDD_CYBERFORCE.md)
+* **Kế hoạch Phân rã Công việc (Task Breakdown):** [`task-breakdown.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/task-breakdown.md)
+* **Chuẩn Thiết kế Giao diện (Design Spec):** [`DESIGN.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/DESIGN.md)
 * **Quy chuẩn Git & Quy trình Phát triển:** [`docs/03-guidelines/GIT_GUIDELINES.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/03-guidelines/GIT_GUIDELINES.md)
 * **Thư viện Đặc tả 8 Epics:** [`docs/05-epics/`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/05-epics/)
 * **Luồng Trải nghiệm Người dùng (User Flows):** [`docs/06-user-flow/`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/06-user-flow/)
@@ -337,20 +394,28 @@ docker compose ps
 
 ---
 
-## 🤝 Quy chuẩn Đóng góp & Phát triển (Contributing)
+## 🤝 Quy chuẩn Đóng góp & Phát triển GitFlow (Contributing & Git Guidelines)
 
-Chúng tôi luôn chào đón sự đóng góp của cộng đồng an ninh mạng và các nhà phát triển mã nguồn mở! Vui lòng tuân thủ các quy tắc sau:
+Chúng tôi luôn chào đón sự đóng góp của cộng đồng an ninh mạng và các nhà phát triển mã nguồn mở! Vui lòng tuân thủ nghiêm ngặt các quy tắc sau:
 
-1. **Quy chuẩn Nhánh (Branching Model):**
-   - `main`: Nhánh production, luôn ở trạng thái sẵn sàng phát hành.
-   - `develop`: Nhánh tích hợp chính của đội ngũ kỹ thuật.
-   - `feature/<epic-code>-<short-description>`: Nhánh phát triển tính năng mới (Ví dụ: `feature/epic-03-docker-spawner`).
+### ⚠️ QUY TẮC BẮT BUỘC VỀ GIT (STRICT GITFLOW RULE)
+> 🔴 **TUYỆT ĐỐI KHÔNG PUSH TRỰC TIẾP LÊN NHÁNH `main`:**
+> Dù là thay đổi lớn, nhỏ, sửa lỗi chính tả hay cập nhật tài liệu, **bắt buộc phải tạo branch riêng** theo quy chuẩn (`feature/CF-xxx-...`, `docs/...`, `fix/...`) và tạo Pull Request để review trước khi merge vào `main`.
+
+1. **Quy chuẩn Đặt tên Nhánh (Branching Model):**
+   - `main`: Nhánh production ổn định, chỉ nhận code thông qua Pull Request được phê duyệt.
+   - `feature/CF-<id>-<kebab-case>`: Nhánh phát triển tính năng mới theo mã ticket (Ví dụ: `feature/CF-101-oauth2-auth`).
+   - `fix/CF-<id>-<kebab-case>`: Nhánh sửa lỗi.
+   - `docs/<description>`: Nhánh cập nhật tài liệu, PRD, spec.
 2. **Quy chuẩn Thông điệp Commit (Conventional Commits):**
-   - Cú pháp: `feat(scope): short description in imperative mood`
-   - Ví dụ: `feat(arena): implement 60-second redis tick runner for koth`
-3. **Quy chuẩn Giao diện (Aesthetic Enforcement):**
-   - Tuân thủ phong cách **Tactical Cyber-HUD**: Tương phản cao, góc cạnh sắc nhọn `0px - 2px`, font đơn cách `JetBrains Mono`.
-   - **Tuyệt đối tuân thủ Purple Ban:** Không sử dụng sắc tím/violet trong bất kỳ thành phần giao diện nào.
+   - Cú pháp: `<type>(<scope>): <short summary>`
+   - Ví dụ: `feat(auth): CF-101 implement 1-click OAuth2 authentication with PKCE`
+3. **Quy chuẩn Thiết kế Giao diện (Neo-Brutalism / Positivus Theme):**
+   - Tuân thủ tài liệu chuẩn thiết kế [`DESIGN.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/DESIGN.md):
+     - **Bảng màu chủ đạo:** Electric Lime (`#B9FF66`), Charcoal Ink Black (`#191A23`), Soft Warm Gray (`#F3F3F3`).
+     - **Kiểu dáng đặc trưng:** Viền sắc nét 1px-2px, đổ bóng phẳng không blur (`shadow-neo`, `shadow-neo-lg`), bo góc hào phóng (`rounded-[40px]` cho Card, `rounded-[14px]` cho Button/Input).
+     - **Font chữ:** `Plus Jakarta Sans` cho văn bản/tiêu đề và `JetBrains Mono` cho terminal/code/flag.
+     - **Quy tắc Purple Ban:** Nghiêm cấm sử dụng sắc tím/violet theo quy chuẩn thương hiệu.
 
 ---
 
