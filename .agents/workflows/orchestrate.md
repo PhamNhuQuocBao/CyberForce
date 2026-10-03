@@ -1,246 +1,156 @@
 ---
-name: orchestrate
 description: Coordinate multiple agents for complex tasks. Use for multi-perspective analysis, comprehensive reviews, or tasks requiring different domain expertise.
-version: 1.0.0
-requires_agents: orchestrator
-requires_skills: parallel-agents, coordinator-mode
-artifact_outputs: task-graph, coordination-status, final-synthesis
 ---
 
 # Multi-Agent Orchestration
 
-You are now in **ORCHESTRATION MODE**. Your task: coordinate specialized agents to solve this complex problem.
+You are now in **ORCHESTRATION MODE**. Your task: coordinate specialized agents to plan, implement, test, and review solutions for complex software tasks.
 
 ## Task to Orchestrate
 $ARGUMENTS
 
 ---
 
-## 🔴 CRITICAL: Minimum Agent Requirement
+## 🔴 CRITICAL: Agent Quota & Selection
 
-> ⚠️ **ORCHESTRATION = MINIMUM 3 DIFFERENT AGENTS**
-> 
-> If you use fewer than 3 agents, you are NOT orchestrating - you're just delegating.
-> 
-> **Validation before completion:**
-> - Count invoked agents
-> - If `agent_count < 3` → STOP and invoke more agents
-> - Single agent = FAILURE of orchestration
+- **Complex / Feature / Full-Stack Tasks:** MANDATORY minimum 3 specialized agents.
+- **Bug Fix / Refactor / Single-Domain Tasks:** Minimum 2 specialized agents (e.g., `debugger` + `test-engineer`).
+- **Trivial / Docs / Config Tweaks:** Fast-track permitted (1 agent).
 
 ### Agent Selection Matrix
 
-| Task Type | REQUIRED Agents (minimum) |
-|-----------|---------------------------|
-| **Web App** | frontend-specialist, backend-specialist, test-engineer |
-| **API** | backend-specialist, security-auditor, test-engineer |
-| **UI/Design** | frontend-specialist, seo-specialist, performance-optimizer |
-| **Database** | database-architect, backend-specialist, security-auditor |
-| **Full Stack** | project-planner, frontend-specialist, backend-specialist, devops-engineer |
-| **Debug** | debugger, explorer-agent, test-engineer |
-| **Security** | security-auditor, penetration-tester, devops-engineer |
+| Task Type | REQUIRED Agents (Minimum Pipeline) |
+|---|---|
+| **Web Feature** | `project-planner` → `frontend-specialist`/`backend-specialist` → `test-engineer` → `security-auditor` |
+| **API Endpoint** | `project-planner` → `backend-specialist` → `test-engineer` → `security-auditor` |
+| **Database** | `database-architect` → `backend-specialist` → `security-auditor` |
+| **Bug Fix** | `debugger` → `backend-specialist`/`frontend-specialist` → `test-engineer` |
+| **Security Patch** | `security-auditor` → `backend-specialist` → `penetration-tester` |
 
 ---
 
 ## Pre-Flight: Mode Check
 
-| Current Mode | Task Type | Action |
-|--------------|-----------|--------|
-| **plan** | Any | ✅ Proceed with planning-first approach |
+| Current Mode | Task Scope | Action |
+|---|---|---|
+| **plan** | Any | ✅ Proceed with planning phase |
 | **edit** | Simple execution | ✅ Proceed directly |
 | **edit** | Complex/multi-file | ⚠️ Ask: "This task requires planning. Switch to plan mode?" |
 | **ask** | Any | ⚠️ Ask: "Ready to orchestrate. Switch to edit or plan mode?" |
 
 ---
 
-## 🔴 STRICT 2-PHASE ORCHESTRATION
+## 🔴 3-PHASE ORCHESTRATION PIPELINE
 
-### PHASE 1: PLANNING (Sequential - NO parallel agents)
+### PHASE 1: PLANNING (Sequential)
 
 | Step | Agent | Action |
-|------|-------|--------|
-| 1 | `project-planner` | Create {task-slug}.md in project root |
-| 2 | (optional) `explorer-agent` | Codebase discovery if needed |
+|---|---|---|
+| 1 | `project-planner` | Create plan `{task-slug}.md` in workspace |
+| 2 | (optional) `explorer-agent` | Map dependencies and codebase structure |
 
-> 🔴 **NO OTHER AGENTS during planning!** Only project-planner and explorer-agent.
+> 🔴 **NO IMPLEMENTATION AGENTS during planning!**
 
-### ⏸️ CHECKPOINT: User Approval
+#### ⏸️ CHECKPOINT: User Approval Gate
+After `{task-slug}.md` is created, STOP and ask:
+```text
+✅ Plan created: {task-slug}.md
 
+Do you approve this implementation plan? (Y/N)
+- Y: Proceed to Phase 2 (Implementation)
+- N: Revise the plan based on feedback
 ```
-After {task-slug}.md is complete, ASK:
-
-"✅ Plan created: {task-slug}.md
-
-Do you approve? (Y/N)
-- Y: Start implementation
-- N: I'll revise the plan"
-```
-
 > 🔴 **DO NOT proceed to Phase 2 without explicit user approval!**
-
-### PHASE 2: IMPLEMENTATION (Parallel agents after approval)
-
-| Parallel Group | Agents |
-|----------------|--------|
-| Foundation | `database-architect`, `security-auditor` |
-| Core | `backend-specialist`, `frontend-specialist` |
-| Polish | `test-engineer`, `devops-engineer` |
-
-> ✅ After user approval, invoke multiple agents in PARALLEL.
-
-## Available Agents (20 total)
-
-| Agent | Domain | Use When |
-|-------|--------|----------|
-| `project-planner` | Planning | Task breakdown, {task-slug}.md |
-| `explorer-agent` | Discovery | Codebase mapping |
-| `frontend-specialist` | UI/UX | React, Vue, CSS, HTML |
-| `backend-specialist` | Server | API, Node.js, Python |
-| `database-architect` | Data | SQL, NoSQL, Schema |
-| `security-auditor` | Security | Vulnerabilities, Auth |
-| `penetration-tester` | Security | Active testing |
-| `test-engineer` | Testing | Unit, E2E, Coverage |
-| `qa-automation-engineer` | QA | E2E pipelines, test automation |
-| `devops-engineer` | Ops | CI/CD, Docker, Deploy |
-| `mobile-developer` | Mobile | React Native, Flutter |
-| `performance-optimizer` | Speed | Lighthouse, Profiling |
-| `seo-specialist` | SEO | Meta, Schema, Rankings |
-| `documentation-writer` | Docs | README, API docs |
-| `debugger` | Debug | Error analysis |
-| `game-developer` | Games | Unity, Godot |
-| `code-archaeologist` | Legacy | Refactoring, legacy code |
-| `product-manager` | Product | Requirements, user stories |
-| `product-owner` | Product | Backlog, MVP, strategy |
-| `orchestrator` | Meta | Coordination |
 
 ---
 
-## Orchestration Protocol
+### PHASE 2: IMPLEMENTATION (Staged Execution)
 
-### Step 1: Analyze Task Domains
-Identify ALL domains this task touches:
-```
-□ Security     → security-auditor, penetration-tester
-□ Backend/API  → backend-specialist
-□ Frontend/UI  → frontend-specialist
-□ Database     → database-architect
-□ Testing      → test-engineer
-□ DevOps       → devops-engineer
-□ Mobile       → mobile-developer
-□ Performance  → performance-optimizer
-□ SEO          → seo-specialist
-□ Planning     → project-planner
-```
+| Stage | Agents | Purpose |
+|---|---|---|
+| **Foundation** | `database-architect`, `security-auditor` | Schema, migrations, auth boundaries |
+| **Core Coding** | `frontend-specialist`, `backend-specialist` | Write features following `{task-slug}.md` |
 
-### Step 2: Phase Detection
+> **Context Passing Rule:** When delegating to any subagent, ALWAYS pass:
+> 1. Original User Request
+> 2. Decisions & Constraints from `{task-slug}.md`
+> 3. Files changed by previous agents
 
-| If Plan Exists | Action |
-|----------------|--------|
-| NO `{task-slug}.md` | → Go to PHASE 1 (planning only) |
-| YES `{task-slug}.md` + user approved | → Go to PHASE 2 (implementation) |
+---
 
-### Step 3: Execute Based on Phase
+### PHASE 3: QUALITY GATE & CODE REVIEW (Test & Heal Loop)
 
-**PHASE 1 (Planning):**
-```
-Use the project-planner agent to create {task-slug}.md
-→ STOP after plan is created
-→ ASK user for approval
-```
+#### Step 3.1: Automated Testing & Self-Healing
+- **Primary Agent:** `test-engineer`
+- **Actions:**
+  1. Write Unit & Integration tests for all code generated in Phase 2.
+  2. Execute the test command (e.g., `npm test`, `pytest`, `cargo test`).
+  3. **Self-Healing Loop (Max 3 Retries):**
+     - If tests fail, read errors/stack traces and invoke the respective Core agent (`frontend-specialist` or `backend-specialist`) to fix the bug.
+     - Re-run tests until all test cases pass.
+     - DO NOT bypass tests with `@ts-ignore` or test skipping flags.
 
-**PHASE 2 (Implementation - after approval):**
-```
-Invoke agents in PARALLEL:
-Use the frontend-specialist agent to [task]
-Use the backend-specialist agent to [task]
-Use the test-engineer agent to [task]
-```
+#### Step 3.2: Automated Code Review
+- **Primary Agent:** `security-auditor` (referencing `workflows/review-code.md`)
+- **Actions:**
+  1. Read full `git diff` of all modified/created files.
+  2. Audit against Security, Performance, Error Handling, and Clean Code standards.
+  3. If critical issues are identified, resolve them immediately before completion.
 
-**🔴 CRITICAL: Context Passing (MANDATORY)**
+---
 
-When invoking ANY subagent, you MUST include:
+### Phase 4: Final Verification Scripts (MANDATORY)
 
-1. **Original User Request:** Full text of what user asked
-2. **Decisions Made:** All user answers to Socratic questions
-3. **Previous Agent Work:** Summary of what previous agents did
-4. **Current Plan State:** If plan files exist in workspace, include them
-
-**Example with FULL context:**
-```
-Use the project-planner agent to create {task-slug}.md:
-
-**CONTEXT:**
-- User Request: "A social platform for students, using mock data"
-- Decisions: Tech=Vue 3, Layout=Grid Widgets, Auth=Mock, Design=Youthful & dynamic
-- Previous Work: Orchestrator asked 6 questions, user chose all options
-- Current Plan: playful-roaming-dream.md exists in workspace with initial structure
-
-**TASK:** Create detailed {task-slug}.md based on ABOVE decisions. Do NOT infer from folder name.
-```
-
-> ⚠️ **VIOLATION:** Invoking subagent without full context = subagent will make wrong assumptions!
-
-
-### Step 4: Verification (MANDATORY)
-The LAST agent must run appropriate verification scripts:
+Execute project validation tools or fallback to standard CLI checks:
 ```bash
-python .agents/skills/vulnerability-scanner/scripts/security_scan.py .
-python .agents/skills/lint-and-validate/scripts/lint_runner.py .
+if [ -d ".agents/skills" ]; then
+  python .agents/skills/vulnerability-scanner/scripts/security_scan.py .
+  python .agents/skills/lint-and-validate/scripts/lint_runner.py .
+else
+  npm run lint && npm run typecheck && npm test
+fi
 ```
-
-### Step 5: Synthesize Results
-Combine all agent outputs into unified report.
 
 ---
 
 ## Output Format
 
-```markdown
+```text
 ## 🎼 Orchestration Report
 
-### Task
+### Task Summary
 [Original task summary]
 
-### Mode
-[Current AG Kit Agent mode: plan/edit/ask]
+### Pipeline Execution Status
+| # | Agent | Role | Status |
+|---|-------|------|--------|
+| 1 | project-planner | Architecture & Plan | ✅ Pass |
+| 2 | backend-specialist | Core API Implementation | ✅ Pass |
+| 3 | test-engineer | Test Suite & Healing Loop | ✅ Pass |
+| 4 | security-auditor | Code Review & Audit | ✅ Pass |
 
-### Agents Invoked (MINIMUM 3)
-| # | Agent | Focus Area | Status |
-|---|-------|------------|--------|
-| 1 | project-planner | Task breakdown | ✅ |
-| 2 | frontend-specialist | UI implementation | ✅ |
-| 3 | test-engineer | Verification scripts | ✅ |
-
-### Verification Scripts Executed
-- [x] security_scan.py → Pass/Fail
-- [x] lint_runner.py → Pass/Fail
-
-### Key Findings
-1. **[Agent 1]**: Finding
-2. **[Agent 2]**: Finding
-3. **[Agent 3]**: Finding
+### Quality & Verification Results
+- [x] Unit/Integration Tests: [X passed / 0 failed]
+- [x] Typecheck & Lint: Clean
+- [x] Code Review Checklist: Completed (No blockers)
+- [x] Security Audit: Clean
 
 ### Deliverables
-- [ ] {task-slug}.md created
-- [ ] Code implemented
-- [ ] Tests passing
-- [ ] Scripts verified
+- [x] {task-slug}.md generated and approved
+- [x] Core implementation committed
+- [x] Test coverage added
+- [x] Final review passed
 
 ### Summary
-[One paragraph synthesis of all agent work]
+[Brief synthesis of architectural decisions, resolved edge cases, and final code state]
 ```
 
 ---
 
 ## 🔴 EXIT GATE
 
-Before completing orchestration, verify:
-
-1. ✅ **Agent Count:** `invoked_agents >= 3`
-2. ✅ **Scripts Executed:** At least `security_scan.py` ran
-3. ✅ **Report Generated:** Orchestration Report with all agents listed
-
-> **If any check fails → DO NOT mark orchestration complete. Invoke more agents or run scripts.**
-
----
-
-**Begin orchestration now. Select 3+ agents, execute sequentially, run verification scripts, synthesize results.**
+Before declaring the task complete, verify:
+1. ✅ **Plan Approved:** User signed off on `{task-slug}.md`.
+2. ✅ **Tests Green:** All tests executed and passed without bypasses.
+3. ✅ **Review Finished:** `git diff` reviewed against `workflows/review-code.md`.
+4. ✅ **No Open Vulnerabilities:** Verification scripts returned exit code 0.
