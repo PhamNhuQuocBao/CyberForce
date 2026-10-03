@@ -166,13 +166,15 @@ gantt
 
 ### 👤 PHASE 1 - EPIC 1: USER IDENTITY, PROFILES & GRANULAR RBAC
 
-#### [x] Task CF-101: Triển khai Đăng nhập & Đăng ký 1-Click OAuth2 (Google & GitHub) (Hoàn thành)
-* **Agent:** `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
-* **Priority:** `P0 (Critical)` | **Dependencies:** CF-003
-* **Mô tả:** Xây dựng luồng OAuth2 Authorization Code với PKCE (RFC 7636) cho GitHub & Google. Xử lý logic tạo mới tài khoản với vai trò `Student`, khởi tạo hồ sơ (Novice, 0 EXP, 1 ngày Streak) theo Story `US-01.01`. Xử lý chặn tự động merge khi trùng email để phòng chống Account Takeover.
-* **INPUT:** `docs/05-epics/EPIC_01_USER_IDENTITY_PROFILES_RBAC.md` (US-01.01).
-* **OUTPUT:** Endpoints `/api/v1/auth/oauth/:provider/url`, `/api/v1/auth/oauth/:provider/callback` (hỗ trợ cả GET browser redirect và POST JSON API), bảng CSDL `oauth_accounts`.
-* **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core test src/modules/auth/auth.api.test.ts` pass 100% (URL gen, PKCE S256 challenge, CSRF state, đăng ký mới student, đăng nhập identity có sẵn, chặn trùng email với HTTP 409).
+#### [x] Task CF-101: Triển khai Đăng nhập & Đăng ký 1-Click OAuth2 (Google & GitHub) kèm Giao diện Auth UI (Hoàn thành)
+* **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `clean-code`, `frontend-design`
+* **Priority:** `P0 (Critical)` | **Dependencies:** CF-003, CF-004
+* **Mô tả:** Xây dựng luồng OAuth2 Authorization Code với PKCE (RFC 7636) cho GitHub & Google. Xử lý logic tạo mới tài khoản với vai trò `Student`, khởi tạo hồ sơ (Novice, 0 EXP, 1 ngày Streak) theo Story `US-01.01`. Xử lý chặn tự động merge khi trùng email để phòng chống Account Takeover. Đồng thời phát triển hoàn chỉnh giao diện Đăng nhập, Đăng ký và OAuth Callback trên Next.js 14 theo phong cách Neo-Brutalism / Positivus Theme.
+* **INPUT:** `docs/05-epics/EPIC_01_USER_IDENTITY_PROFILES_RBAC.md` (US-01.01), `DESIGN.md` (Positivus Theme).
+* **OUTPUT:** 
+  - Backend: Endpoints `/api/v1/auth/oauth/:provider/url`, `/api/v1/auth/oauth/:provider/callback`, bảng CSDL `oauth_accounts`.
+  - Frontend: Giao diện Asymmetric Split `/login`, `/register`, `/auth/callback`, client store `apps/web/src/lib/auth-store.ts`, API client `apps/web/src/lib/api.ts`.
+* **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core test` pass 38/38 tests. Frontend Next.js build và typecheck pass 100%, kiểm thử trực quan trên trình duyệt (browser subagent) xác nhận giao diện render hoàn hảo. Gộp thành công vào `main` qua PR #8.
 
 #### Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking)
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `frontend-architecture`
@@ -492,13 +494,13 @@ gantt
 
 | Mã Task | Epic Liên Quan | User Story / Tiêu Chuẩn Nghiệm Thu | Agent Phụ Trách | Ưu Tiên |
 | :--- | :--- | :--- | :--- | :---: |
-| **CF-001** | Foundation | Monorepo Setup & Git Guidelines | `devops-engineer` | P0 |
-| **CF-002** | Foundation | Docker Compose Dev Infrastructure | `devops-engineer` | P0 |
-| **CF-003** | Foundation | PostgreSQL Schema & Migrations | `database-architect` | P0 |
-| **CF-004** | Foundation | Cyber-Minimalism Design System | `frontend-specialist` | P1 |
-| **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) | `backend-specialist` | P0 |
+| **CF-001** | Foundation | [x] Monorepo Setup & Git Guidelines | `devops-engineer` | P0 |
+| **CF-002** | Foundation | [x] Docker Compose Dev Infrastructure | `devops-engineer` | P0 |
+| **CF-003** | Foundation | [x] PostgreSQL Schema & Migrations | `database-architect` | P0 |
+| **CF-004** | Foundation | [x] Neo-Brutalism (Positivus) Theme & Base Shell | `frontend-specialist` | P1 |
+| **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) & Auth UI | `backend-specialist` | P0 |
 | **CF-102** | Epic 1 | US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
-| **CF-103** | Epic 1 | US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
+| **CF-103** | Epic 1 | [x] US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
 | **CF-104** | Epic 1 | US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
 | **CF-105** | Epic 1 | US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
 | **CF-201** | Epic 2 | US-02.01: Learning Paths Catalog & Detail | `frontend-specialist` | P0 |
@@ -532,11 +534,38 @@ gantt
 
 ---
 
-## 7. Bảng Kiểm Tra Định Kỳ & Kế Hoạch Triển Khai Tiếp Theo (Next Steps)
+## 7. Nhật Ký Tiến Độ Triển Khai Thực Tế (Execution Log)
 
-1. **Phê duyệt Kế hoạch Phân rã:** Người dùng và các kỹ sư rà soát tài liệu `task-breakdown.md`.
-2. **Khởi động Giai đoạn 0 (Sprint 0 - Foundations):** Bắt đầu triển khai từ các task nền tảng `CF-001`, `CF-002`, `CF-003`, `CF-004`.
-3. **Thực thi Sprint theo chuẩn Git:**
-   - Mỗi task tạo một branch tương ứng theo format: `feature/CF-xxx-description`.
-   - Viết test trước hoặc song song theo chuẩn TDD.
-   - Hoàn thành từng task với đầy đủ `INPUT → OUTPUT → VERIFY`.
+### 🚀 Ngày 2026-10-03: Hoàn thành Redesign Neo-Brutalism & Triển khai Trọn Vẹn Auth Stack (CF-101 + CF-103)
+* **Design System Migration (`DESIGN.md` v2.0.0):**
+  - Chuyển đổi toàn diện sang phong cách **Neo-Brutalism / Soft Brutalism (Positivus Theme)**: Bảng màu `#B9FF66` Electric Lime highlighter, `#191A23` Charcoal Ink Black, `#F3F3F3` surface, bo góc thẻ `rounded-[40px]`, nút `rounded-[14px]`, đổ bóng cứng `shadow-neo` / `shadow-neo-lg`.
+  - Fix triệt để màu primary Tailwind CSS thông qua biến CSS variables và CVA components.
+* **Backend Authentication API Core (`services/api-core`):**
+  - Đăng nhập/Đăng ký 1-Click OAuth2 cho **GitHub** và **Google** sử dụng PKCE (RFC 7636) với `code_challenge`, `code_verifier`, CSRF `state`.
+  - Đăng nhập/Đăng ký truyền thống (Email/Password) bảo mật bằng Argon2id + Redis rate limiting (khóa tạm 15 phút khi nhập sai 5 lần).
+  - Schema CSDL: Bổ sung bảng `oauth_accounts` vào Prisma, chạy migration thành công.
+  - Test Suite: Viết và pass toàn bộ **38/38 unit & integration tests** trong `api-core`.
+* **Frontend Authentication UI (`apps/web` - Option A):**
+  - Xây dựng bố cục Asymmetric Split (`(auth)/layout.tsx`) với thẻ Live Cyber Range Telemetry mô phỏng trạng thái kernel và thống kê pods/flags.
+  - Trang Đăng nhập (`(auth)/login/page.tsx`): 1-Click OAuth2 buttons, email/password form, attempt counter, countdown timer thời gian thực khi bị lockout (HTTP 429).
+  - Trang Đăng ký (`(auth)/register/page.tsx`): Nhập `@handle`, live password security checklist 4 tiêu chí.
+  - Trang OAuth Callback (`auth/callback/page.tsx`): Xác thực token với `/me` và tự động lưu phiên.
+  - Cập nhật Navbar (`page.tsx`) hiển thị huy hiệu người dùng đăng nhập (`@handle`, rank badge, streak).
+* **Khắc phục Sự cố Môi trường & Browser Verification:**
+  - Điều tra và xử lý triệt để lỗi 404 driver Playwright bằng cách cài đặt trực tiếp `playwright-core@1.57.0` và browser binaries vào cache hệ thống.
+  - Kiểm thử trực quan tự động bằng `browser_subagent` chụp ảnh thực tế cả 2 trang `/login` và `/register`.
+* **Git & Release Management:**
+  - Branch `feature/CF-101-oauth2-auth` đã commit, push và được merge an toàn vào `main` qua **PR #8** (commit `ef33bc8`).
+  - Toàn bộ codebase cục bộ và remote đã đồng bộ 100% trên `main`.
+
+---
+
+## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
+
+1. **Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking):**
+   - Hoàn thiện cơ chế khi người dùng đăng nhập OAuth thứ 2 có cùng email với tài khoản đã tồn tại.
+   - Gửi mã OTP xác nhận liên kết và cung cấp modal xác nhận trên Web.
+2. **Task CF-104: Xây dựng Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư:**
+   - Dựng trang `/user/[username]` theo phong cách Neo-Brutalist hiển thị avatar, rank Novice, badges, streak.
+3. **Task CF-201 & CF-202 (Epic 2):**
+   - Bắt đầu triển khai Catalog Lộ trình Học tập (`/paths`) và không gian thực hành All-in-One Split-Pane (`/rooms/[slug]`).
