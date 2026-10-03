@@ -138,29 +138,29 @@ gantt
 * **OUTPUT:** Thư mục gốc dự án cấu hình xong workspaces (`apps/web`, `services/api-core`, `infra/`), git hooks chặn commit lỗi.
 * **VERIFY:** Chạy `npm run lint` pass 100%, thử commit sai định dạng Conventional Commit bị chặn bởi hook.
 
-#### Task CF-002: Thiết lập Docker Compose Cụm Dịch vụ Hạ tầng
+#### [x] Task CF-002: Thiết lập Docker Compose Cụm Dịch vụ Hạ tầng (Hoàn thành)
 * **Agent:** `devops-engineer` | **Skills:** `bash-linux`, `server-management`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-001
-* **Mô tả:** Viết file `infra/docker-compose.yml` khởi chạy: PostgreSQL 16, Redis 7.2, MinIO S3, Traefik v3.0 Ingress Proxy kèm cấu hình biến môi trường chuẩn (`.env.example`).
+* **Mô tả:** Viết file `infra/docker-compose.yml` khởi chạy: PostgreSQL 16, Redis 7.2, MinIO S3, Apache Guacamole `guacd`, Traefik v3.0 Ingress Proxy kèm cấu hình biến môi trường chuẩn (`.env.example`).
 * **INPUT:** TDD Mục 11.1 (Local Development Stack).
-* **OUTPUT:** `infra/docker-compose.yml`, thư mục cấu hình `infra/traefik/traefik.yml`.
-* **VERIFY:** Chạy `docker compose up -d` thành công, kiểm tra `docker ps` thấy 4 container `Up (healthy)`.
+* **OUTPUT:** `infra/docker-compose.yml`, root `docker-compose.yml`, `.env.example`, `.env`.
+* **VERIFY:** Chạy `docker compose up -d` thành công, kiểm tra `docker ps` thấy cả 5 container `Up (healthy)`.
 
-#### Task CF-003: Khởi tạo CSDL PostgreSQL & Data Dictionary Migrations
+#### [x] Task CF-003: Khởi tạo CSDL PostgreSQL & Data Dictionary Migrations (Hoàn thành)
 * **Agent:** `database-architect` | **Skills:** `database-design`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-002
-* **Mô tả:** Thiết lập DDL migration khởi tạo các bảng: `users`, `learning_paths`, `rooms`, `tasks`, `questions`, `lab_instances`, `certificates`, `koth_matches` theo TDD Mục 4.1.
+* **Mô tả:** Thiết lập Prisma schema DDL khởi tạo các bảng: `users`, `refresh_tokens`, `learning_paths`, `rooms`, `tasks`, `questions`, `lab_instances`, `submissions`, `certificates` theo TDD Mục 4.1.
 * **INPUT:** `docs/02-architecture/TDD_CYBERFORCE.md` Mục 4.1.
-* **OUTPUT:** Các file migration SQL / ORM (Prisma/Drizzle/Go-Migrate), file seed dữ liệu mẫu ban đầu.
-* **VERIFY:** Chạy migration vào PostgreSQL container thành công, `\dt` hiển thị đầy đủ 8 bảng chính kèm ràng buộc Foreign Key và UUID.
+* **OUTPUT:** `services/api-core/prisma/schema.prisma`, seed script `services/api-core/prisma/seed.ts`.
+* **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core run db:push` và `db:seed` thành công, `\dt` trong PostgreSQL hiển thị đủ 9 bảng chính kèm foreign keys và dữ liệu mẫu (admin, creator, student, sample room).
 
-#### Task CF-004: Xây dựng Hệ thống Design System Tokens & Base Layout Shell
+#### [x] Task CF-004: Xây dựng Hệ thống Design System Tokens & Base Layout Shell (Hoàn thành)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `design-spec`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-001
-* **Mô tả:** Cài đặt Tailwind CSS v4 / Shadcn UI trên `apps/web`, cấu hình bảng màu Cyber-Minimalism (`#070A0F` Obsidian, `#00F0FF` Electric Cyan, `#10B981` Emerald, tuyệt đối tuân thủ Purple Ban), font `Inter` + `JetBrains Mono`. Dựng khung Top Navigation và Footer.
-* **INPUT:** Wireframes Design Specs Mục Design Tokens (`docs/07-wireframes/EPIC_01_WIREFRAMES_IDENTITY_PROFILES_RBAC.md`).
-* **OUTPUT:** `apps/web/src/app/globals.css`, các components: `Button`, `Card`, `Badge`, `Navbar`, `Modal`.
-* **VERIFY:** Khởi chạy `npm run dev --prefix apps/web`, truy cập `http://localhost:3000` hiển thị giao diện tối chuẩn cyber, không có bất kỳ mã màu tím nào (`#8B5CF6`, `#A855F7`,...).
+* **Mô tả:** Cài đặt Tailwind CSS v3 / Shadcn UI trên `apps/web`, cấu hình bảng màu Neo-Brutalism / Soft Brutalism (Positivus Theme: `#B9FF66` Electric Lime, `#191A23` Charcoal Ink Black, `#F3F3F3` Surface, 40px Card Radius, 14px Button Radius, 0-blur hard offset shadows). Dựng khung Top Navigation và Footer.
+* **INPUT:** `DESIGN.md` (v2.0.0).
+* **OUTPUT:** `apps/web/src/styles/globals.css`, `tailwind.config.ts`, components `Button`, `Card`, `Badge`, `Input`, `Navbar`.
+* **VERIFY:** Khởi chạy `pnpm --filter @cyberforce/web dev`, truy cập `http://localhost:3000` hiển thị giao diện Neo-Brutalist Positivus chuẩn xác với Electric Lime.
 
 ---
 
@@ -182,13 +182,13 @@ gantt
 * **OUTPUT:** Endpoint `/api/v1/auth/link-account`, Modal UI "Account Linking Confirmation" trên frontend.
 * **VERIFY:** Đăng ký bằng Google `test@cyberforce.io`, sau đó dùng GitHub cùng email `test@cyberforce.io` -> Hệ thống dừng lại, yêu cầu OTP và liên kết thành công sau khi nhập đúng OTP.
 
-#### Task CF-103: Đăng nhập/Đăng ký Truyền thống (Email/Password) kèm Rate Limiting & Khóa Tạm thời
+#### [x] Task CF-103: Đăng nhập/Đăng ký Truyền thống (Email/Password) kèm Rate Limiting & Khóa Tạm thời (Hoàn thành)
 * **Agent:** `security-auditor` & `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-003
 * **Mô tả:** Triển khai đăng ký/đăng nhập qua email/password sử dụng thuật toán băm Argon2id. Tích hợp Redis rate limiting: nộp sai mật khẩu 5 lần/15 phút -> tạm khóa tài khoản trong 15 phút (US-01.02, Sub-flow 1.4).
 * **INPUT:** `docs/05-epics/EPIC_01_USER_IDENTITY_PROFILES_RBAC.md` (US-01.02).
-* **OUTPUT:** Endpoints `/api/v1/auth/register`, `/api/v1/auth/login`, Redis keys `login_attempts:<email>`.
-* **VERIFY:** Chạy script thử đăng nhập sai 6 lần liên tiếp -> request thứ 6 nhận mã lỗi HTTP 429 kèm thông báo thời gian mở khóa.
+* **OUTPUT:** Endpoints `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout`, `/api/v1/auth/me`, Redis keys `auth:failed_attempts:<email>`, `auth:blacklist:<jti>`.
+* **VERIFY:** Đăng nhập sai 5 lần liên tiếp -> lần thứ 6 nhận HTTP 429 `ACCOUNT_LOCKED` kèm đếm ngược remainingSeconds; đăng nhập đúng trả về HTTP-only refresh cookie và JWT access token. Đăng xuất thu hồi refresh token và blacklist access token.
 
 #### Task CF-104: Xây dựng Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `clean-code`

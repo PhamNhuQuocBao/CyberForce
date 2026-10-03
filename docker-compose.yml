@@ -1,0 +1,3 @@
+# Root Docker Compose proxying to infra/docker-compose.yml
+include:
+  - infra/docker-compose.yml

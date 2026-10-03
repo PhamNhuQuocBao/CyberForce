@@ -1,0 +1,115 @@
+services:
+  # ---------------------------------------------------------------------------
+  # 1. Primary Relational Database - PostgreSQL 16
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyberforce-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cyberforce}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyberforce_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-cyberforce}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-cyberforce} -d ${POSTGRES_DB:-cyberforce}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cyberforce-net
+
+  # ---------------------------------------------------------------------------
+  # 2. In-Memory Cache, Rate Limiter & Real-time Queue - Redis 7.2
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: cyberforce-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cyberforce-net
+
+  # ---------------------------------------------------------------------------
+  # 3. S3-Compatible Object Storage - MinIO (VM Images, Signed PDF Certs)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: cleanstart/minio:latest
+    container_name: cyberforce-minio
+    restart: unless-stopped
+    user: '0:0'
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-cyberforce_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-cyberforce_minio_dev}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/live || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cyberforce-net
+
+  # ---------------------------------------------------------------------------
+  # 4. In-Browser Remote Desktop Daemon - Apache Guacamole (guacd)
+  # ---------------------------------------------------------------------------
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: cyberforce-guacd
+    restart: unless-stopped
+    ports:
+      - '${GUACD_PORT:-4822}:4822'
+    networks:
+      - cyberforce-net
+
+  # ---------------------------------------------------------------------------
+  # 5. Ingress & Reverse Proxy - Traefik v3.0
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: cyberforce-traefik
+    restart: unless-stopped
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.traefik.address=:8080'
+    ports:
+      - '${TRAEFIK_HTTP_PORT:-8088}:80'
+      - '${TRAEFIK_DASHBOARD_PORT:-8080}:8080'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - cyberforce-net
+
+volumes:
+  postgres_data:
+    name: cyberforce_postgres_data
+  redis_data:
+    name: cyberforce_redis_data
+  minio_data:
+    name: cyberforce_minio_data
+
+networks:
+  cyberforce-net:
+    name: cyberforce-network
+    driver: bridge

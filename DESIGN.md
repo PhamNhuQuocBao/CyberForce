@@ -1,62 +1,62 @@
 ---
-name: CyberForce Tactical Dark
-version: 1.0.0
-description: Tactical Cyber-Minimalism design tokens and guidelines for CyberForce Cloud Range & Training Platform. Strict Purple Ban.
+name: CyberForce Neo-Brutalism (Positivus Theme)
+version: 2.0.0
+description: Neo-Brutalism & Soft Brutalism design system tokens inspired by the Positivus aesthetic for CyberForce Cloud Cyber Range & Training Platform.
 colors:
-  primary: "#00F0FF"
-  primary-hover: "#00D2E0"
-  secondary: "#10B981"
-  secondary-hover: "#059669"
-  warning: "#F59E0B"
-  error: "#EF4444"
-  neutral-canvas: "#070A0F"
-  neutral-surface: "#0E131F"
-  neutral-surface-hover: "#141C2E"
-  neutral-border: "#1E293B"
-  neutral-border-active: "#334155"
-  text-primary: "#F8FAFC"
-  text-secondary: "#94A3B8"
-  text-muted: "#64748B"
+  primary: "#B9FF66"
+  primary-hover: "#A6F24D"
+  brand-lime: "#B9FF66"
+  brand-lime-hover: "#A6F24D"
+  brand-dark: "#191A23"
+  brand-gray: "#F3F3F3"
+  brand-white: "#FFFFFF"
+  canvas: "#FFFFFF"
+  canvas-dark: "#11141B"
+  surface-card: "#F3F3F3"
+  surface-card-alt: "#B9FF66"
+  surface-card-dark: "#191A23"
+  border-neo: "#191A23"
+  border-neo-dark: "rgba(255, 255, 255, 0.20)"
+  border-subtle: "rgba(25, 26, 35, 0.12)"
 typography:
   display:
-    fontFamily: Inter
-    fontSize: 48px
+    fontFamily: Plus Jakarta Sans
+    fontSize: 54px
     fontWeight: 800
-    lineHeight: 1.1
+    lineHeight: 1.15
     letterSpacing: -0.03em
   h1:
-    fontFamily: Inter
-    fontSize: 36px
-    fontWeight: 700
+    fontFamily: Plus Jakarta Sans
+    fontSize: 40px
+    fontWeight: 800
     lineHeight: 1.2
     letterSpacing: -0.02em
   h2:
-    fontFamily: Inter
-    fontSize: 24px
-    fontWeight: 600
-    lineHeight: 1.3
+    fontFamily: Plus Jakarta Sans
+    fontSize: 28px
+    fontWeight: 700
+    lineHeight: 1.25
     letterSpacing: -0.01em
   h3:
-    fontFamily: Inter
-    fontSize: 18px
-    fontWeight: 600
-    lineHeight: 1.4
+    fontFamily: Plus Jakarta Sans
+    fontSize: 20px
+    fontWeight: 700
+    lineHeight: 1.35
   body:
-    fontFamily: Inter
-    fontSize: 15px
+    fontFamily: Plus Jakarta Sans
+    fontSize: 16px
     fontWeight: 400
     lineHeight: 1.6
   code:
     fontFamily: JetBrains Mono
     fontSize: 14px
-    fontWeight: 500
+    fontWeight: 600
     lineHeight: 1.5
 rounded:
-  none: 0px
-  sm: 2px
-  md: 4px
-  lg: 6px
-  full: 9999px
+  card: 40px
+  btn: 14px
+  badge: 7px
+  pill: 9999px
 spacing:
   xs: 4px
   sm: 8px
@@ -64,52 +64,101 @@ spacing:
   lg: 24px
   xl: 32px
   2xl: 48px
+  3xl: 64px
+shadows:
+  neo: "0 5px 0 #191A23"
+  neo-lg: "0 8px 0 #191A23"
+  neo-sm: "0 3px 0 #191A23"
+  neo-dark: "0 5px 0 rgba(0, 0, 0, 0.65)"
+  neo-lg-dark: "0 8px 0 rgba(0, 0, 0, 0.75)"
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.neutral-canvas}"
-    rounded: "{rounded.sm}"
-    padding: 10px 18px
-  button-secondary:
-    backgroundColor: "{colors.neutral-surface}"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.sm}"
-    padding: 10px 18px
-  card-panel:
-    backgroundColor: "{colors.neutral-surface}"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.md}"
-    padding: 20px
+    backgroundColor: "{colors.brand-lime}"
+    textColor: "{colors.brand-dark}"
+    rounded: "{rounded.btn}"
+    border: "1px solid {colors.border-neo}"
+    shadow: "{shadows.neo}"
+  button-dark:
+    backgroundColor: "{colors.brand-dark}"
+    textColor: "{colors.brand-white}"
+    rounded: "{rounded.btn}"
+    border: "1px solid {colors.border-neo}"
+    shadow: "{shadows.neo}"
+  card-service:
+    backgroundColor: "{colors.surface-card}"
+    rounded: "{rounded.card}"
+    border: "1px solid {colors.border-neo}"
+    shadow: "{shadows.neo}"
+  badge-chip:
+    backgroundColor: "{colors.brand-lime}"
+    textColor: "{colors.brand-dark}"
+    rounded: "{rounded.badge}"
+    border: "1px solid {colors.border-neo}"
 ---
 
-# CyberForce Design Specification
+# CyberForce Neo-Brutalism (Positivus Theme) Specification
 
 ## Overview
-CyberForce is an interactive cyber range and real-time security competition platform.
-The design language is **Tactical Cyber-Minimalism**: ultra-clean, high-contrast, dark-mode first, with 0–4px sharp radii, avoiding all AI visual clichés.
+CyberForce adopts the **Neo-Brutalism / Soft Brutalism (Positivus Theme)** visual direction. This design language merges high-impact industrial aesthetics with playful highlighters and accessible ergonomics. It conveys military-grade cyber range credibility without being dreary, stale, or corporate-slop.
+
+Key pillars:
+1. **Crisp 1px–2px Borders:** All interactive cards, inputs, badges, and buttons have solid black (`#191A23`) outlines.
+2. **Hard Flat Drop Shadows (0 blur):** Signature offset depth (`0 5px 0 #191A23`) with tactile push-down active states.
+3. **Pronounced Generous Radii:** Striking contrast of ultra-rounded 40px cards (`--radius-card`), smooth 14px buttons (`--radius-btn`), and 7px highlighter chips (`--radius-badge`).
+4. **Electric Lime Highlighter:** `#B9FF66` acts as the primary accent and marker for CTF successes, active labs, and primary CTA buttons.
 
 ## Colors
-- **Canvas Base (`#070A0F`):** Deep obsidian background for prolonged training sessions without eye fatigue.
-- **Surface Layer (`#0E131F`):** Layered card/panel elevation.
-- **Electric Cyan (`#00F0FF`):** Primary accent for interactive actions, highlights, and CTAs.
-- **Cyber Emerald (`#10B981`):** Success indicators, solved flags, live VPN connection status.
-- **Amber Alert (`#F59E0B`):** Machine lease expiry warnings, SLA warnings, tiered hints.
-- **Crimson Breach (`#EF4444`):** Failed submissions, account lockouts, critical service failures.
+- **Brand Electric Lime (`#B9FF66`):** The primary brand accent and highlighter, bringing intense energy and focus.
+- **Deep Charcoal Ink Black (`#191A23`):** Used for typography, crisp borders, and deep container surfaces.
+- **Soft Warm Gray (`#F3F3F3`):** Neutral surface for primary content cards.
+- **Crisp Canvas White (`#FFFFFF`):** High-contrast base background in light mode.
+- **Dark Mode Adaptation:** Dark canvas (`#11141B`), elevated card surfaces (`#1B1F2B`), deep panels (`#0B0D13`), and subtle white/translucent crisp borders (`rgba(255, 255, 255, 0.20)`).
 
 ## Typography
-- **UI Text:** `Inter` (geometric, highly legible at small sizes).
-- **Terminal, Code & Flags:** `JetBrains Mono` (clear distinction for `0` vs `O`, `l` vs `1`).
+- **Primary Typeface:** `Plus Jakarta Sans`, system-ui, sans-serif. Clean geometric grotesk with high legibility and contemporary character.
+- **Monospace Typeface:** `JetBrains Mono` for IP addresses, terminal output, flags, ports, and technical codes.
+- **Hierarchy:**
+  - Display (54px / 800): Hero headlines and banner statements.
+  - H1 (40px / 800): Page titles and primary section intros.
+  - H2 (28px / 700): Card headings and module titles.
+  - H3 (20px / 700): Subheadings and task labels.
+  - Body (16px / 400): Descriptive paragraphs and instructional guides.
+  - Code (14px / 600): Terminal, flags, hashes, and API endpoints.
+
+## Layout & Spacing
+- Container layout relies on generous padding (p-6 to p-12) and spacious grid gaps (gap-6 to gap-8).
+- Asymmetrical grids and alternating card backgrounds (Warm Gray vs Electric Lime vs Charcoal Dark) create engaging visual rhythm.
 
 ## Elevation & Depth
-- Flat technical panels separated by sharp `#1E293B` borders rather than muddy diffuse drop shadows.
-- Active states use `#334155` borders with subtle cyan/emerald glows (`box-shadow: 0 0 12px rgba(0, 240, 255, 0.15)`).
+- **Zero-blur hard drop shadows:**
+  - Standard buttons and cards: `box-shadow: 0 5px 0 #191A23;`
+  - Large showcase cards / Hover: `box-shadow: 0 8px 0 #191A23;`
+  - Small badges / Active states: `box-shadow: 0 3px 0 #191A23;`
+- **Micro-interactions:** On button hover, subtle negative translation (`translate-y-[-2px]` with `shadow-neo-lg`), and on active press, translation down (`translate-y-[2px]` with `shadow-neo-sm` or flush).
 
 ## Shapes
-- Sharp, technical borders with minimal corner radius (`0px` to `4px`).
-- Pills (`9999px`) reserved strictly for status chips and tags (e.g. `100.64.10.42`).
+- **Cards:** 40px rounded corners (`rounded-[40px]`).
+- **Action Buttons & Inputs:** 14px rounded corners (`rounded-[14px]`).
+- **Category Chips & Status Badges:** 7px rounded corners (`rounded-[7px]`).
+- **Icon / Arrow Buttons:** Full circular pill (`rounded-full` / `9999px`).
+
+## Components
+- **Primary Button:** `#B9FF66` background, `#191A23` text and 1px border, 14px radius, hard drop shadow.
+- **Dark Button:** `#191A23` background, `#FFFFFF` text and 1px border, 14px radius, hard drop shadow.
+- **Service & Lab Card:** 40px radius, 1px `#191A23` border, hard drop shadow, available in 3 colorways (Gray, Lime, Charcoal).
+- **Highlighter Badge:** 7px radius, uppercase bold text, 1px border, highlighter marker aesthetic.
+- **Interactive Flag Input:** 14px radius, 1px `#191A23` border with hard drop shadow on focus.
 
 ## Do's and Don'ts
-- **DO** maintain strict dark aesthetic with WCAG AA compliance (4.5:1 text contrast).
-- **DON'T** use purple or violet gradients (`#8B5CF6`, `#A855F7`, `#7C3AED`) — strict Purple Ban.
-- **DON'T** use generic rounded corporate SaaS templates.
-- **DO** use monospace fonts for all hashes, IPs, flags, and terminal outputs.
+### Do's:
+- Use solid 1px–2px outlines on cards, buttons, badges, and inputs.
+- Keep hard flat drop shadows with zero blur radius (`0 Xpx 0 #191A23`).
+- Maintain the 40px / 14px / 7px radius hierarchy across all redesigned pages.
+- Highlight key headlines with electric lime (`#B9FF66`) chips or background blocks.
+- Preserve Dark Mode compatibility with deep charcoal canvas and crisp translucent borders.
+
+### Don'ts:
+- Do not use fuzzy, blurred drop shadows (e.g. `box-shadow: 0 10px 25px rgba(0,0,0,0.1)`).
+- Do not mix random border radiuses (e.g. 2px, 8px, 16px, 24px) — stick strictly to 40px / 14px / 7px / pill.
+- Do not use generic cold blue or purple gradients.
+- Do not remove the 1px-2px solid border from interactive components.
