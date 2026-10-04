@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Navbar } from '@/components/layout/Navbar';
 import { useAuthStore } from '@/lib/auth-store';
 import {
   Terminal,
@@ -16,13 +17,11 @@ import {
   Award,
   Swords,
   ChevronRight,
-  LogOut,
-  Flame,
-  UserCheck,
+  Radar,
 } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, isAuthenticated, initialize, logout } = useAuthStore();
+  const { user, isAuthenticated, initialize } = useAuthStore();
 
   useEffect(() => {
     initialize();
@@ -31,74 +30,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
       {/* Top Navigation */}
-      <header className="border-b border-brand-dark/15 dark:border-white/10 bg-canvas/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="h-10 w-10 bg-primary border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm font-extrabold text-primary-foreground group-hover:-translate-y-0.5 transition-transform">
-              CF
-            </div>
-            <span className="font-extrabold text-2xl tracking-tight text-brand-dark dark:text-white">
-              CyberForce
-            </span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6 font-bold text-sm">
-            <a
-              href="#labs"
-              className="text-brand-dark/80 hover:text-brand-dark dark:text-white/80 dark:hover:text-white transition-colors"
-            >
-              Practice Labs
-            </a>
-            <a
-              href="#arena"
-              className="text-brand-dark/80 hover:text-brand-dark dark:text-white/80 dark:hover:text-white transition-colors"
-            >
-              KotH Arena
-            </a>
-            <a
-              href="#certs"
-              className="text-brand-dark/80 hover:text-brand-dark dark:text-white/80 dark:hover:text-white transition-colors"
-            >
-              Certificates
-            </a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isAuthenticated && user ? (
-              <div className="flex items-center gap-2.5">
-                <Badge variant="lime" className="hidden sm:inline-flex gap-1 font-bold">
-                  <Flame className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-                  <span>{user.streakDays}d Streak</span>
-                </Badge>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-gray border border-brand-dark rounded-btn shadow-neo-sm font-mono text-xs font-bold text-brand-dark">
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{user.username}</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logout()}
-                  title="Logout"
-                  className="h-9 px-2.5"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm">Get Started</Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-6 py-12 md:py-20 space-y-20 flex-1 w-full">
@@ -123,6 +55,41 @@ export default function HomePage() {
             Zero-friction in-browser Kali Linux, 1-Click isolated Docker sandboxes, WireGuard VPN
             access, and cryptographically verifiable digital certificates.
           </p>
+
+          {/* Quick Access Dossier Banner for Authenticated Operators */}
+          {isAuthenticated && user && (
+            <div className="p-4 bg-white border-2 border-brand-dark rounded-card shadow-neo flex flex-col sm:flex-row items-center justify-between gap-4 max-w-xl mx-auto animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-3 text-left">
+                <div className="w-12 h-12 rounded-badge bg-brand-lime border-2 border-brand-dark flex items-center justify-center font-extrabold text-brand-dark text-lg shadow-neo-sm shrink-0">
+                  {user.username.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                      Operator Online
+                    </span>
+                    <Badge variant="lime" className="text-[10px] px-1.5 py-0 font-bold">
+                      {user.rankTier || 'Novice'}
+                    </Badge>
+                  </div>
+                  <div className="font-extrabold text-base text-brand-dark font-sans">
+                    @{user.username}
+                  </div>
+                </div>
+              </div>
+
+              <Link href={`/user/${encodeURIComponent(user.username)}`}>
+                <Button
+                  variant="dark"
+                  size="sm"
+                  className="gap-2 font-mono font-bold shadow-neo-sm w-full sm:w-auto"
+                >
+                  <Radar className="w-4 h-4 text-brand-lime" />
+                  Xem Hồ Sơ Năng Lực (CV)
+                </Button>
+              </Link>
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Button size="lg" className="gap-2">

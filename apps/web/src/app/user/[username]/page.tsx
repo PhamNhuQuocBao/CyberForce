@@ -17,7 +17,6 @@ import {
   Check,
   AlertTriangle,
   FileCheck,
-  LogOut,
   ArrowLeft,
   Compass,
   Trophy,
@@ -33,6 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Navbar } from '@/components/layout/Navbar';
 import { SkillRadarChart } from '@/components/profile/SkillRadarChart';
 import { ProfileSettingsDialog } from '@/components/profile/ProfileSettingsDialog';
 import { userApi, type UserDossierResponse } from '@/lib/api';
@@ -44,14 +44,7 @@ export default function UserProfilePage() {
   const rawUsername = params?.username as string;
   const username = decodeURIComponent(rawUsername || '');
 
-  const {
-    user: authUser,
-    accessToken,
-    isAuthenticated,
-    isLoading: authLoading,
-    logout,
-    initialize,
-  } = useAuthStore();
+  const { accessToken, isLoading: authLoading, initialize } = useAuthStore();
   const [dossier, setDossier] = useState<UserDossierResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,19 +142,7 @@ export default function UserProfilePage() {
     return (
       <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col">
         {/* Navigation */}
-        <header className="border-b border-brand-dark/15 bg-white/80 backdrop-blur sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 font-extrabold text-xl text-brand-dark"
-            >
-              <div className="h-8 w-8 bg-brand-lime border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm text-sm">
-                CF
-              </div>
-              <span>CyberForce</span>
-            </Link>
-          </div>
-        </header>
+        <Navbar />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white border-2 border-brand-dark rounded-card p-8 shadow-neo-lg text-center space-y-5">
@@ -192,31 +173,7 @@ export default function UserProfilePage() {
     return (
       <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
         {/* Top Header */}
-        <header className="border-b border-brand-dark/15 bg-white/80 backdrop-blur sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 font-extrabold text-xl text-brand-dark"
-            >
-              <div className="h-8 w-8 bg-brand-lime border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm text-sm">
-                CF
-              </div>
-              <span>CyberForce</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button variant="outline" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button variant="default" size="sm">
-                  Join CyberForce
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </header>
+        <Navbar />
 
         {/* Wireframe 2.2 Perspective A Classified Shield */}
         <main className="max-w-3xl mx-auto px-6 py-16 flex-1 flex items-center justify-center w-full">
@@ -297,71 +254,7 @@ export default function UserProfilePage() {
   return (
     <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
       {/* Top Header */}
-      <header className="border-b border-brand-dark/15 bg-white/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 font-extrabold text-xl text-brand-dark group"
-          >
-            <div className="h-8 w-8 bg-brand-lime border border-brand-dark rounded-badge flex items-center justify-center shadow-neo-sm text-sm group-hover:-translate-y-0.5 transition-transform">
-              CF
-            </div>
-            <span>CyberForce</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6 font-bold text-sm">
-            <Link href="/" className="text-brand-dark/80 hover:text-brand-dark transition-colors">
-              Labs
-            </Link>
-            <Link href="/" className="text-brand-dark/80 hover:text-brand-dark transition-colors">
-              Learning Paths
-            </Link>
-            <Link href="/" className="text-brand-dark/80 hover:text-brand-dark transition-colors">
-              CTF Arena
-            </Link>
-            <Link href="/" className="text-brand-dark/80 hover:text-brand-dark transition-colors">
-              Rankings
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isAuthenticated && authUser ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="lime" className="hidden sm:inline-flex gap-1 font-bold">
-                  <Flame className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-                  <span>{authUser.streakDays}d Streak</span>
-                </Badge>
-                <div className="flex items-center gap-2 px-3 py-1 bg-brand-gray border border-brand-dark rounded-btn shadow-neo-sm font-mono text-xs font-bold text-brand-dark">
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{authUser.username}</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logout()}
-                  title="Logout"
-                  className="h-8 px-2"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/login">
-                  <Button variant="outline" size="sm">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="default" size="sm">
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-8 flex-1 w-full">
