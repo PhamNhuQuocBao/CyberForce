@@ -1,8 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Flame, UserCheck, LogOut, User, Shield, ChevronDown, Radar } from 'lucide-react';
+import {
+  Flame,
+  UserCheck,
+  LogOut,
+  User,
+  Shield,
+  ChevronDown,
+  Radar,
+  Sparkles,
+  ShieldAlert,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,9 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/lib/auth-store';
+import { BecomeCreatorDialog } from '@/components/creator/BecomeCreatorDialog';
 
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [isCreatorDialogOpen, setIsCreatorDialogOpen] = useState(false);
 
   return (
     <header className="border-b border-brand-dark/15 dark:border-white/10 bg-canvas/80 backdrop-blur sticky top-0 z-50">
@@ -129,6 +141,43 @@ export function Navbar() {
 
                   <DropdownMenuSeparator />
 
+                  {/* Role-Specific Actions */}
+                  {user.role === 'student' && (
+                    <DropdownMenuItem
+                      onClick={() => setIsCreatorDialogOpen(true)}
+                      className="flex items-center gap-2.5 cursor-pointer font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>Trở thành Creator (Apply)</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {['creator', 'instructor', 'org_admin', 'superadmin'].includes(user.role) && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/#creator-studio"
+                        className="flex items-center gap-2.5 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                      >
+                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                        <span>Lab Creator Studio</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {['org_admin', 'superadmin'].includes(user.role) && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin/roles"
+                        className="flex items-center gap-2.5 cursor-pointer font-extrabold text-brand-dark bg-brand-lime/25 hover:bg-brand-lime/50 border border-brand-dark/20 rounded-[8px]"
+                      >
+                        <ShieldAlert className="w-4 h-4 text-brand-dark" />
+                        <span>Duyệt quyền Creator (/admin)</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem
                     onClick={() => logout()}
                     className="flex items-center gap-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
@@ -153,6 +202,11 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      <BecomeCreatorDialog
+        isOpen={isCreatorDialogOpen}
+        onClose={() => setIsCreatorDialogOpen(false)}
+      />
     </header>
   );
 }

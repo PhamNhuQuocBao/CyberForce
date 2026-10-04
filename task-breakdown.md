@@ -192,21 +192,21 @@ gantt
 * **OUTPUT:** Endpoints `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout`, `/api/v1/auth/me`, Redis keys `auth:failed_attempts:<email>`, `auth:blacklist:<jti>`.
 * **VERIFY:** Đăng nhập sai 5 lần liên tiếp -> lần thứ 6 nhận HTTP 429 `ACCOUNT_LOCKED` kèm đếm ngược remainingSeconds; đăng nhập đúng trả về HTTP-only refresh cookie và JWT access token. Đăng xuất thu hồi refresh token và blacklist access token.
 
-#### Task CF-104: Xây dựng Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư
+#### [x] Task CF-104: Xây dựng Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư (Hoàn thành)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-004, CF-101
 * **Mô tả:** Dựng trang `/user/[username]` hiển thị Avatar, Rank tier, EXP, Badges, danh sách chứng chỉ và nút chia sẻ. Cho phép người dùng bật/tắt chế độ Public Profile (US-01.03, Wireframe 1.2).
 * **INPUT:** `docs/07-wireframes/EPIC_01_WIREFRAMES_IDENTITY_PROFILES_RBAC.md` Wireframe 1.2 & 1.3.
-* **OUTPUT:** Trang `apps/web/src/app/(dashboard)/user/[username]/page.tsx`, component `ProfileSettingsDialog`.
-* **VERIFY:** Đăng nhập, chỉnh sửa Bio và bật Public Profile -> Mở tab ẩn danh truy cập URL công khai hiển thị chính xác thông tin.
+* **OUTPUT:** Trang `apps/web/src/app/user/[username]/page.tsx`, component `ProfileSettingsDialog`, radar `SkillRadarChart`.
+* **VERIFY:** Đăng nhập, chỉnh sửa Bio và bật Public Profile -> Mở tab ẩn danh truy cập URL công khai hiển thị chính xác thông tin. Gộp thành công vào `main` qua PR #10.
 
-#### Task CF-105: Phân quyền Granular RBAC & Quy trình Xét duyệt Creator
-* **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `clean-code`
+#### [x] Task CF-105: Phân quyền Granular RBAC & Quy trình Xét duyệt Creator (Hoàn thành)
+* **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `clean-code`, `frontend-design`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-101
 * **Mô tả:** Xây dựng middleware kiểm tra quyền RBAC (`Student`, `Creator`, `Instructor`, `Admin`). Cung cấp form gửi yêu cầu "Become a Creator" cho học viên và trang duyệt cho Admin tại `/admin/roles` (US-01.04).
 * **INPUT:** `docs/05-epics/EPIC_01_USER_IDENTITY_PROFILES_RBAC.md` (US-01.04).
-* **OUTPUT:** Auth Guard Middleware, API `/api/v1/roles/request-creator`, `/api/v1/admin/roles/review`.
-* **VERIFY:** Học viên gửi đơn -> Admin nhấn "Approve" -> Tài khoản học viên chuyển vai trò sang `Creator`, mở khóa quyền truy cập Creator Studio.
+* **OUTPUT:** Auth Guard Middleware, API `/api/v1/roles/request-creator`, `/api/v1/admin/roles/review`, `/api/v1/admin/users/assign-role`, CSDL `RoleRequest` & `AuditLog`, UI `BecomeCreatorDialog` và trang quản trị `/admin/roles`.
+* **VERIFY:** Học viên gửi đơn -> Admin nhấn "Approve" -> Tài khoản học viên chuyển vai trò sang `Creator`, mở khóa quyền truy cập Creator Studio; người dùng không có quyền gọi API bị chặn 403 Forbidden. Đạt 62/62 vitest tests và 100% build Next.js.
 
 ---
 
@@ -502,7 +502,7 @@ gantt
 | **CF-102** | Epic 1 | [x] US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
 | **CF-103** | Epic 1 | [x] US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
 | **CF-104** | Epic 1 | [x] US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
-| **CF-105** | Epic 1 | US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
+| **CF-105** | Epic 1 | [x] US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
 | **CF-201** | Epic 2 | US-02.01: Learning Paths Catalog & Detail | `frontend-specialist` | P0 |
 | **CF-202** | Epic 2 | US-02.02: All-in-One Split-Pane Room View | `frontend-specialist` | P0 |
 | **CF-203** | Epic 2 | US-02.03: Flag Validation & Anti-Bruteforce | `backend-specialist` | P0 |

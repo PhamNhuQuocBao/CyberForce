@@ -50,6 +50,14 @@ enum InstanceStatus {
   @@map("instance_status")
 }
 
+enum RoleRequestStatus {
+  pending
+  approved
+  rejected
+
+  @@map("role_request_status")
+}
+
 // -----------------------------------------------------------------------------
 // 1. USERS
 // -----------------------------------------------------------------------------
@@ -70,11 +78,14 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  labInstances  LabInstance[]
-  submissions   Submission[]
-  certificates  Certificate[]
-  refreshTokens RefreshToken[]
-  oauthAccounts OAuthAccount[]
+  labInstances     LabInstance[]
+  submissions      Submission[]
+  certificates     Certificate[]
+  refreshTokens    RefreshToken[]
+  oauthAccounts    OAuthAccount[]
+  roleRequests     RoleRequest[]  @relation("UserRoleRequests")
+  reviewedRequests RoleRequest[]  @relation("ReviewerRoleRequests")
+  auditLogs        AuditLog[]     @relation("AuditLogActor")
 
   @@map("users")
 }
@@ -94,6 +105,52 @@ model OAuthAccount {
   @@unique([provider, providerAccountId])
   @@index([userId])
   @@map("oauth_accounts")
+}
+
+// -----------------------------------------------------------------------------
+// 1c. ROLE REQUESTS (Creator / Instructor Approval Workflow - CF-105 / US-01.04)
+// -----------------------------------------------------------------------------
+model RoleRequest {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  requestedRole   UserRole          @default(creator) @map("requested_role")
+  status          RoleRequestStatus @default(pending)
+  motivation      String            @db.Text
+  specialty       String            @db.VarChar(100)
+  portfolioUrl    String?           @map("portfolio_url") @db.VarChar(255)
+  reviewerId      String?           @map("reviewer_id") @db.Uuid
+  rejectionReason String?           @map("rejection_reason") @db.Text
+  reviewedAt      DateTime?         @map("reviewed_at") @db.Timestamptz
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User  @relation("UserRoleRequests", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("ReviewerRoleRequests", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@map("role_requests")
+}
+
+// -----------------------------------------------------------------------------
+// 1d. AUDIT LOGS (Security & RBAC Compliance - CF-105 / US-01.04)
+// -----------------------------------------------------------------------------
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  action    String   @db.VarChar(100)
+  actorId   String?  @map("actor_id") @db.Uuid
+  targetId  String?  @map("target_id") @db.Uuid
+  details   Json?
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor User? @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([actorId])
+  @@index([targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 // -----------------------------------------------------------------------------

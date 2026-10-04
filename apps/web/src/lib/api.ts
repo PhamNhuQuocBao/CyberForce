@@ -252,3 +252,101 @@ export const userApi = {
     });
   },
 };
+
+export interface RoleRequestItem {
+  id: string;
+  userId: string;
+  requestedRole: string;
+  status: 'pending' | 'approved' | 'rejected';
+  motivation: string;
+  specialty: string;
+  portfolioUrl?: string | null;
+  reviewerId?: string | null;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+    avatarUrl?: string | null;
+    role: string;
+    rankTier: string;
+    expPoints: number;
+  };
+  reviewer?: {
+    id: string;
+    username: string;
+    avatarUrl?: string | null;
+  };
+}
+
+export const rolesApi = {
+  async submitCreatorRequest(
+    data: { motivation: string; specialty: string; portfolioUrl?: string },
+    accessToken: string,
+  ) {
+    return request<{ success: true; message: string; data: RoleRequestItem }>(
+      '/roles/request-creator',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(data),
+      },
+    );
+  },
+
+  async getMyRequests(accessToken: string) {
+    return request<{ success: true; data: RoleRequestItem[] }>('/roles/my-requests', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+
+  async getAdminRequests(
+    params: { status?: string; page?: number; limit?: number },
+    accessToken: string,
+  ) {
+    const search = new URLSearchParams();
+    if (params.status) search.set('status', params.status);
+    if (params.page) search.set('page', String(params.page));
+    if (params.limit) search.set('limit', String(params.limit));
+
+    const qs = search.toString() ? `?${search.toString()}` : '';
+    return request<{
+      success: true;
+      data: RoleRequestItem[];
+      pagination: { total: number; page: number; limit: number; totalPages: number };
+    }>(`/admin/roles/requests${qs}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+
+  async reviewRequest(
+    data: { requestId: string; action: 'approve' | 'reject'; rejectionReason?: string },
+    accessToken: string,
+  ) {
+    return request<{
+      success: true;
+      message: string;
+      data: { request: RoleRequestItem; user: UserProfile };
+    }>('/admin/roles/review', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async assignUserRole(data: { userId: string; role: string }, accessToken: string) {
+    return request<{ success: true; message: string; data: UserProfile }>(
+      '/admin/users/assign-role',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(data),
+      },
+    );
+  },
+};
