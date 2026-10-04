@@ -501,7 +501,7 @@ gantt
 | **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) & Auth UI | `backend-specialist` | P0 |
 | **CF-102** | Epic 1 | [x] US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
 | **CF-103** | Epic 1 | [x] US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
-| **CF-104** | Epic 1 | US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
+| **CF-104** | Epic 1 | [x] US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
 | **CF-105** | Epic 1 | US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
 | **CF-201** | Epic 2 | US-02.01: Learning Paths Catalog & Detail | `frontend-specialist` | P0 |
 | **CF-202** | Epic 2 | US-02.02: All-in-One Split-Pane Room View | `frontend-specialist` | P0 |
@@ -536,36 +536,29 @@ gantt
 
 ## 7. Nhật Ký Tiến Độ Triển Khai Thực Tế (Execution Log)
 
-### 🚀 Ngày 2026-10-03: Hoàn thành Redesign Neo-Brutalism & Triển khai Trọn Vẹn Auth Stack (CF-101 + CF-103)
-* **Design System Migration (`DESIGN.md` v2.0.0):**
-  - Chuyển đổi toàn diện sang phong cách **Neo-Brutalism / Soft Brutalism (Positivus Theme)**: Bảng màu `#B9FF66` Electric Lime highlighter, `#191A23` Charcoal Ink Black, `#F3F3F3` surface, bo góc thẻ `rounded-[40px]`, nút `rounded-[14px]`, đổ bóng cứng `shadow-neo` / `shadow-neo-lg`.
-  - Fix triệt để màu primary Tailwind CSS thông qua biến CSS variables và CVA components.
-* **Backend Authentication API Core (`services/api-core`):**
-  - Đăng nhập/Đăng ký 1-Click OAuth2 cho **GitHub** và **Google** sử dụng PKCE (RFC 7636) với `code_challenge`, `code_verifier`, CSRF `state`.
-  - Đăng nhập/Đăng ký truyền thống (Email/Password) bảo mật bằng Argon2id + Redis rate limiting (khóa tạm 15 phút khi nhập sai 5 lần).
-  - Schema CSDL: Bổ sung bảng `oauth_accounts` vào Prisma, chạy migration thành công.
-  - Test Suite: Viết và pass toàn bộ **38/38 unit & integration tests** trong `api-core`.
-* **Frontend Authentication UI (`apps/web` - Option A):**
-  - Xây dựng bố cục Asymmetric Split (`(auth)/layout.tsx`) với thẻ Live Cyber Range Telemetry mô phỏng trạng thái kernel và thống kê pods/flags.
-  - Trang Đăng nhập (`(auth)/login/page.tsx`): 1-Click OAuth2 buttons, email/password form, attempt counter, countdown timer thời gian thực khi bị lockout (HTTP 429).
-  - Trang Đăng ký (`(auth)/register/page.tsx`): Nhập `@handle`, live password security checklist 4 tiêu chí.
-  - Trang OAuth Callback (`auth/callback/page.tsx`): Xác thực token với `/me` và tự động lưu phiên.
-  - Cập nhật Navbar (`page.tsx`) hiển thị huy hiệu người dùng đăng nhập (`@handle`, rank badge, streak).
-* **Khắc phục Sự cố Môi trường & Browser Verification:**
-  - Điều tra và xử lý triệt để lỗi 404 driver Playwright bằng cách cài đặt trực tiếp `playwright-core@1.57.0` và browser binaries vào cache hệ thống.
-  - Kiểm thử trực quan tự động bằng `browser_subagent` chụp ảnh thực tế cả 2 trang `/login` và `/register`.
-* **Git & Release Management:**
-  - Branch `feature/CF-101-oauth2-auth` đã commit, push và được merge an toàn vào `main` qua **PR #8** (commit `ef33bc8`).
-  - Toàn bộ codebase cục bộ và remote đã đồng bộ 100% trên `main`.
+### 🚀 Ngày 2026-10-04: Hoàn thành Task CF-104 - Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư (US-01.03)
+* **Backend API & Schema (`services/api-core`):**
+  - Mở rộng model `User` trong PostgreSQL/Prisma: `bio`, `specialty`, `isPublic`.
+  - Middleware `optionalAuthenticate`: Hỗ trợ cả khách ngoài (không có token) và chính chủ (có Bearer JWT token).
+  - API `GET /api/v1/users/:username/profile`: Trả về dữ liệu dossier, 8-trục kỹ năng, capstone certificates, badges; tự động ẩn toàn bộ thông tin nhạy cảm khi hồ sơ là Private.
+  - API `PATCH /api/v1/users/me/profile`: Cho phép chủ sở hữu cập nhật Bio, Specialty và chuyển đổi Public/Private.
+  - Bộ kiểm thử `users.api.test.ts` (7 tests) và `auth.service.test.ts`: Đạt **50/50 test suites pass**.
+* **Frontend Web Application (`apps/web`):**
+  - Biểu đồ **8-Axis Skill Radar (`SkillRadarChart.tsx`)**: Vẽ đa giác thuần SVG linh hoạt, hỗ trợ highlight tương tác từng đỉnh theo chuẩn thẩm mỹ Neo-Brutalism (Positivus Theme).
+  - Modal **`ProfileSettingsDialog.tsx`**: Cho phép chỉnh sửa Bio, chọn nhanh Specialty qua preset chips, toggle chế độ Public/Private.
+  - Trang **`/user/[username]` (Wireframe 2.1 & 2.2)**:
+    - **Perspective A (Khách ngoài khi xem Private):** Màn hình Classified Shield bảo mật thông tin tuyệt đối.
+    - **Perspective B/C (Chính chủ hoặc Public):** HUD đầy đủ, cảnh báo Amber watermark khi đang để Private, nút chuyển Public 1-click.
+    - Nút "Copy CV Share Link" thông minh: Cảnh báo và đề xuất mở công khai nếu hồ sơ đang ở chế độ riêng tư.
+  - Kiểm tra toàn diện: `typecheck` 0 lỗi, `eslint` 0 cảnh báo, Next.js `build` production thành công.
 
 ---
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking):**
-   - Hoàn thiện cơ chế khi người dùng đăng nhập OAuth thứ 2 có cùng email với tài khoản đã tồn tại.
-   - Gửi mã OTP xác nhận liên kết và cung cấp modal xác nhận trên Web.
-2. **Task CF-104: Xây dựng Giao diện Hồ sơ Năng lực Cá nhân & Thiết lập Quyền riêng tư:**
-   - Dựng trang `/user/[username]` theo phong cách Neo-Brutalist hiển thị avatar, rank Novice, badges, streak.
-3. **Task CF-201 & CF-202 (Epic 2):**
+1. **Task CF-105: Phân quyền Granular RBAC & Quy trình Xét duyệt Creator (US-01.04):**
+   - Middleware RBAC phân quyền `Student`, `Creator`, `Instructor`, `Admin`.
+   - Luồng nộp đơn "Become a Creator" (Wireframe 3.1) và giao diện xét duyệt `/admin/roles`.
+2. **Task CF-201 & CF-202 (Epic 2):**
    - Bắt đầu triển khai Catalog Lộ trình Học tập (`/paths`) và không gian thực hành All-in-One Split-Pane (`/rooms/[slug]`).
+

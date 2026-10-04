@@ -70,6 +70,9 @@ export interface UserProfile {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  bio?: string | null;
+  specialty?: string | null;
+  isPublic?: boolean;
   lastActiveAt?: Date;
   createdAt: Date;
 }

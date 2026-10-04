@@ -63,6 +63,9 @@ model User {
   expPoints    Int       @default(0) @map("exp_points")
   rankTier     String    @default("Novice") @map("rank_tier") @db.VarChar(30)
   streakDays   Int       @default(0) @map("streak_days")
+  bio          String?   @db.Text
+  specialty    String?   @default("General Cybersecurity") @db.VarChar(100)
+  isPublic     Boolean   @default(true) @map("is_public")
   lastActiveAt DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 

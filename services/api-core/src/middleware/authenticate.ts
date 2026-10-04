@@ -37,3 +37,21 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
     throw new AuthError(401, 'Invalid authentication token', 'INVALID_TOKEN');
   }
 }
+
+export async function optionalAuthenticate(request: FastifyRequest, _reply: FastifyReply) {
+  const authHeader = request.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const payload = verifyAccessToken(token);
+    if (payload.jti && (await isTokenBlacklisted(payload.jti))) {
+      return;
+    }
+    request.user = payload;
+  } catch {
+    // Graceful fallback for optional authentication
+  }
+}

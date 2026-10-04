@@ -45,6 +45,9 @@ export function toUserProfile(user: {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  bio?: string | null;
+  specialty?: string | null;
+  isPublic?: boolean;
   lastActiveAt?: Date;
   createdAt: Date;
 }): UserProfile {
@@ -57,6 +60,9 @@ export function toUserProfile(user: {
     expPoints: user.expPoints,
     rankTier: user.rankTier,
     streakDays: user.streakDays,
+    bio: user.bio ?? null,
+    specialty: user.specialty ?? 'General Cybersecurity',
+    isPublic: user.isPublic ?? true,
     lastActiveAt: user.lastActiveAt,
     createdAt: user.createdAt,
   };

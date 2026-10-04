@@ -9,8 +9,72 @@ export interface UserProfile {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  bio?: string | null;
+  specialty?: string | null;
+  isPublic?: boolean;
   lastActiveAt?: string;
   createdAt: string;
+}
+
+export interface SkillTelemetry {
+  webExploitation: number;
+  cloudSecurity: number;
+  networkPentest: number;
+  devSecOps: number;
+  cryptography: number;
+  reverseEngineering: number;
+  osint: number;
+  binaryExploitation: number;
+}
+
+export interface BadgeItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+}
+
+export interface CertificateItem {
+  code: string;
+  title: string;
+  scorePercentage: number;
+  issuedAt: string;
+  verificationHash: string;
+}
+
+export interface LearningPathProgress {
+  title: string;
+  completionPercentage: number;
+  completedRooms: number;
+  totalRooms: number;
+}
+
+export interface UserDossierResponse {
+  isPublic: boolean;
+  isSelf: boolean;
+  username: string;
+  avatarUrl?: string | null;
+  rankTier?: string;
+  expPoints?: number;
+  streakDays?: number;
+  bio?: string | null;
+  specialty?: string | null;
+  memberSince?: string;
+  labsCleared?: number;
+  telemetry?: SkillTelemetry;
+  badges?: BadgeItem[];
+  certificates?: CertificateItem[];
+  completedPaths?: LearningPathProgress[];
+  email?: string;
+}
+
+export interface UpdateProfileInput {
+  bio?: string | null;
+  specialty?: string;
+  isPublic?: boolean;
+  avatarUrl?: string | null;
 }
 
 export interface AuthSuccessResponse {
@@ -164,6 +228,26 @@ export const authApi = {
   }) {
     return request<AuthSuccessResponse>('/auth/link-account', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+export const userApi = {
+  async getProfile(username: string, accessToken?: string) {
+    return request<{ success: true; data: UserDossierResponse }>(
+      `/users/${encodeURIComponent(username)}/profile`,
+      {
+        method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      },
+    );
+  },
+
+  async updateProfile(data: UpdateProfileInput, accessToken: string) {
+    return request<{ success: true; message: string; data: UserProfile }>('/users/me/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(data),
     });
   },

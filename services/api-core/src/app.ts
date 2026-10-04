@@ -9,6 +9,7 @@ import { prisma } from './lib/prisma.js';
 import { redis } from './lib/redis.js';
 import { AuthError } from './modules/auth/auth.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { usersRoutes } from './modules/users/users.routes.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -77,6 +78,7 @@ export function buildApp() {
   // 3. API ROUTES
   // ---------------------------------------------------------------------------
   app.register(authRoutes, { prefix: '/api/v1/auth' });
+  app.register(usersRoutes, { prefix: '/api/v1/users' });
 
   // ---------------------------------------------------------------------------
   // 4. CENTRALIZED ERROR HANDLER
