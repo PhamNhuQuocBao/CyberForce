@@ -176,13 +176,13 @@ gantt
   - Frontend: Giao diện Asymmetric Split `/login`, `/register`, `/auth/callback`, client store `apps/web/src/lib/auth-store.ts`, API client `apps/web/src/lib/api.ts`.
 * **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core test` pass 38/38 tests. Frontend Next.js build và typecheck pass 100%, kiểm thử trực quan trên trình duyệt (browser subagent) xác nhận giao diện render hoàn hảo. Gộp thành công vào `main` qua PR #8.
 
-#### Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking)
+#### [x] Task CF-102: Xử lý Trùng Email & Luồng Liên kết Tài khoản (Account Linking) (Hoàn thành)
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `frontend-architecture`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-101
 * **Mô tả:** Cài đặt cơ chế bảo vệ khi người dùng đăng nhập bằng OAuth thứ 2 trùng email tài khoản đã có. Hệ thống không tự gộp mà hiển thị thông báo và gửi mã OTP xác nhận liên kết (Sub-flow 1.2).
 * **INPUT:** `docs/06-user-flow/EPIC_01_USER_FLOW_IDENTITY_PROFILES_RBAC.md` Sub-flow 1.2.
-* **OUTPUT:** Endpoint `/api/v1/auth/link-account`, Modal UI "Account Linking Confirmation" trên frontend.
-* **VERIFY:** Đăng ký bằng Google `test@cyberforce.io`, sau đó dùng GitHub cùng email `test@cyberforce.io` -> Hệ thống dừng lại, yêu cầu OTP và liên kết thành công sau khi nhập đúng OTP.
+* **OUTPUT:** Endpoints `/api/v1/auth/link-account`, `/api/v1/auth/link/send-otp`, `/api/v1/auth/link/verify-password`, `/api/v1/auth/link/verify-otp`, Modal UI "Account Linking Confirmation" trên frontend (`AccountLinkingModal.tsx`).
+* **VERIFY:** Chạy `pnpm --filter @cyberforce/api-core test` pass 43/43 tests (bao gồm integration tests cho OTP verification, password verification, unified endpoint, và invalid tokens). Frontend Next.js build và typecheck pass 100%.
 
 #### [x] Task CF-103: Đăng nhập/Đăng ký Truyền thống (Email/Password) kèm Rate Limiting & Khóa Tạm thời (Hoàn thành)
 * **Agent:** `security-auditor` & `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
@@ -499,7 +499,7 @@ gantt
 | **CF-003** | Foundation | [x] PostgreSQL Schema & Migrations | `database-architect` | P0 |
 | **CF-004** | Foundation | [x] Neo-Brutalism (Positivus) Theme & Base Shell | `frontend-specialist` | P1 |
 | **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) & Auth UI | `backend-specialist` | P0 |
-| **CF-102** | Epic 1 | US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
+| **CF-102** | Epic 1 | [x] US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
 | **CF-103** | Epic 1 | [x] US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
 | **CF-104** | Epic 1 | US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
 | **CF-105** | Epic 1 | US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |

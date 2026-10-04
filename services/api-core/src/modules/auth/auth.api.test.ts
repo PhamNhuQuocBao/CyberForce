@@ -27,6 +27,9 @@ describe('Auth API Contract & Integration Tests', () => {
           OR: [
             { email: testEmail },
             { email: { startsWith: 'oauth_test_' } },
+            { email: { startsWith: 'link_test_' } },
+            { email: { startsWith: 'conflict_' } },
+            { email: { startsWith: 'unified_' } },
             { email: 'gh_conflict_test@cyberforce.io' },
           ],
         },
@@ -529,6 +532,272 @@ describe('Auth API Contract & Integration Tests', () => {
       expect(res.statusCode).toBe(302);
       expect(res.headers.location).toContain('/auth/callback?token=');
       expect(res.headers['set-cookie']).toBeDefined();
+    });
+
+    it('GET /api/v1/auth/oauth/github/callback should redirect to /auth/callback with link_required on email conflict', async () => {
+      const conflictEmail = `conflict_redirect_${Date.now()}@cyberforce.io`;
+
+      // 1. Create existing user
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: {
+          email: conflictEmail,
+          username: `user_${Date.now().toString().slice(-5)}`,
+          password: 'Password123!',
+        },
+      });
+
+      // 2. Incoming OAuth with same email
+      mockOAuthClient.mockProfile = {
+        provider: 'github',
+        providerAccountId: `gh_redirect_conflict_${Date.now()}`,
+        email: conflictEmail,
+        username: 'conflict_github',
+        avatarUrl: null,
+      };
+
+      const validState = generateOAuthState();
+      await storeOAuthState(validState, { provider: 'github' });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/auth/oauth/github/callback?code=code&state=${validState}`,
+      });
+
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toContain('/auth/callback?');
+      expect(res.headers.location).toContain('link_required=true');
+      expect(res.headers.location).toContain(`email=${encodeURIComponent(conflictEmail)}`);
+      expect(res.headers.location).toContain('pending_token=');
+    });
+
+    describe('CF-102: Account Linking Flow (Sub-flow 1.2)', () => {
+      const linkEmail = `link_test_${Date.now()}@cyberforce.io`;
+      const linkPassword = 'CorrectP@ssword2026!';
+      let existingUserId: string;
+
+      beforeAll(async () => {
+        const regRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/register',
+          payload: {
+            email: linkEmail,
+            username: `linker_${Date.now().toString().slice(-4)}`,
+            password: linkPassword,
+          },
+        });
+        const body = JSON.parse(regRes.payload);
+        existingUserId = body.data.user.id;
+      });
+
+      it('Sub-flow 1.2.3 & 1.2.4 & 1.2.5: OTP Request & Verification flow', async () => {
+        // Step 1: Trigger OAuth collision via POST
+        const incomingGhId = `gh_link_${Date.now()}`;
+        mockOAuthClient.mockProfile = {
+          provider: 'github',
+          providerAccountId: incomingGhId,
+          email: linkEmail,
+          username: 'linker_gh',
+          avatarUrl: null,
+        };
+
+        const state1 = generateOAuthState();
+        await storeOAuthState(state1, { provider: 'github' });
+
+        const conflictRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/oauth/github/callback',
+          payload: { code: 'code_gh', state: state1 },
+        });
+
+        expect(conflictRes.statusCode).toBe(409);
+        const conflictJson = JSON.parse(conflictRes.payload);
+        expect(conflictJson.error.code).toBe('ACCOUNT_EXISTS_DIFFERENT_PROVIDER');
+        const pendingToken = conflictJson.error.details.pendingLinkToken;
+        expect(pendingToken).toBeDefined();
+
+        // Step 2: Request OTP via Sub-flow 1.2.3 (POST /auth/link/send-otp)
+        const sendOtpRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/send-otp',
+          payload: { pendingLinkToken: pendingToken },
+        });
+
+        expect(sendOtpRes.statusCode).toBe(200);
+        const sendOtpJson = JSON.parse(sendOtpRes.payload);
+        expect(sendOtpJson.success).toBe(true);
+        expect(sendOtpJson.data.email).toBe(linkEmail);
+
+        // Fetch OTP from Redis
+        const otp = await redis.get(`account_link:otp:${pendingToken}`);
+        expect(otp).toBeDefined();
+        expect(otp).toMatch(/^\d{6}$/);
+
+        // Step 3: Sub-flow 1.2.4 - Submit incorrect OTP -> 401 INVALID_OTP
+        const wrongOtpRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/verify-otp',
+          payload: { pendingLinkToken: pendingToken, otp: '000000' },
+        });
+        expect(wrongOtpRes.statusCode).toBe(401);
+        const wrongOtpJson = JSON.parse(wrongOtpRes.payload);
+        expect(wrongOtpJson.error.code).toBe('INVALID_OTP');
+
+        // Step 4: Sub-flow 1.2.5 - Submit correct OTP -> 200 OK & linked session tokens
+        const correctOtpRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/verify-otp',
+          payload: { pendingLinkToken: pendingToken, otp },
+        });
+
+        expect(correctOtpRes.statusCode).toBe(200);
+        const correctOtpJson = JSON.parse(correctOtpRes.payload);
+        expect(correctOtpJson.success).toBe(true);
+        expect(correctOtpJson.data.user.id).toBe(existingUserId);
+        expect(correctOtpJson.data.accessToken).toBeDefined();
+
+        // Step 5: Verify OAuth account is now linked in database
+        const oAuthAccount = await prisma.oAuthAccount.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: 'github',
+              providerAccountId: incomingGhId,
+            },
+          },
+        });
+        expect(oAuthAccount).toBeDefined();
+        expect(oAuthAccount?.userId).toBe(existingUserId);
+
+        // Step 6: Verify logging in with this GitHub account now succeeds directly (no 409!)
+        const state2 = generateOAuthState();
+        await storeOAuthState(state2, { provider: 'github' });
+        const directLoginRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/oauth/github/callback',
+          payload: { code: 'code_gh_2', state: state2 },
+        });
+        expect(directLoginRes.statusCode).toBe(200);
+        const directJson = JSON.parse(directLoginRes.payload);
+        expect(directJson.data.user.id).toBe(existingUserId);
+      });
+
+      it('Sub-flow 1.2.2: Password Verification flow', async () => {
+        const incomingGoogleId = `google_link_${Date.now()}`;
+        mockOAuthClient.mockProfile = {
+          provider: 'google',
+          providerAccountId: incomingGoogleId,
+          email: linkEmail,
+          username: 'linker_google',
+          avatarUrl: null,
+        };
+
+        const state = generateOAuthState();
+        await storeOAuthState(state, { provider: 'google' });
+
+        const conflictRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/oauth/google/callback',
+          payload: { code: 'code_gg', state },
+        });
+
+        expect(conflictRes.statusCode).toBe(409);
+        const pendingToken = JSON.parse(conflictRes.payload).error.details.pendingLinkToken;
+
+        // Wrong password -> 401
+        const wrongPassRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/verify-password',
+          payload: { pendingLinkToken: pendingToken, password: 'WrongPassword999!' },
+        });
+        expect(wrongPassRes.statusCode).toBe(401);
+
+        // Correct password -> 200 and linked
+        const correctPassRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/verify-password',
+          payload: { pendingLinkToken: pendingToken, password: linkPassword },
+        });
+        expect(correctPassRes.statusCode).toBe(200);
+        const json = JSON.parse(correctPassRes.payload);
+        expect(json.data.user.id).toBe(existingUserId);
+
+        // Verify google account is linked
+        const googleLink = await prisma.oAuthAccount.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: 'google',
+              providerAccountId: incomingGoogleId,
+            },
+          },
+        });
+        expect(googleLink).toBeDefined();
+        expect(googleLink?.userId).toBe(existingUserId);
+      });
+
+      it('POST /api/v1/auth/link-account should link via unified endpoint with password or OTP', async () => {
+        // Create another user
+        const unifiedEmail = `unified_${Date.now()}@cyberforce.io`;
+        const unifiedPass = 'UnifiedP@ssword2026!';
+        const regRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/register',
+          payload: {
+            email: unifiedEmail,
+            username: `uni_${Date.now().toString().slice(-4)}`,
+            password: unifiedPass,
+          },
+        });
+        const userId = JSON.parse(regRes.payload).data.user.id;
+
+        const incomingGh = `gh_uni_${Date.now()}`;
+        mockOAuthClient.mockProfile = {
+          provider: 'github',
+          providerAccountId: incomingGh,
+          email: unifiedEmail,
+          username: 'uni_gh',
+          avatarUrl: null,
+        };
+
+        const state = generateOAuthState();
+        await storeOAuthState(state, { provider: 'github' });
+
+        const conflictRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/oauth/github/callback',
+          payload: { code: 'code', state },
+        });
+        const pendingToken = JSON.parse(conflictRes.payload).error.details.pendingLinkToken;
+
+        // Use unified /link-account endpoint with password
+        const linkRes = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link-account',
+          payload: {
+            pendingLinkToken: pendingToken,
+            method: 'password',
+            password: unifiedPass,
+          },
+        });
+
+        expect(linkRes.statusCode).toBe(200);
+        const linkJson = JSON.parse(linkRes.payload);
+        expect(linkJson.success).toBe(true);
+        expect(linkJson.data.user.id).toBe(userId);
+      });
+
+      it('should reject invalid or expired pendingLinkToken with 400 INVALID_LINK_TOKEN', async () => {
+        const { randomUUID } = await import('node:crypto');
+        const fakeToken = randomUUID();
+        const res = await app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/link/verify-password',
+          payload: { pendingLinkToken: fakeToken, password: 'any' },
+        });
+        expect(res.statusCode).toBe(400);
+        const json = JSON.parse(res.payload);
+        expect(json.error.code).toBe('INVALID_LINK_TOKEN');
+      });
     });
   });
 });

@@ -10,7 +10,14 @@ import {
   recordFailedLogin,
   clearFailedLogins,
   blacklistToken,
+  generateOtp,
+  storePendingLinkSession,
+  consumePendingLinkSession,
+  storeOtpForLink,
+  verifyAndConsumeOtp,
+  type PendingLinkSession,
 } from '../../lib/security.js';
+
 import type { RegisterInput, LoginInput, UserProfile } from './auth.schemas.js';
 import type { NormalizedOAuthProfile } from './oauth.provider.js';
 
@@ -354,8 +361,17 @@ export class AuthService {
     });
 
     if (existingUser) {
-      // Email exists with password or a different OAuth provider
-      // Per US-01.01 Scenario 2: Refuse automatic merge to prevent Account Takeover
+      // Email exists — issue a pending link token so the client can initiate Sub-flow 1.2
+      const { randomUUID } = await import('node:crypto');
+      const pendingLinkToken = randomUUID();
+
+      const session: PendingLinkSession = {
+        existingUserId: existingUser.id,
+        incomingProvider: profile.provider,
+        incomingProviderAccountId: profile.providerAccountId,
+      };
+      await storePendingLinkSession(pendingLinkToken, session);
+
       throw new AuthError(
         409,
         `An account with email "${profile.email}" already exists with a different login method. Please authenticate with your existing account to link your ${profile.provider} identity.`,
@@ -363,6 +379,7 @@ export class AuthService {
         {
           email: profile.email,
           attemptedProvider: profile.provider,
+          pendingLinkToken,
         },
       );
     }
@@ -413,6 +430,155 @@ export class AuthService {
       tokens,
       isNewUser: true,
     };
+  }
+
+  /**
+   * Sub-flow 1.2.3 — Send a 6-digit OTP to the existing user's email
+   * In this implementation the OTP is returned in the response (dev mode).
+   * Production systems should send via email service (SendGrid, SES…).
+   */
+  async initiateAccountLinking(
+    pendingLinkToken: string,
+  ): Promise<{ otpSent: boolean; email: string }> {
+    // Peek at the session without consuming it yet
+    const key = `account_link:pending:${pendingLinkToken}`;
+    const raw = await import('../../lib/redis.js').then(({ redis }) => redis.get(key));
+    if (!raw) {
+      throw new AuthError(400, 'Pending link session not found or expired', 'INVALID_LINK_TOKEN');
+    }
+    const session: PendingLinkSession = JSON.parse(raw);
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.existingUserId },
+      select: { email: true },
+    });
+    if (!user) {
+      throw new AuthError(404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const otp = generateOtp();
+    await storeOtpForLink(pendingLinkToken, otp);
+
+    // TODO: integrate email service (SendGrid/SES) in production
+    // For now, log OTP to console in non-production environments
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`[Account Link OTP] ${user.email}: ${otp}`);
+    }
+
+    return { otpSent: true, email: user.email };
+  }
+
+  /**
+   * Sub-flow 1.2.2 — Verify by existing account password then link OAuth identity
+   */
+  async verifyLinkByPassword(
+    pendingLinkToken: string,
+    password: string,
+  ): Promise<{ user: UserProfile; tokens: ReturnType<typeof generateTokens> }> {
+    const session = await consumePendingLinkSession(pendingLinkToken);
+    if (!session) {
+      throw new AuthError(400, 'Pending link session not found or expired', 'INVALID_LINK_TOKEN');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.existingUserId },
+    });
+    if (!user || !user.passwordHash) {
+      throw new AuthError(
+        401,
+        'Cannot verify via password for this account',
+        'INVALID_CREDENTIALS',
+      );
+    }
+
+    const isValid = await verifyPassword(user.passwordHash, password);
+    if (!isValid) {
+      // Re-store the session so the user can retry
+      await storePendingLinkSession(pendingLinkToken, session);
+      throw new AuthError(401, 'Incorrect password', 'INVALID_CREDENTIALS');
+    }
+
+    return this._performLink(user, session);
+  }
+
+  /**
+   * Sub-flow 1.2.4-1.2.5 — Verify by OTP then link OAuth identity
+   */
+  async verifyLinkByOtp(
+    pendingLinkToken: string,
+    otp: string,
+  ): Promise<{ user: UserProfile; tokens: ReturnType<typeof generateTokens> }> {
+    const isOtpValid = await verifyAndConsumeOtp(pendingLinkToken, otp);
+    if (!isOtpValid) {
+      throw new AuthError(401, 'Invalid or expired OTP', 'INVALID_OTP');
+    }
+
+    const session = await consumePendingLinkSession(pendingLinkToken);
+    if (!session) {
+      throw new AuthError(400, 'Pending link session not found or expired', 'INVALID_LINK_TOKEN');
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: session.existingUserId } });
+    if (!user) {
+      throw new AuthError(404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    return this._performLink(user, session);
+  }
+
+  /**
+   * Internal: create OAuthAccount record and issue session tokens after successful verification
+   */
+  private async _performLink(
+    user: {
+      id: string;
+      email: string;
+      username: string;
+      avatarUrl: string | null;
+      role: UserRole | string;
+      expPoints: number;
+      rankTier: string;
+      streakDays: number;
+      lastActiveAt?: Date;
+      createdAt: Date;
+    },
+    session: PendingLinkSession,
+  ) {
+    await prisma.$transaction(async (tx) => {
+      // Guard: check the OAuth identity isn't already linked to another user
+      const existing = await tx.oAuthAccount.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: session.incomingProvider,
+            providerAccountId: session.incomingProviderAccountId,
+          },
+        },
+      });
+      if (existing && existing.userId !== user.id) {
+        throw new AuthError(
+          409,
+          'This OAuth identity is already linked to a different account',
+          'OAUTH_ALREADY_LINKED',
+        );
+      }
+      if (!existing) {
+        await tx.oAuthAccount.create({
+          data: {
+            userId: user.id,
+            provider: session.incomingProvider,
+            providerAccountId: session.incomingProviderAccountId,
+          },
+        });
+      }
+    });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActiveAt: new Date() },
+    });
+
+    const tokens = await this.issueSessionTokens(updatedUser);
+    return { user: toUserProfile(updatedUser), tokens };
   }
 }
 

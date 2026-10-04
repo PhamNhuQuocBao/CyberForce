@@ -131,4 +131,40 @@ export const authApi = {
       body: JSON.stringify(data),
     });
   },
+
+  async initiateAccountLinking(pendingLinkToken: string) {
+    return request<{ success: true; message: string; data: { otpSent: boolean; email: string } }>(
+      '/auth/link/send-otp',
+      {
+        method: 'POST',
+        body: JSON.stringify({ pendingLinkToken }),
+      },
+    );
+  },
+
+  async verifyLinkPassword(pendingLinkToken: string, password: string) {
+    return request<AuthSuccessResponse>('/auth/link/verify-password', {
+      method: 'POST',
+      body: JSON.stringify({ pendingLinkToken, password }),
+    });
+  },
+
+  async verifyLinkOtp(pendingLinkToken: string, otp: string) {
+    return request<AuthSuccessResponse>('/auth/link/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ pendingLinkToken, otp }),
+    });
+  },
+
+  async linkAccount(data: {
+    pendingLinkToken: string;
+    method?: 'password' | 'otp';
+    password?: string;
+    otp?: string;
+  }) {
+    return request<AuthSuccessResponse>('/auth/link-account', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
