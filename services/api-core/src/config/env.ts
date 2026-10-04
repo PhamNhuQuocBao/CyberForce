@@ -1,5 +1,12 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+
+// Ensure both local service .env and root .env are loaded seamlessly
+dotenv.config();
+const rootEnvPath = path.resolve(fileURLToPath(import.meta.url), '../../../../.env');
+dotenv.config({ path: rootEnvPath });
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
