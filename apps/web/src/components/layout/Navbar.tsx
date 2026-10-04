@@ -45,6 +45,13 @@ export function Navbar() {
         {/* Navigation Links */}
         <div className="hidden md:flex items-center gap-6 font-bold text-sm">
           <Link
+            href="/paths"
+            className="text-brand-dark hover:text-brand-dark/80 dark:text-white dark:hover:text-brand-lime transition-colors flex items-center gap-1.5"
+          >
+            <span className="h-2 w-2 rounded-full bg-brand-lime"></span>
+            Learning Paths
+          </Link>
+          <Link
             href="/#labs"
             className="text-brand-dark/80 hover:text-brand-dark dark:text-white/80 dark:hover:text-white transition-colors"
           >

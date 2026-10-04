@@ -350,3 +350,146 @@ export const rolesApi = {
     );
   },
 };
+
+export interface PathListItem {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  difficultyLevel: string;
+  category: string;
+  estimatedHours: number;
+  iconUrl: string | null;
+  orderIndex: number;
+  modulesCount: number;
+  roomsCount: number;
+  totalPointsReward: number;
+  earnedPoints: number;
+  completedRoomsCount: number;
+  progressPercentage: number;
+  status: 'not_started' | 'in_progress' | 'mastered';
+  nextUpRoom: {
+    id: string;
+    slug: string;
+    title: string;
+    orderIndex: number;
+    moduleName: string;
+  } | null;
+}
+
+export interface PathRoomPrerequisite {
+  requiredRoomId: string | null;
+  requiredRoomTitle: string | null;
+  requiredRoomSlug: string | null;
+  isSatisfied: boolean;
+  prerequisiteProgress: {
+    completedQuestions: number;
+    totalQuestions: number;
+    percentage: number;
+  } | null;
+}
+
+export interface PathRoomDetail {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  difficulty: string;
+  pointsReward: number;
+  estimatedMinutes: number;
+  isFree: boolean;
+  orderIndex: number;
+  moduleName: string;
+  moduleOrder: number;
+  taskCount: number;
+  questionCount: number;
+  status: 'completed' | 'in_progress' | 'available' | 'locked';
+  userProgress: {
+    completedQuestions: number;
+    totalQuestions: number;
+    percentage: number;
+  };
+  prerequisite: PathRoomPrerequisite;
+}
+
+export interface PathModuleDetail {
+  moduleName: string;
+  moduleOrder: number;
+  roomsCount: number;
+  completedRoomsCount: number;
+  rooms: PathRoomDetail[];
+}
+
+export interface PathDetailResponse {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  difficultyLevel: string;
+  category: string;
+  estimatedHours: number;
+  iconUrl: string | null;
+  orderIndex: number;
+  totalTrackExp: number;
+  totalRoomsCount: number;
+  completedRoomsCount: number;
+  userTrackExp: number;
+  progressPercentage: number;
+  status: 'not_started' | 'in_progress' | 'mastered';
+  isCapstoneUnlocked: boolean;
+  nextUpRoom: {
+    id: string;
+    slug: string;
+    title: string;
+    orderIndex: number;
+    moduleName: string;
+  } | null;
+  modules: PathModuleDetail[];
+}
+
+export const pathsApi = {
+  async listPaths(
+    params?: { category?: string; difficulty?: string; search?: string },
+    accessToken?: string | null,
+  ) {
+    const searchParams = new URLSearchParams();
+    if (params?.category && params.category !== 'all')
+      searchParams.set('category', params.category);
+    if (params?.difficulty) searchParams.set('difficulty', params.difficulty);
+    if (params?.search) searchParams.set('search', params.search);
+
+    const qs = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    return request<{ success: true; data: PathListItem[] }>(`/paths${qs}`, {
+      method: 'GET',
+      headers,
+    });
+  },
+
+  async getPath(slug: string, accessToken?: string | null) {
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    return request<{ success: true; data: PathDetailResponse }>(`/paths/${slug}`, {
+      method: 'GET',
+      headers,
+    });
+  },
+
+  async enroll(slug: string, accessToken: string) {
+    return request<{
+      success: true;
+      message: string;
+      data: { pathId: string; title: string; slug: string; nextUpRoom: unknown };
+    }>(`/paths/${slug}/enroll`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+};
