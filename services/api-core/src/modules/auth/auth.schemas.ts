@@ -70,6 +70,9 @@ export interface UserProfile {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  bio?: string | null;
+  specialty?: string | null;
+  isPublic?: boolean;
   lastActiveAt?: Date;
   createdAt: Date;
 }
@@ -85,3 +88,51 @@ export interface AuthResponseData {
   user: UserProfile;
   accessToken: string;
 }
+
+// -----------------------------------------------------------------------------
+// Account Linking Schemas (Sub-flow 1.2 — CF-102)
+// -----------------------------------------------------------------------------
+
+export const linkInitiateSchema = z.object({
+  pendingLinkToken: z.string().uuid('Invalid pending link token'),
+});
+
+export const linkVerifyPasswordSchema = z.object({
+  pendingLinkToken: z.string().uuid('Invalid pending link token'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const linkVerifyOtpSchema = z.object({
+  pendingLinkToken: z.string().uuid('Invalid pending link token'),
+  otp: z
+    .string()
+    .length(6, 'OTP must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'OTP must contain only digits'),
+});
+
+export const linkAccountSchema = z
+  .object({
+    pendingLinkToken: z.string().uuid('Invalid pending link token'),
+    method: z.enum(['password', 'otp']).optional(),
+    password: z.string().optional(),
+    otp: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.method === 'password' || (!data.method && data.password !== undefined)) {
+        return !!data.password && data.password.length > 0;
+      }
+      if (data.method === 'otp' || (!data.method && data.otp !== undefined)) {
+        return !!data.otp && /^\d{6}$/.test(data.otp);
+      }
+      return false;
+    },
+    {
+      message: 'Either valid password or 6-digit OTP is required for account linking',
+    },
+  );
+
+export type LinkInitiateInput = z.infer<typeof linkInitiateSchema>;
+export type LinkVerifyPasswordInput = z.infer<typeof linkVerifyPasswordSchema>;
+export type LinkVerifyOtpInput = z.infer<typeof linkVerifyOtpSchema>;
+export type LinkAccountInput = z.infer<typeof linkAccountSchema>;

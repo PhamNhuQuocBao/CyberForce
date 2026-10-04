@@ -214,3 +214,78 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateData |
     return null;
   }
 }
+
+// -----------------------------------------------------------------------------
+// 6. ACCOUNT LINKING — Pending Session & OTP (Sub-flow 1.2)
+// -----------------------------------------------------------------------------
+
+/** Data stored in Redis while user is completing an account link confirmation */
+export interface PendingLinkSession {
+  /** Existing user's ID who owns the email */
+  existingUserId: string;
+  /** OAuth provider attempting the link (github | google) */
+  incomingProvider: string;
+  /** Provider-side account ID to link */
+  incomingProviderAccountId: string;
+}
+
+const PENDING_LINK_TTL = 300; // 5 minutes
+const OTP_TTL = 300; // 5 minutes
+const OTP_LENGTH = 6;
+
+/** Generate a cryptographically secure 6-digit numeric OTP */
+export function generateOtp(): string {
+  const bytes = crypto.randomBytes(4);
+  const num = bytes.readUInt32BE(0) % 1_000_000;
+  return num.toString().padStart(OTP_LENGTH, '0');
+}
+
+/** Store a pending link session keyed by a unique token */
+export async function storePendingLinkSession(
+  token: string,
+  data: PendingLinkSession,
+): Promise<void> {
+  try {
+    await redis.set(`account_link:pending:${token}`, JSON.stringify(data), 'EX', PENDING_LINK_TTL);
+  } catch (error) {
+    console.error('Redis store pending link session error:', error);
+  }
+}
+
+/** Read and atomically delete a pending link session (one-time use) */
+export async function consumePendingLinkSession(token: string): Promise<PendingLinkSession | null> {
+  try {
+    const key = `account_link:pending:${token}`;
+    const data = await redis.get(key);
+    if (!data) return null;
+    await redis.del(key);
+    return JSON.parse(data) as PendingLinkSession;
+  } catch (error) {
+    console.error('Redis consume pending link session error:', error);
+    return null;
+  }
+}
+
+/** Store an OTP keyed by the pending link token */
+export async function storeOtpForLink(token: string, otp: string): Promise<void> {
+  try {
+    await redis.set(`account_link:otp:${token}`, otp, 'EX', OTP_TTL);
+  } catch (error) {
+    console.error('Redis store OTP error:', error);
+  }
+}
+
+/** Verify and consume the OTP for a pending link token — returns true once, then deletes */
+export async function verifyAndConsumeOtp(token: string, otp: string): Promise<boolean> {
+  try {
+    const key = `account_link:otp:${token}`;
+    const stored = await redis.get(key);
+    if (!stored) return false;
+    const isValid = crypto.timingSafeEqual(Buffer.from(stored), Buffer.from(otp));
+    if (isValid) await redis.del(key);
+    return isValid;
+  } catch (error) {
+    console.error('Redis verify OTP error:', error);
+    return false;
+  }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -32,6 +33,7 @@ export default function RootLayout({
     <html lang="vi" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-canvas text-brand-dark dark:text-foreground antialiased font-sans">
         {children}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

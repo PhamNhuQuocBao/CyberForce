@@ -30,6 +30,9 @@ describe('Auth Service Helpers & Errors', () => {
       expPoints: dbUser.expPoints,
       rankTier: dbUser.rankTier,
       streakDays: dbUser.streakDays,
+      bio: null,
+      specialty: 'General Cybersecurity',
+      isPublic: true,
       lastActiveAt: dbUser.lastActiveAt,
       createdAt: dbUser.createdAt,
     });

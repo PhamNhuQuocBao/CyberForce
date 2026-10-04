@@ -8,6 +8,10 @@ import {
   oauthUrlQuerySchema,
   oauthCallbackQuerySchema,
   oauthCallbackBodySchema,
+  linkInitiateSchema,
+  linkVerifyPasswordSchema,
+  linkVerifyOtpSchema,
+  linkAccountSchema,
 } from './auth.schemas.js';
 import {
   generateOAuthState,
@@ -221,7 +225,27 @@ export async function oauthCallbackHandler(request: FastifyRequest, reply: Fasti
   });
 
   // 3. Authenticate existing user or register new student
-  const result = await authService.handleOAuthLoginOrRegister(profile);
+  let result;
+  try {
+    result = await authService.handleOAuthLoginOrRegister(profile);
+  } catch (error) {
+    if (
+      request.method === 'GET' &&
+      error instanceof AuthError &&
+      error.code === 'ACCOUNT_EXISTS_DIFFERENT_PROVIDER'
+    ) {
+      const targetUrl = new URL('/auth/callback', env.WEB_ORIGIN);
+      targetUrl.searchParams.set('link_required', 'true');
+      targetUrl.searchParams.set('email', (error.details?.email as string) || profile.email);
+      targetUrl.searchParams.set('provider', profile.provider);
+      targetUrl.searchParams.set(
+        'pending_token',
+        (error.details?.pendingLinkToken as string) || '',
+      );
+      return reply.redirect(targetUrl.toString());
+    }
+    throw error;
+  }
 
   // 4. Set secure HTTP-only refresh cookie
   setAuthCookie(reply, result.tokens.refreshToken);
@@ -244,6 +268,88 @@ export async function oauthCallbackHandler(request: FastifyRequest, reply: Fasti
       user: result.user,
       accessToken: result.tokens.accessToken,
       isNewUser: result.isNewUser,
+    },
+  });
+}
+/**
+ * CF-102 — Sub-flow 1.2.3: Initiate account linking by sending OTP to email
+ * POST /api/v1/auth/link/send-otp
+ */
+export async function linkInitiateHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { pendingLinkToken } = linkInitiateSchema.parse(request.body);
+  const result = await authService.initiateAccountLinking(pendingLinkToken);
+
+  return reply.status(200).send({
+    success: true,
+    message: 'OTP sent to your registered email address',
+    data: result,
+  });
+}
+
+/**
+ * CF-102 — Sub-flow 1.2.2: Verify link by existing account password
+ * POST /api/v1/auth/link/verify-password
+ */
+export async function linkVerifyPasswordHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { pendingLinkToken, password } = linkVerifyPasswordSchema.parse(request.body);
+  const result = await authService.verifyLinkByPassword(pendingLinkToken, password);
+
+  setAuthCookie(reply, result.tokens.refreshToken);
+
+  return reply.status(200).send({
+    success: true,
+    message: 'Account linked successfully via password verification',
+    data: {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+    },
+  });
+}
+
+/**
+ * CF-102 — Sub-flow 1.2.4/1.2.5: Verify link by OTP code
+ * POST /api/v1/auth/link/verify-otp
+ */
+export async function linkVerifyOtpHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { pendingLinkToken, otp } = linkVerifyOtpSchema.parse(request.body);
+  const result = await authService.verifyLinkByOtp(pendingLinkToken, otp);
+
+  setAuthCookie(reply, result.tokens.refreshToken);
+
+  return reply.status(200).send({
+    success: true,
+    message: 'Account linked successfully via OTP verification',
+    data: {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+    },
+  });
+}
+
+/**
+ * CF-102 — Unified account linking endpoint
+ * POST /api/v1/auth/link-account
+ */
+export async function linkAccountHandler(request: FastifyRequest, reply: FastifyReply) {
+  const body = linkAccountSchema.parse(request.body);
+
+  let result;
+  if (body.otp || body.method === 'otp') {
+    result = await authService.verifyLinkByOtp(body.pendingLinkToken, body.otp!);
+  } else if (body.password || body.method === 'password') {
+    result = await authService.verifyLinkByPassword(body.pendingLinkToken, body.password!);
+  } else {
+    throw new AuthError(400, 'Verification method required', 'INVALID_INPUT');
+  }
+
+  setAuthCookie(reply, result.tokens.refreshToken);
+
+  return reply.status(200).send({
+    success: true,
+    message: 'Account linked successfully',
+    data: {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
     },
   });
 }

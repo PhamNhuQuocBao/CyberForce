@@ -7,20 +7,44 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { AccountLinkingModal } from '@/components/auth/AccountLinkingModal';
 
 function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [status, setStatus] = useState<'verifying' | 'linking' | 'success' | 'error'>('verifying');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<{ username: string; isNewUser: boolean } | null>(null);
+
+  // CF-102: Account Linking State
+  const [linkingState, setLinkingState] = useState<{
+    email: string;
+    provider: string;
+    pendingLinkToken: string;
+  } | null>(null);
 
   useEffect(() => {
     const token = searchParams.get('token');
     const isNew = searchParams.get('new_user') === 'true';
+
+    // CF-102: Detect Sub-flow 1.2 Account Linking redirection
+    const isLinkRequired = searchParams.get('link_required') === 'true';
+    const pendingToken = searchParams.get('pending_token');
+    const emailParam = searchParams.get('email');
+    const providerParam = searchParams.get('provider') || 'OAuth';
+
+    if (isLinkRequired && pendingToken && emailParam) {
+      setStatus('linking');
+      setLinkingState({
+        email: emailParam,
+        provider: providerParam,
+        pendingLinkToken: pendingToken,
+      });
+      return;
+    }
 
     if (!token) {
       setStatus('error');
@@ -70,6 +94,41 @@ function CallbackContent() {
             <p className="text-xs text-muted-foreground font-mono">
               Validating cryptographic tokens and loading operator profile...
             </p>
+          </div>
+        )}
+
+        {status === 'linking' && linkingState && (
+          <div className="p-8 md:p-10 space-y-6">
+            <div className="mx-auto h-16 w-16 rounded-badge bg-primary border-2 border-brand-dark flex items-center justify-center shadow-neo">
+              <ShieldAlert className="w-8 h-8 text-brand-dark" />
+            </div>
+
+            <div className="space-y-2">
+              <Badge variant="lime" className="font-extrabold text-[11px]">
+                IDENTITY CONFLICT DETECTED
+              </Badge>
+              <h2 className="text-2xl font-extrabold text-brand-dark dark:text-white">
+                Account Linking Required
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                An account with email{' '}
+                <strong className="text-brand-dark dark:text-white font-mono">
+                  {linkingState.email}
+                </strong>{' '}
+                is already registered. Please verify ownership to link your {linkingState.provider}{' '}
+                identity.
+              </p>
+            </div>
+
+            <Button
+              variant="lime"
+              size="lg"
+              onClick={() => {}}
+              className="w-full font-bold flex items-center justify-center gap-2"
+            >
+              <span>Verification Modal Active</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
           </div>
         )}
 
@@ -127,6 +186,18 @@ function CallbackContent() {
           </div>
         )}
       </Card>
+
+      {/* CF-102: Account Linking Modal for Sub-flow 1.2 */}
+      {linkingState && (
+        <AccountLinkingModal
+          isOpen={status === 'linking'}
+          onClose={() => router.push('/login')}
+          email={linkingState.email}
+          provider={linkingState.provider}
+          pendingLinkToken={linkingState.pendingLinkToken}
+          onSuccess={() => router.push('/')}
+        />
+      )}
     </div>
   );
 }
