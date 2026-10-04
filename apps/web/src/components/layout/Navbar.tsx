@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Flame, UserCheck, LogOut, User, Shield, ChevronDown, Radar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,10 +15,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store';
 
 export function Navbar() {
-  const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
-
-  const isDossierActive = user && pathname === `/user/${user.username}`;
 
   return (
     <header className="border-b border-brand-dark/15 dark:border-white/10 bg-canvas/80 backdrop-blur sticky top-0 z-50">
@@ -54,21 +50,6 @@ export function Navbar() {
           >
             Certificates
           </Link>
-
-          {/* Direct Nav Item for logged-in user to their Dossier */}
-          {isAuthenticated && user && (
-            <Link
-              href={`/user/${encodeURIComponent(user.username)}`}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-btn border transition-all ${
-                isDossierActive
-                  ? 'bg-brand-lime text-brand-dark border-brand-dark shadow-neo-sm font-extrabold'
-                  : 'bg-white hover:bg-brand-gray text-brand-dark border-brand-dark/20 hover:border-brand-dark'
-              }`}
-            >
-              <Radar className="w-3.5 h-3.5" />
-              <span>Hồ Sơ Dossier</span>
-            </Link>
-          )}
         </div>
 
         {/* Auth / User Actions */}
