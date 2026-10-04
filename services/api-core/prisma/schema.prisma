@@ -180,6 +180,8 @@ model LearningPath {
   description     String?  @db.Text
   difficultyLevel String   @default("Beginner") @map("difficulty_level") @db.VarChar(20)
   iconUrl         String?  @map("icon_url") @db.Text
+  category        String   @default("Offense") @db.VarChar(50)
+  estimatedHours  Int      @default(20) @map("estimated_hours")
   orderIndex      Int      @default(0) @map("order_index")
   isPublished     Boolean  @default(false) @map("is_published")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -197,6 +199,9 @@ model LearningPath {
 model Room {
   id                 String    @id @default(uuid()) @db.Uuid
   pathId             String?   @map("path_id") @db.Uuid
+  moduleName         String    @default("Core Module") @map("module_name") @db.VarChar(150)
+  moduleOrder        Int       @default(1) @map("module_order")
+  orderIndex         Int       @default(0) @map("order_index")
   title              String    @db.VarChar(255)
   slug               String    @unique @db.VarChar(255)
   description        String?   @db.Text
@@ -204,15 +209,21 @@ model Room {
   roomType           RoomType  @default(walkthrough) @map("room_type")
   targetTemplateSpec Json      @map("target_template_spec")
   isFree             Boolean   @default(true) @map("is_free")
+  pointsReward       Int       @default(200) @map("points_reward")
+  estimatedMinutes   Int       @default(45) @map("estimated_minutes")
+  prerequisiteRoomId String?   @map("prerequisite_room_id") @db.Uuid
   publishedAt        DateTime? @map("published_at") @db.Timestamptz
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  learningPath LearningPath? @relation(fields: [pathId], references: [id], onDelete: SetNull)
-  tasks        Task[]
-  labInstances LabInstance[]
+  learningPath     LearningPath? @relation(fields: [pathId], references: [id], onDelete: SetNull)
+  prerequisiteRoom Room?         @relation("RoomPrerequisites", fields: [prerequisiteRoomId], references: [id], onDelete: SetNull)
+  dependentRooms   Room[]        @relation("RoomPrerequisites")
+  tasks            Task[]
+  labInstances     LabInstance[]
 
   @@index([pathId])
+  @@index([prerequisiteRoomId])
   @@map("rooms")
 }
 
