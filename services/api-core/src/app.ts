@@ -10,6 +10,8 @@ import { redis } from './lib/redis.js';
 import { AuthError } from './modules/auth/auth.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
+import { rolesRoutes } from './modules/roles/roles.routes.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -79,6 +81,8 @@ export function buildApp() {
   // ---------------------------------------------------------------------------
   app.register(authRoutes, { prefix: '/api/v1/auth' });
   app.register(usersRoutes, { prefix: '/api/v1/users' });
+  app.register(rolesRoutes, { prefix: '/api/v1/roles' });
+  app.register(adminRoutes, { prefix: '/api/v1/admin' });
 
   // ---------------------------------------------------------------------------
   // 4. CENTRALIZED ERROR HANDLER
