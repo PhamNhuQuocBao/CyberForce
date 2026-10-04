@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Flame, UserCheck, LogOut, User, Shield, ChevronDown, Radar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,19 +76,19 @@ export function Navbar() {
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2 sm:gap-2.5">
               {/* Streak Badge */}
-              <Badge variant="lime" className="hidden sm:inline-flex gap-1 font-bold">
-                <Flame className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-                <span>{user.streakDays}d Streak</span>
-              </Badge>
+              <div className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 bg-brand-lime text-brand-dark border-2 border-brand-dark rounded-[10px] shadow-neo-sm font-mono text-xs font-extrabold select-none">
+                <Flame className="w-4 h-4 text-amber-600 fill-amber-500" />
+                <span>{user.streakDays}D STREAK</span>
+              </div>
 
               {/* User Profile Dropdown Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center gap-2 px-3 py-1.5 bg-brand-gray hover:bg-brand-lime border border-brand-dark rounded-btn shadow-neo-sm hover:shadow-neo transition-all font-mono text-xs font-bold text-brand-dark cursor-pointer group outline-none"
+                    className="h-9 px-3 flex items-center gap-2 bg-white hover:bg-brand-gray text-brand-dark border-2 border-brand-dark rounded-[10px] shadow-neo-sm hover:shadow-neo hover:-translate-y-0.5 active:translate-y-0 active:shadow-neo-sm transition-all font-mono text-xs font-extrabold cursor-pointer group outline-none select-none"
                   >
-                    <div className="w-5 h-5 rounded-badge bg-brand-dark text-brand-lime flex items-center justify-center text-[10px] font-extrabold">
+                    <div className="w-5 h-5 rounded-[5px] bg-brand-dark text-brand-lime flex items-center justify-center text-[10px] font-extrabold font-mono shrink-0">
                       {user.username.slice(0, 1).toUpperCase()}
                     </div>
                     <span>{user.username}</span>
@@ -97,16 +96,20 @@ export function Navbar() {
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuLabel>
-                    <div className="space-y-0.5">
-                      <div className="text-xs font-mono font-bold text-brand-dark flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <DropdownMenuContent align="end" className="w-64 p-2 shadow-neo-lg">
+                  <DropdownMenuLabel className="p-2.5 bg-brand-gray/70 rounded-[10px] border border-brand-dark/15 mb-2 font-mono">
+                    <div className="space-y-1">
+                      <div className="text-xs font-extrabold text-brand-dark flex items-center gap-1.5 font-mono">
+                        <UserCheck className="w-4 h-4 text-emerald-600" />
                         <span>@{user.username}</span>
                       </div>
-                      <div className="text-[10px] font-mono text-muted-foreground">
-                        {user.rankTier || 'Novice'} &bull; {user.expPoints?.toLocaleString() ?? 0}{' '}
-                        EXP
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                        <span className="bg-brand-lime text-brand-dark px-1.5 py-0.5 rounded font-extrabold border border-brand-dark/30">
+                          {user.rankTier || 'Novice'}
+                        </span>
+                        <span className="font-bold">
+                          {user.expPoints?.toLocaleString() ?? 0} EXP
+                        </span>
                       </div>
                     </div>
                   </DropdownMenuLabel>

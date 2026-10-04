@@ -302,9 +302,6 @@ export default function UserProfilePage() {
 
         {/* SECTION 1: OPERATOR DOSSIER HEADER */}
         <section className="bg-white border-2 border-brand-dark rounded-card p-6 sm:p-8 shadow-neo-lg relative overflow-hidden">
-          {/* Subtle top banner strip */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-brand-dark" />
-
           {/* Subheader callsign & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-brand-dark/10">
             <div className="flex items-center gap-2 font-mono text-xs font-bold text-muted-foreground uppercase tracking-wider">
