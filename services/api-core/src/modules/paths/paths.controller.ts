@@ -28,18 +28,10 @@ export async function getPathBySlugHandler(request: FastifyRequest, reply: Fasti
 
 export async function enrollPathHandler(request: FastifyRequest, reply: FastifyReply) {
   const { slug } = pathSlugParamSchema.parse(request.params);
-  const userId = request.user?.sub;
-
-  const data = await pathsService.getPathBySlug(slug, userId);
-
+  const data = await pathsService.enroll(slug, request.user!.sub);
   return reply.status(200).send({
     success: true,
     message: `Enrolled in learning track: ${data.title}`,
-    data: {
-      pathId: data.id,
-      title: data.title,
-      slug: data.slug,
-      nextUpRoom: data.nextUpRoom,
-    },
+    data,
   });
 }

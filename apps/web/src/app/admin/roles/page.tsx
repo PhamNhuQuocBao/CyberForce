@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
@@ -25,8 +25,11 @@ const statusLabels = {
 };
 export default function AdminRolesPage() {
   const router = useRouter();
-  const { user, accessToken, isAuthenticated } = useAuthStore();
+  const { user, accessToken, isAuthenticated, isLoading: authLoading } = useAuthStore();
 
+  const requestVersion = useRef(0);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
   const [requests, setRequests] = useState<RoleRequestItem[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>(
     'pending',
@@ -48,30 +51,41 @@ export default function AdminRolesPage() {
   const fetchRequests = useCallback(async () => {
     if (!accessToken || !isAdmin) return;
 
+    const version = ++requestVersion.current;
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const res = await rolesApi.getAdminRequests(
         {
           status: filterStatus === 'all' ? undefined : filterStatus,
-          limit: 50,
+          limit: 20,
+          page,
         },
         accessToken,
       );
+      if (version !== requestVersion.current) return;
+      if (res.pagination.totalPages > 0 && page > res.pagination.totalPages) {
+        setPage(res.pagination.totalPages);
+        return;
+      }
       setRequests(res.data);
+      setPagination(res.pagination);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch role applications.';
-      setErrorMessage(msg);
+      if (version === requestVersion.current) setErrorMessage(msg);
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) setIsLoading(false);
     }
-  }, [accessToken, isAdmin, filterStatus]);
+  }, [accessToken, isAdmin, filterStatus, page]);
 
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
+    if (!authLoading && isAuthenticated && isAdmin) {
       fetchRequests();
     }
-  }, [isAuthenticated, isAdmin, fetchRequests]);
+    return () => {
+      requestVersion.current += 1;
+    };
+  }, [authLoading, isAuthenticated, isAdmin, fetchRequests]);
 
   // Handle Approve
   const handleApprove = async (item: RoleRequestItem) => {
@@ -133,6 +147,16 @@ export default function AdminRolesPage() {
     }
   };
 
+  if (authLoading)
+    return (
+      <>
+        <Navbar />
+        <main id="main-content" className="page-container">
+          <p role="status">Đang kiểm tra phiên đăng nhập…</p>
+        </main>
+      </>
+    );
+
   if (!isAuthenticated || !isAdmin)
     return (
       <>
@@ -192,7 +216,10 @@ export default function AdminRolesPage() {
           {(['pending', 'all', 'approved', 'rejected'] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setFilterStatus(tab)}
+              onClick={() => {
+                setFilterStatus(tab);
+                setPage(1);
+              }}
               aria-pressed={filterStatus === tab}
               className={`min-h-11 border-b-2 px-3 py-3 text-sm ${filterStatus === tab ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
             >
@@ -230,7 +257,8 @@ export default function AdminRolesPage() {
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Đang hiển thị {requests.length} yêu cầu · tối đa 50 kết quả
+              Đang hiển thị {requests.length}/{pagination.total} yêu cầu · Trang {page}/
+              {Math.max(1, pagination.totalPages)}
             </p>
             <Table>
               <caption className="sr-only">Yêu cầu cấp quyền Creator</caption>
@@ -326,6 +354,22 @@ export default function AdminRolesPage() {
                 })}
               </tbody>
             </Table>
+            <nav aria-label="Phân trang yêu cầu" className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                disabled={isLoading || page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Trang trước
+              </Button>
+              <Button
+                variant="outline"
+                disabled={isLoading || page >= pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Trang sau
+              </Button>
+            </nav>
           </>
         )}
       </main>

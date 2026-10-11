@@ -15,6 +15,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { BecomeCreatorDialog } from '@/components/creator/BecomeCreatorDialog';
 import { ThemeToggle } from './ThemeToggle';
 const links = [
+  ['/paths', 'Lộ trình'],
   ['/#labs', 'Thực hành'],
   ['/#arena', 'Thi đấu'],
   ['/#certs', 'Chứng chỉ'],

@@ -1,22 +1,28 @@
 import { create } from 'zustand';
-import { authApi, type UserProfile } from './api';
+import { ApiError, authApi, refreshSession, type UserProfile } from './api';
 
 interface AuthState {
   user: UserProfile | null;
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  sessionVersion: number;
+  initializationError: string | null;
   setAuth: (user: UserProfile, token: string) => void;
   clearAuth: () => void;
   initialize: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
+let initialization: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
   isLoading: true,
+  sessionVersion: 0,
+  initializationError: null,
 
   setAuth: (user: UserProfile, token: string) => {
     if (typeof window !== 'undefined') {
@@ -26,8 +32,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       user,
       accessToken: token,
+      sessionVersion: get().sessionVersion + 1,
       isAuthenticated: true,
       isLoading: false,
+      initializationError: null,
     });
   },
 
@@ -39,47 +47,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       user: null,
       accessToken: null,
+      sessionVersion: get().sessionVersion + 1,
       isAuthenticated: false,
       isLoading: false,
+      initializationError: null,
     });
   },
 
   initialize: async () => {
-    if (typeof window === 'undefined') return;
-
-    const token = localStorage.getItem('cyberforce_access_token');
-    const cachedUser = localStorage.getItem('cyberforce_user');
-
-    if (!token) {
-      set({ isLoading: false, isAuthenticated: false });
-      return;
-    }
-
-    try {
-      if (cachedUser) {
-        set({
-          user: JSON.parse(cachedUser),
-          accessToken: token,
-          isAuthenticated: true,
-        });
+    if (typeof window === 'undefined' || (!get().isLoading && !get().initializationError)) return;
+    if (initialization) return initialization;
+    initialization = (async () => {
+      set({ isLoading: true, initializationError: null });
+      const token = localStorage.getItem('cyberforce_access_token');
+      set({ accessToken: token });
+      const version = get().sessionVersion;
+      try {
+        if (!token) {
+          await refreshSession();
+        } else {
+          const res = await authApi.getMe(token);
+          const currentToken = get().accessToken;
+          if (currentToken && get().sessionVersion === version)
+            get().setAuth(res.data, currentToken);
+        }
+      } catch (error) {
+        if (get().sessionVersion !== version) return;
+        if (error instanceof ApiError && error.code === 'SESSION_CHANGED') return;
+        if (error instanceof ApiError && error.statusCode === 401) {
+          get().clearAuth();
+        } else {
+          set({
+            isLoading: false,
+            initializationError: 'Không thể kiểm tra phiên đăng nhập. Vui lòng thử lại.',
+          });
+        }
       }
-
-      // Validate token with /me endpoint
-      const res = await authApi.getMe(token);
-      set({
-        user: res.data,
-        accessToken: token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      localStorage.setItem('cyberforce_user', JSON.stringify(res.data));
-    } catch {
-      get().clearAuth();
-    }
+    })().finally(() => {
+      initialization = null;
+    });
+    return initialization;
   },
 
   logout: async () => {
     const token = get().accessToken;
+    get().clearAuth();
     try {
       if (token) {
         await authApi.logout(token);

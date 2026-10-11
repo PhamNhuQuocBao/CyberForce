@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Loader2, Lock, Share2, Settings, Check } from 'lucide-react';
@@ -34,7 +34,8 @@ export default function UserProfilePage() {
   const rawUsername = params?.username as string;
   const username = decodeURIComponent(rawUsername || '');
 
-  const { accessToken, isLoading: authLoading, initialize } = useAuthStore();
+  const { accessToken, isLoading: authLoading } = useAuthStore();
+  const requestVersion = useRef(0);
   const [dossier, setDossier] = useState<UserDossierResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,24 +45,20 @@ export default function UserProfilePage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeCertModal, setActiveCertModal] = useState<string | null>(null);
 
-  // Initialize auth store on mount
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
   // Fetch dossier
   const fetchDossier = useCallback(async () => {
     if (!username) return;
+    const version = ++requestVersion.current;
     try {
       setIsLoading(true);
       setError(null);
       const res = await userApi.getProfile(username, accessToken ?? undefined);
-      setDossier(res.data);
+      if (version === requestVersion.current) setDossier(res.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Operator not found or network error';
-      setError(msg);
+      if (version === requestVersion.current) setError(msg);
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) setIsLoading(false);
     }
   }, [username, accessToken]);
 
@@ -69,6 +66,9 @@ export default function UserProfilePage() {
     if (!authLoading) {
       fetchDossier();
     }
+    return () => {
+      requestVersion.current += 1;
+    };
   }, [authLoading, fetchDossier]);
 
   // Handle Copy Share Link
@@ -108,7 +108,7 @@ export default function UserProfilePage() {
     }
   };
 
-  if (isLoading || authLoading)
+  if ((isLoading && !dossier) || authLoading)
     return (
       <>
         <Navbar />
@@ -118,7 +118,7 @@ export default function UserProfilePage() {
         </main>
       </>
     );
-  if (error || !dossier)
+  if (!dossier)
     return (
       <>
         <Navbar />
@@ -172,6 +172,14 @@ export default function UserProfilePage() {
     <div className="min-h-screen">
       <Navbar />
       <main id="main-content" className="page-container space-y-6">
+        {error && (
+          <div role="alert" className="space-y-3 rounded-card border p-4">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" onClick={fetchDossier}>
+              Thử tải lại hồ sơ
+            </Button>
+          </div>
+        )}
         {!dossier.isPublic && dossier.isSelf && (
           <section
             className="flex flex-col justify-between gap-4 rounded-card border bg-card p-4 sm:flex-row sm:items-center"

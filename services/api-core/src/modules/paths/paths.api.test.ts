@@ -8,14 +8,14 @@ import { FlagType } from '@prisma/client';
 describe('Learning Paths Catalog & Prerequisite Gating API (US-02.01 / CF-201)', () => {
   let app: FastifyInstance;
 
-  let testStudent: { id: string; email: string; username: string };
+  let testStudent: { id: string; email: string; username: string; role: string };
   let studentToken: string;
 
   let testPathId: string;
   const testPathSlug = `test-offensive-path-${Date.now()}`;
   let room1Id: string;
   let room2Id: string;
-  let room3Id: string;
+  let _room3Id: string;
 
   beforeAll(async () => {
     app = buildApp();
@@ -175,7 +175,7 @@ describe('Learning Paths Catalog & Prerequisite Gating API (US-02.01 / CF-201)',
         },
       },
     });
-    room3Id = r3.id;
+    _room3Id = r3.id;
 
     // 3. Seed student progress:
     // Solve Room 1's question (100% completed)
@@ -205,6 +205,47 @@ describe('Learning Paths Catalog & Prerequisite Gating API (US-02.01 / CF-201)',
         },
       });
     }
+  });
+
+  it('persists enrollment, is idempotent, and keeps it private to the enrolled user', async () => {
+    const url = `/api/v1/paths/${testPathSlug}/enroll`;
+    const headers = { authorization: `Bearer ${studentToken}` };
+    const before = await app.inject({
+      method: 'GET',
+      url: `/api/v1/paths/${testPathSlug}`,
+      headers,
+    });
+    expect(before.json().data.isEnrolled).toBe(false);
+    const responses = await Promise.all([
+      app.inject({ method: 'POST', url, headers }),
+      app.inject({ method: 'POST', url, headers }),
+    ]);
+    for (const res of responses) {
+      expect(res.statusCode).toBe(200);
+      expect(res.json().data.isEnrolled).toBe(true);
+    }
+    expect(
+      await prisma.pathEnrollment.count({ where: { userId: testStudent.id, pathId: testPathId } }),
+    ).toBe(1);
+    const detail = await app.inject({
+      method: 'GET',
+      url: `/api/v1/paths/${testPathSlug}`,
+      headers,
+    });
+    expect(detail.json().data.isEnrolled).toBe(true);
+    expect(detail.json().data.enrolledAt).toBe(responses[0].json().data.enrolledAt);
+    const list = await app.inject({ method: 'GET', url: '/api/v1/paths/', headers });
+    expect(list.json().data.find((path: { id: string }) => path.id === testPathId).isEnrolled).toBe(
+      true,
+    );
+    const anonymous = await app.inject({ method: 'GET', url: `/api/v1/paths/${testPathSlug}` });
+    expect(anonymous.json().data.isEnrolled).toBe(false);
+    expect(anonymous.json().data.enrolledAt).toBeNull();
+    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'POST', url: '/api/v1/paths/not-a-real-path/enroll', headers }))
+        .statusCode,
+    ).toBe(404);
   });
 
   afterAll(async () => {

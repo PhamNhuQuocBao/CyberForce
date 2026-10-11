@@ -1,15 +1,11 @@
 'use client';
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/lib/auth-store';
 export default function HomePage() {
-  const { initialize, user, isAuthenticated } = useAuthStore();
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
+  const { user, isAuthenticated } = useAuthStore();
   return (
     <div className="min-h-screen">
       <Navbar />

@@ -7,13 +7,13 @@ import { generateTokens, hashPassword } from '../../lib/security.js';
 describe('RBAC & Role Request Review API Contract Tests (US-01.04 / CF-105)', () => {
   let app: FastifyInstance;
 
-  let studentUser: { id: string; email: string; username: string };
+  let studentUser: { id: string; email: string; username: string; role: string };
   let studentToken: string;
 
-  let secondStudentUser: { id: string; email: string; username: string };
+  let secondStudentUser: { id: string; email: string; username: string; role: string };
   let secondStudentToken: string;
 
-  let adminUser: { id: string; email: string; username: string };
+  let adminUser: { id: string; email: string; username: string; role: string };
   let adminToken: string;
 
   beforeAll(async () => {

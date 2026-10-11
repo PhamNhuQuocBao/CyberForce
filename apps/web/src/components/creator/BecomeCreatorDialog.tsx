@@ -47,8 +47,12 @@ export function BecomeCreatorDialog({ isOpen, onClose }: BecomeCreatorDialogProp
         } else {
           setExistingRequest(null);
         }
-      } catch {
-        // Ignored fallback
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : 'Không thể tải yêu cầu Creator. Vui lòng mở lại hộp thoại để thử lại.',
+        );
       } finally {
         setIsLoading(false);
       }

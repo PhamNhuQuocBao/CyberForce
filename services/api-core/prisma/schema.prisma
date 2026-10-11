@@ -78,6 +78,7 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
+  pathEnrollments  PathEnrollment[]
   labInstances     LabInstance[]
   submissions      Submission[]
   certificates     Certificate[]
@@ -187,6 +188,7 @@ model LearningPath {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
+  enrollments  PathEnrollment[]
   rooms        Room[]
   certificates Certificate[]
 
@@ -332,4 +334,18 @@ model Certificate {
   @@index([pathId])
   @@index([userId])
   @@map("certificates")
+}
+
+// A registration is independent of progress earned through submissions.
+model PathEnrollment {
+  userId     String   @map("user_id") @db.Uuid
+  pathId     String   @map("path_id") @db.Uuid
+  enrolledAt DateTime @default(now()) @map("enrolled_at") @db.Timestamptz
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pathId])
+  @@index([pathId])
+  @@map("path_enrollments")
 }
