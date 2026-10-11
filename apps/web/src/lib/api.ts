@@ -114,19 +114,83 @@ export class ApiError extends Error {
   }
 }
 
+let refreshPromise: Promise<string> | null = null;
+
+export async function refreshSession(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const { useAuthStore } = await import('./auth-store');
+      const originalVersion = useAuthStore.getState().sessionVersion;
+      try {
+        const result = await authApi.refresh();
+        if (useAuthStore.getState().sessionVersion !== originalVersion) {
+          throw new ApiError(401, 'Phiên đăng nhập đã thay đổi.', 'SESSION_CHANGED');
+        }
+        useAuthStore.getState().setAuth(result.data.user, result.data.accessToken);
+        return result.data.accessToken;
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          error.statusCode === 401 &&
+          useAuthStore.getState().sessionVersion === originalVersion
+        ) {
+          useAuthStore.getState().clearAuth();
+        }
+        throw error;
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+function tokenExpiresSoon(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now() + 30_000;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = new Headers(options.headers);
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  if (options.body != null && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const res = await fetch(url, {
+  const authenticated = headers.has('Authorization') && endpoint !== '/auth/logout';
+  if (authenticated) {
+    const { useAuthStore } = await import('./auth-store');
+    const token = useAuthStore.getState().accessToken || headers.get('Authorization')!.slice(7);
+    headers.set(
+      'Authorization',
+      `Bearer ${tokenExpiresSoon(token) ? await refreshSession() : token}`,
+    );
+  }
+
+  let res = await fetch(url, {
     ...options,
     headers,
     credentials: 'include', // Include HTTP-only cookies
   });
+
+  if (res.status === 401 && authenticated) {
+    const { useAuthStore } = await import('./auth-store');
+    const currentToken = useAuthStore.getState().accessToken;
+    const sentToken = headers.get('Authorization')!.slice(7);
+    const token =
+      currentToken && currentToken !== sentToken ? currentToken : await refreshSession();
+    headers.set('Authorization', `Bearer ${token}`);
+    res = await fetch(url, { ...options, headers, credentials: 'include' });
+    if (res.status === 401) {
+      const { useAuthStore } = await import('./auth-store');
+      useAuthStore.getState().clearAuth();
+    }
+  }
 
   const json = await res.json().catch(() => ({}));
 
@@ -143,6 +207,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const authApi = {
+  async refresh() {
+    return request<AuthSuccessResponse>('/auth/refresh', { method: 'POST', body: '{}' });
+  },
+
   async register(data: { email: string; username: string; password: string }) {
     return request<AuthSuccessResponse>('/auth/register', {
       method: 'POST',
@@ -352,6 +420,8 @@ export const rolesApi = {
 };
 
 export interface PathListItem {
+  isEnrolled: boolean;
+  enrolledAt: string | null;
   id: string;
   title: string;
   slug: string;
@@ -421,6 +491,8 @@ export interface PathModuleDetail {
 }
 
 export interface PathDetailResponse {
+  isEnrolled: boolean;
+  enrolledAt: string | null;
   id: string;
   title: string;
   slug: string;
@@ -476,18 +548,28 @@ export const pathsApi = {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    return request<{ success: true; data: PathDetailResponse }>(`/paths/${slug}`, {
-      method: 'GET',
-      headers,
-    });
+    return request<{ success: true; data: PathDetailResponse }>(
+      `/paths/${encodeURIComponent(slug)}`,
+      {
+        method: 'GET',
+        headers,
+      },
+    );
   },
 
   async enroll(slug: string, accessToken: string) {
     return request<{
       success: true;
       message: string;
-      data: { pathId: string; title: string; slug: string; nextUpRoom: unknown };
-    }>(`/paths/${slug}/enroll`, {
+      data: {
+        pathId: string;
+        title: string;
+        slug: string;
+        isEnrolled: boolean;
+        enrolledAt: string;
+        nextUpRoom: PathDetailResponse['nextUpRoom'];
+      };
+    }>(`/paths/${encodeURIComponent(slug)}/enroll`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
     });

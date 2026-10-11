@@ -46,6 +46,23 @@ export interface PathModuleGroup {
 }
 
 export class PathsService {
+  async enroll(slug: string, userId: string) {
+    const path = await this.getPathBySlug(slug, userId);
+    const enrollment = await prisma.pathEnrollment.upsert({
+      where: { userId_pathId: { userId, pathId: path.id } },
+      create: { userId, pathId: path.id },
+      update: {},
+    });
+    return {
+      pathId: path.id,
+      title: path.title,
+      slug: path.slug,
+      isEnrolled: true,
+      enrolledAt: enrollment.enrolledAt,
+      nextUpRoom: path.nextUpRoom,
+    };
+  }
+
   /**
    * List all published learning paths with user progress telemetry
    */
@@ -79,6 +96,10 @@ export class PathsService {
       where: whereClause,
       orderBy: { orderIndex: 'asc' },
       include: {
+        enrollments: {
+          where: { userId: userId ?? '00000000-0000-0000-0000-000000000000' },
+          select: { enrolledAt: true },
+        },
         rooms: {
           orderBy: [{ moduleOrder: 'asc' }, { orderIndex: 'asc' }],
           include: {
@@ -189,6 +210,8 @@ export class PathsService {
       }
 
       return {
+        isEnrolled: Boolean(userId && path.enrollments.length),
+        enrolledAt: userId ? (path.enrollments[0]?.enrolledAt ?? null) : null,
         id: path.id,
         title: path.title,
         slug: path.slug,
@@ -217,6 +240,10 @@ export class PathsService {
     const path = await prisma.learningPath.findUnique({
       where: { slug },
       include: {
+        enrollments: {
+          where: { userId: userId ?? '00000000-0000-0000-0000-000000000000' },
+          select: { enrolledAt: true },
+        },
         rooms: {
           orderBy: [{ moduleOrder: 'asc' }, { orderIndex: 'asc' }],
           include: {
@@ -434,6 +461,8 @@ export class PathsService {
       roomItems.find((r) => r.status === 'in_progress' || r.status === 'available') || null;
 
     return {
+      isEnrolled: Boolean(userId && path.enrollments.length),
+      enrolledAt: userId ? (path.enrollments[0]?.enrolledAt ?? null) : null,
       id: path.id,
       title: path.title,
       slug: path.slug,

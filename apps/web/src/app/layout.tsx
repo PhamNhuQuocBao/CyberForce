@@ -3,6 +3,7 @@ import React from 'react';
 import localFont from 'next/font/local';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 
 const inter = localFont({
   src: [
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="min-h-screen font-sans">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{

@@ -1,350 +1,168 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import {
-  ShieldAlert,
-  Radar,
-  Cloud,
-  Terminal,
-  Search,
-  BookOpen,
-  Clock,
-  Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  Award,
-  Layers,
-  ChevronRight,
-  Filter,
-} from 'lucide-react';
+import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/lib/auth-store';
 import { pathsApi, type PathListItem } from '@/lib/api';
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Tracks' },
-  { id: 'Offense', label: 'Offense' },
-  { id: 'Defense', label: 'Defense' },
-  { id: 'Cloud', label: 'Cloud' },
-  { id: 'Pentest', label: 'Pentest' },
-];
-
+const categories = ['all', 'Offense', 'Defense', 'Cloud', 'Pentest'];
 export default function LearningPathsCatalogPage() {
-  const { accessToken, isAuthenticated } = useAuthStore();
+  const { accessToken, isLoading: authLoading } = useAuthStore();
   const [paths, setPaths] = useState<PathListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
-    async function fetchPaths() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await pathsApi.listPaths(
-          {
-            category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          },
-          accessToken,
-        );
-        setPaths(res.data);
-      } catch (err: unknown) {
-        const errorObj = err as { message?: string };
-        setError(errorObj.message || 'Failed to load learning tracks. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    }
+    if (authLoading) return;
+    let active = true;
+    setLoading(true);
+    setError(null);
+    pathsApi
+      .listPaths({ category }, accessToken)
+      .then((res) => {
+        if (active) setPaths(res.data);
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Không thể tải lộ trình.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [category, accessToken, authLoading, retry]);
 
-    fetchPaths();
-  }, [selectedCategory, accessToken]);
-
-  const filteredPaths = useMemo(() => {
-    if (!searchQuery.trim()) return paths;
-    const q = searchQuery.toLowerCase();
-    return paths.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        p.category.toLowerCase().includes(q),
-    );
-  }, [paths, searchQuery]);
-
-  const getPathIcon = (category: string, iconUrl?: string | null) => {
-    switch (category.toLowerCase()) {
-      case 'offense':
-        return <ShieldAlert className="w-6 h-6 text-brand-dark" />;
-      case 'defense':
-        return <Radar className="w-6 h-6 text-brand-dark" />;
-      case 'cloud':
-        return <Cloud className="w-6 h-6 text-brand-dark" />;
-      case 'pentest':
-      default:
-        return <Terminal className="w-6 h-6 text-brand-dark" />;
-    }
-  };
-
-  const getDifficultyBadgeColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'beginner':
-        return 'bg-emerald-100 text-emerald-900 border-emerald-900/30';
-      case 'intermediate':
-        return 'bg-amber-100 text-amber-900 border-amber-900/30';
-      case 'advanced':
-        return 'bg-rose-100 text-rose-900 border-rose-900/30';
-      default:
-        return 'bg-brand-gray text-brand-dark border-brand-dark/20';
-    }
-  };
+  const filteredPaths = useMemo(
+    () =>
+      paths.filter((path) =>
+        `${path.title} ${path.description ?? ''} ${path.category}`
+          .toLowerCase()
+          .includes(search.trim().toLowerCase()),
+      ),
+    [paths, search],
+  );
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-canvas-dark text-brand-dark dark:text-white pb-20">
-      {/* Top Header Section */}
-      <section className="border-b border-brand-dark/15 dark:border-white/10 bg-brand-gray/60 dark:bg-card-dark/40 py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-badge bg-brand-lime text-brand-dark border border-brand-dark shadow-neo-sm font-mono text-xs font-extrabold uppercase tracking-wider mb-4">
-            <Layers className="w-3.5 h-3.5" />
-            CAREER ROADMAPS // STRUCTURED LEARNING PATHS
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-brand-dark dark:text-white mb-4">
-            Master Real-World Cyber Roles
-          </h1>
-
-          <p className="text-base sm:text-lg text-brand-dark/70 dark:text-white/70 max-w-2xl leading-relaxed">
-            Step through verified hands-on progression tracks with instant flag validation, sandbox
-            targets, and progressive skill calibration.
+    <>
+      <Navbar />
+      <main id="main-content" className="page-container space-y-8">
+        <header className="space-y-3">
+          <h1 className="text-3xl font-semibold tracking-tight">Lộ trình học tập</h1>
+          <p className="max-w-2xl text-muted-foreground">
+            Khám phá nội dung theo chuyên môn, xem điều kiện tiên quyết và theo dõi tiến độ của bạn.
           </p>
-
-          {/* Search & Category Filter Bar */}
-          <div className="mt-8 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-dark/50 dark:text-white/50" />
-              <Input
-                type="text"
-                placeholder="Search tracks, skills, or vulnerabilities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 bg-white dark:bg-card-dark border-2 border-brand-dark dark:border-white/20 rounded-btn shadow-neo-sm focus-visible:ring-0 focus-visible:border-brand-dark font-medium text-sm"
-              />
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              <span className="text-xs font-mono font-extrabold uppercase text-brand-dark/60 dark:text-white/60 mr-1 hidden sm:inline-flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5" /> Filter:
-              </span>
-              {CATEGORIES.map((cat) => {
-                const isActive = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3.5 py-1.5 rounded-btn text-xs font-extrabold transition-all border border-brand-dark select-none whitespace-nowrap ${
-                      isActive
-                        ? 'bg-brand-lime text-brand-dark shadow-neo-sm -translate-y-0.5'
-                        : 'bg-white dark:bg-card-dark text-brand-dark/80 dark:text-white/80 hover:bg-brand-gray dark:hover:bg-brand-dark'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
-            </div>
+        </header>
+        <div className="space-y-4">
+          <div className="max-w-md space-y-2">
+            <label htmlFor="path-search" className="text-sm font-medium">
+              Tìm lộ trình
+            </label>
+            <Input
+              id="path-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tên, nội dung hoặc chuyên môn"
+            />
           </div>
-        </div>
-      </section>
-
-      {/* Main Catalog Grid */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10">
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-80 rounded-card bg-brand-gray/50 dark:bg-card-dark/50 border-2 border-brand-dark/10 animate-pulse p-8 flex flex-col justify-between"
+          <div className="flex flex-wrap gap-2" aria-label="Chuyên môn">
+            {categories.map((item) => (
+              <Button
+                key={item}
+                variant={category === item ? 'secondary' : 'outline'}
+                aria-pressed={category === item}
+                onClick={() => setCategory(item)}
               >
-                <div className="space-y-4">
-                  <div className="h-6 w-32 bg-black/10 dark:bg-white/10 rounded-btn" />
-                  <div className="h-8 w-3/4 bg-black/10 dark:bg-white/10 rounded-btn" />
-                  <div className="h-16 w-full bg-black/5 dark:bg-white/5 rounded-btn" />
-                </div>
-                <div className="h-12 w-full bg-black/10 dark:bg-white/10 rounded-btn" />
-              </div>
+                {item === 'all' ? 'Tất cả' : item}
+              </Button>
             ))}
           </div>
+        </div>
+        {loading || authLoading ? (
+          <p role="status">Đang tải lộ trình…</p>
         ) : error ? (
-          <div className="text-center py-16 p-8 border-2 border-dashed border-red-400 rounded-card bg-red-50 dark:bg-red-950/20">
-            <ShieldAlert className="w-10 h-10 text-red-600 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-red-900 dark:text-red-300">
-              Error Loading Tracks
-            </h3>
-            <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">{error}</p>
-            <Button
-              onClick={() => setSelectedCategory('all')}
-              className="bg-brand-dark text-white rounded-btn"
-            >
-              Reset Filters
-            </Button>
-          </div>
-        ) : filteredPaths.length === 0 ? (
-          <div className="text-center py-16 p-8 border-2 border-dashed border-brand-dark/20 rounded-card bg-brand-gray/30">
-            <Search className="w-10 h-10 text-brand-dark/40 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-brand-dark dark:text-white">
-              No Learning Tracks Found
-            </h3>
-            <p className="text-sm text-brand-dark/60 dark:text-white/60 mt-1 mb-4">
-              Try adjusting your search keywords or resetting category filters.
+          <Card className="space-y-4 p-6">
+            <p role="alert" className="text-destructive">
+              {error}
             </p>
-            <Button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
-              }}
-              className="bg-brand-lime text-brand-dark border border-brand-dark rounded-btn shadow-neo-sm"
-            >
-              View All Tracks
+            <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
+              Thử lại
             </Button>
-          </div>
+          </Card>
+        ) : filteredPaths.length === 0 ? (
+          <Card className="space-y-3 p-6">
+            <h2 className="font-medium">Không tìm thấy lộ trình</h2>
+            <p className="text-sm text-muted-foreground">Thử từ khóa hoặc chuyên môn khác.</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch('');
+                setCategory('all');
+              }}
+            >
+              Xóa bộ lọc
+            </Button>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {filteredPaths.map((path) => {
-              const isMastered = path.status === 'mastered';
-              const isInProgress = path.status === 'in_progress';
-
-              return (
-                <div
-                  key={path.id}
-                  className="group relative flex flex-col justify-between bg-white dark:bg-card-dark border-2 border-brand-dark rounded-card shadow-neo hover:shadow-neo-lg hover:-translate-y-1 transition-all duration-200 p-6 sm:p-8"
-                >
-                  {/* Top Metadata Header */}
-                  <div>
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      {/* Icon */}
-                      <div className="h-12 w-12 rounded-badge bg-brand-lime border-2 border-brand-dark flex items-center justify-center shadow-neo-sm">
-                        {getPathIcon(path.category, path.iconUrl)}
-                      </div>
-
-                      {/* Badges */}
-                      <div className="flex items-center gap-2 flex-wrap justify-end">
-                        <span className="font-mono text-xs font-extrabold uppercase px-2.5 py-1 rounded-badge bg-brand-gray dark:bg-brand-dark border border-brand-dark/40 text-brand-dark dark:text-white">
-                          {path.category}
-                        </span>
-                        <span
-                          className={`font-mono text-xs font-extrabold px-2.5 py-1 rounded-badge border ${getDifficultyBadgeColor(
-                            path.difficultyLevel,
-                          )}`}
-                        >
-                          {path.difficultyLevel}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Track Title & Description */}
-                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-dark dark:text-white group-hover:text-brand-dark/90 transition-colors">
-                      {path.title}
-                    </h2>
-
-                    <p className="mt-2 text-sm text-brand-dark/70 dark:text-white/70 line-clamp-2 leading-relaxed">
-                      {path.description ||
-                        'Structured cyber security curriculum with interactive hands-on labs.'}
+          <div className="grid gap-6 md:grid-cols-2">
+            {filteredPaths.map((path) => (
+              <Card key={path.id} className="flex flex-col gap-5 p-6">
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {path.category} · {path.difficultyLevel}
+                  </p>
+                  <h2 className="text-xl font-semibold">{path.title}</h2>
+                  {path.description && (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {path.description}
                     </p>
-
-                    {/* Modules & Time Stats */}
-                    <div className="mt-4 pt-4 border-t border-brand-dark/10 dark:border-white/10 flex items-center gap-4 text-xs font-mono font-bold text-brand-dark/80 dark:text-white/80">
-                      <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-brand-dark/50 dark:text-white/50" />
-                        <span>{path.modulesCount} Modules</span>
-                      </div>
-                      <span>•</span>
-                      <div className="flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-brand-dark/50 dark:text-white/50" />
-                        <span>{path.roomsCount} Rooms</span>
-                      </div>
-                      <span>•</span>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-brand-dark/50 dark:text-white/50" />
-                        <span>~{path.estimatedHours}h</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar & Telemetry */}
-                    <div className="mt-6 p-4 rounded-btn bg-brand-gray/60 dark:bg-brand-dark/40 border border-brand-dark/20 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-mono font-extrabold">
-                        <span className="uppercase text-brand-dark/70 dark:text-white/70">
-                          {isMastered
-                            ? 'Status: Mastered 🎖️'
-                            : isInProgress
-                              ? `Status: In Progress (${path.completedRoomsCount}/${path.roomsCount} Rooms Cleared)`
-                              : 'Status: Not Started'}
-                        </span>
-                        <span className="text-brand-dark dark:text-brand-lime font-bold">
-                          {path.progressPercentage}%
-                        </span>
-                      </div>
-
-                      {/* Visual Bar */}
-                      <div className="h-3 w-full bg-white dark:bg-black/40 border border-brand-dark rounded-full overflow-hidden p-0.5">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 border border-brand-dark/30 ${
-                            isMastered ? 'bg-emerald-500' : 'bg-brand-lime'
-                          }`}
-                          style={{
-                            width: `${Math.max(path.progressPercentage > 0 ? 5 : 0, path.progressPercentage)}%`,
-                          }}
-                        />
-                      </div>
-
-                      {/* Next Up Recommendation */}
-                      {path.nextUpRoom && !isMastered && (
-                        <div className="pt-1 flex items-center gap-1.5 text-xs font-mono text-brand-dark/80 dark:text-white/80">
-                          <span className="font-extrabold text-amber-600 dark:text-amber-400">
-                            Next Up:
-                          </span>
-                          <span className="truncate">{path.nextUpRoom.title}</span>
-                        </div>
-                      )}
-
-                      {isMastered && (
-                        <div className="pt-1 flex items-center gap-1.5 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-extrabold">
-                          <Award className="w-3.5 h-3.5" />
-                          <span>Capstone Certification Issued</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="mt-6 pt-2">
-                    <Link href={`/paths/${path.slug}`}>
-                      {isMastered ? (
-                        <Button className="w-full bg-emerald-500 text-white hover:bg-emerald-600 border-2 border-brand-dark font-extrabold rounded-btn shadow-neo-sm hover:shadow-none hover:translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Review Completed Track</span>
-                        </Button>
-                      ) : isInProgress ? (
-                        <Button className="w-full bg-brand-lime text-brand-dark hover:bg-brand-lime-hover border-2 border-brand-dark font-extrabold rounded-btn shadow-neo-sm hover:shadow-none hover:translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                          <span>&gt; Resume Learning Track</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button className="w-full bg-white dark:bg-card-dark text-brand-dark dark:text-white hover:bg-brand-lime hover:text-brand-dark border-2 border-brand-dark font-extrabold rounded-btn shadow-neo-sm hover:shadow-none hover:translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                          <span>Enroll &amp; Start Path</span>
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </Link>
-                  </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {path.modulesCount} học phần · {path.roomsCount} phòng · {path.estimatedHours}{' '}
+                    giờ
+                  </p>
                 </div>
-              );
-            })}
+                {accessToken && (
+                  <div className="mt-auto space-y-2 text-sm">
+                    <p>
+                      {path.completedRoomsCount}/{path.roomsCount} phòng hoàn thành ·{' '}
+                      {path.progressPercentage}%
+                    </p>
+                    <progress
+                      className="h-2 w-full accent-primary"
+                      value={path.progressPercentage}
+                      max={100}
+                      aria-label={`Tiến độ ${path.title}`}
+                    />
+                    <p className="text-muted-foreground">
+                      {path.status === 'mastered'
+                        ? 'Đã hoàn thành'
+                        : path.status === 'in_progress'
+                          ? 'Đang học'
+                          : path.isEnrolled
+                            ? 'Đã đăng ký · Chưa bắt đầu'
+                            : 'Chưa đăng ký'}
+                    </p>
+                    {path.nextUpRoom && (
+                      <p className="text-muted-foreground">Tiếp theo: {path.nextUpRoom.title}</p>
+                    )}
+                  </div>
+                )}
+                <Button asChild variant="outline" className="mt-auto">
+                  <Link href={`/paths/${encodeURIComponent(path.slug)}`}>Xem lộ trình</Link>
+                </Button>
+              </Card>
+            ))}
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }

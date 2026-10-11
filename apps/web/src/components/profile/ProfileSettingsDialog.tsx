@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -44,14 +44,17 @@ export function ProfileSettingsDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Sync state if dossier changes while opened
+  const wasOpen = useRef(false);
+
+  // Initialize only when opening; preserve drafts during background refreshes.
   React.useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current) {
       setBio(dossier.bio ?? '');
       setSpecialty(dossier.specialty ?? 'General Cybersecurity Operator');
       setIsPublic(dossier.isPublic ?? true);
       setErrorMsg(null);
     }
+    wasOpen.current = open;
   }, [open, dossier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +85,8 @@ export function ProfileSettingsDialog({
           specialty: res.data.specialty,
           isPublic: res.data.isPublic,
         };
-        setAuth(updatedAuthUser, accessToken);
+        const currentToken = useAuthStore.getState().accessToken;
+        if (currentToken) setAuth(updatedAuthUser, currentToken);
       }
 
       // Notify parent page
