@@ -1,34 +1,28 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Table, TableHead, TableCell } from '@/components/ui/table';
+import { Navbar } from '@/components/layout/Navbar';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { rolesApi, type RoleRequestItem } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import {
-  ShieldAlert,
-  ShieldCheck,
-  Check,
-  X,
-  Clock,
-  ExternalLink,
-  Loader2,
-  RefreshCw,
-  AlertTriangle,
-  ArrowLeft,
-  Inbox,
-} from 'lucide-react';
-
+import { Loader2, RefreshCw, X } from 'lucide-react';
+const statusLabels = {
+  all: 'Tất cả',
+  pending: 'Chờ duyệt',
+  approved: 'Đã duyệt',
+  rejected: 'Đã từ chối',
+};
 export default function AdminRolesPage() {
   const router = useRouter();
   const { user, accessToken, isAuthenticated } = useAuthStore();
@@ -139,386 +133,248 @@ export default function AdminRolesPage() {
     }
   };
 
-  // RBAC Access Denied Fallback (US-01.04 Scenario 2)
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated || !isAdmin)
     return (
-      <div className="min-h-screen bg-canvas bg-neo-grid flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white dark:bg-card border-2 border-brand-dark shadow-neo-lg text-center p-8 space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-badge bg-rose-100 dark:bg-rose-950/60 border-2 border-brand-dark flex items-center justify-center shadow-neo">
-            <ShieldAlert className="w-8 h-8 text-rose-600 dark:text-rose-400" />
-          </div>
-
-          <div className="space-y-2">
-            <Badge
-              variant="outline"
-              className="bg-rose-100 text-rose-800 border-rose-500 font-mono text-[10px] font-extrabold"
-            >
-              403 FORBIDDEN
-            </Badge>
-            <h1 className="text-2xl font-extrabold text-brand-dark dark:text-white font-mono">
-              Access Denied
-            </h1>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your security clearance level is insufficient. This console is restricted strictly to{' '}
-              <strong>Platform Administrators</strong>.
+      <>
+        <Navbar />
+        <main id="main-content" className="page-container">
+          <Card className="mx-auto max-w-lg space-y-4 p-8">
+            <p className="text-sm text-muted-foreground">Quản trị quyền truy cập</p>
+            <h1 className="text-2xl font-semibold">Bạn chưa có quyền truy cập</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Chỉ quản trị viên được xem và duyệt yêu cầu Creator. Nếu bạn có quyền, hãy đăng nhập
+              bằng tài khoản quản trị.
+            </p>
+            <Button onClick={() => router.push('/')} variant="outline">
+              Về trang chủ
+            </Button>
+          </Card>
+        </main>
+      </>
+    );
+  return (
+    <>
+      <Navbar />
+      <main id="main-content" className="page-container space-y-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div>
+            <p className="mb-2 text-sm text-muted-foreground">Quản trị</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Duyệt quyền Creator</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Xem kinh nghiệm, chuyên môn và ý tưởng của người đăng ký trước khi cấp quyền xây dựng
+              nội dung.
             </p>
           </div>
-
-          <Button
-            variant="lime"
-            onClick={() => router.push('/')}
-            className="w-full font-bold flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Command Center</span>
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  const pendingCount = requests.filter((r) => r.status === 'pending').length;
-
-  return (
-    <div className="min-h-screen bg-canvas bg-neo-grid py-8 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-mono font-bold text-muted-foreground hover:text-brand-dark dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>HQ / Command Center</span>
-          </Link>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchRequests}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 font-mono text-xs font-bold"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Sync Registry</span>
+          <Button variant="outline" onClick={fetchRequests} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Tải lại
           </Button>
         </div>
-
-        {/* Header HUD */}
-        <Card className="bg-white dark:bg-card border-2 border-brand-dark shadow-neo p-6 sm:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-[12px] bg-brand-lime border-2 border-brand-dark flex items-center justify-center shadow-neo-sm shrink-0">
-                <ShieldCheck className="w-7 h-7 text-brand-dark" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-dark dark:text-white font-mono">
-                    RBAC Clearance Console
-                  </h1>
-                  <Badge variant="lime" className="font-mono text-[10px] font-extrabold">
-                    ADMIN ONLY
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-                  Review and verify candidate dossiers applying for{' '}
-                  <strong>Lab Creator Clearance</strong>. Approved members gain access to challenge
-                  design tools and VM container orchestration.
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Stats Pill */}
-            <div className="flex items-center gap-3">
-              <div className="px-4 py-2 bg-brand-gray/60 border-2 border-brand-dark rounded-[10px] shadow-neo-sm text-center">
-                <span className="text-[10px] font-mono text-muted-foreground block uppercase font-bold">
-                  Pending Applications
-                </span>
-                <span className="text-xl font-extrabold font-mono text-brand-dark dark:text-white">
-                  {pendingCount}
-                </span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Global Notifications */}
         {notification && (
           <div
-            className={`p-4 rounded-[10px] border-2 border-brand-dark shadow-neo-sm flex items-center justify-between gap-3 text-xs font-bold ${
-              notification.type === 'success'
-                ? 'bg-brand-lime/30 text-brand-dark'
-                : 'bg-rose-100 text-rose-800'
-            }`}
+            role={notification.type === 'error' ? 'alert' : 'status'}
+            className="flex items-center justify-between gap-3 rounded-btn border bg-card p-3 text-sm"
           >
-            <div className="flex items-center gap-2">
-              {notification.type === 'success' ? (
-                <Check className="w-4 h-4 text-emerald-700" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-rose-700" />
-              )}
-              <span>{notification.message}</span>
-            </div>
-            <button
+            <p className={notification.type === 'error' ? 'text-destructive' : ''}>
+              {notification.message}
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setNotification(null)}
-              className="text-muted-foreground hover:text-brand-dark"
+              aria-label="Đóng thông báo"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         )}
-
-        {/* Filter Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b-2 border-brand-dark pb-3 overflow-x-auto">
+        <div className="flex flex-wrap gap-1 border-b" aria-label="Lọc theo trạng thái">
           {(['pending', 'all', 'approved', 'rejected'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilterStatus(tab)}
-              className={`h-9 px-4 rounded-[8px] font-mono text-xs font-extrabold uppercase transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                filterStatus === tab
-                  ? 'bg-brand-dark text-brand-lime border-2 border-brand-dark shadow-neo-sm -translate-y-0.5'
-                  : 'bg-white hover:bg-brand-gray text-brand-dark border-2 border-brand-dark/20 hover:border-brand-dark'
-              }`}
+              aria-pressed={filterStatus === tab}
+              className={`min-h-11 border-b-2 px-3 py-3 text-sm ${filterStatus === tab ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
             >
-              <span>{tab}</span>
-              {tab === 'pending' && pendingCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-brand-lime text-brand-dark text-[10px] flex items-center justify-center font-extrabold">
-                  {pendingCount}
-                </span>
-              )}
+              {statusLabels[tab]}
             </button>
           ))}
         </div>
-
-        {/* Applications List */}
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-dark dark:text-white" />
-            <p className="text-xs font-mono text-muted-foreground">
-              Querying security clearance registry...
-            </p>
+          <div
+            role="status"
+            className="flex items-center gap-3 py-12 text-sm text-muted-foreground"
+          >
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Đang tải yêu cầu…
           </div>
         ) : errorMessage ? (
-          <Card className="p-8 text-center border-2 border-brand-dark bg-rose-50 text-rose-800 space-y-3">
-            <AlertTriangle className="w-8 h-8 mx-auto text-rose-600" />
-            <p className="text-xs font-bold font-mono">{errorMessage}</p>
-            <Button variant="outline" size="sm" onClick={fetchRequests} className="font-bold">
-              Try Again
+          <Card className="space-y-4 p-6">
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage}
+            </p>
+            <Button variant="outline" onClick={fetchRequests}>
+              Thử lại
             </Button>
           </Card>
         ) : requests.length === 0 ? (
-          <Card className="p-12 text-center border-2 border-dashed border-brand-dark/30 bg-white/50 space-y-3">
-            <Inbox className="w-10 h-10 mx-auto text-muted-foreground/60" />
-            <h3 className="text-base font-bold text-brand-dark dark:text-white font-mono">
-              No Applications in Registry
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              There are currently no {filterStatus !== 'all' ? filterStatus : ''} Creator clearance
-              requests to display.
+          <Card className="p-8">
+            <h2 className="font-medium">
+              Không có yêu cầu{' '}
+              {filterStatus === 'all' ? '' : statusLabels[filterStatus].toLowerCase()}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Các yêu cầu phù hợp với bộ lọc sẽ xuất hiện tại đây.
             </p>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {requests.map((item) => {
-              const isActionRunning = actionLoadingId === item.id;
-
-              return (
-                <Card
-                  key={item.id}
-                  className="bg-white dark:bg-card border-2 border-brand-dark shadow-neo p-5 sm:p-6 space-y-4 transition-all"
-                >
-                  {/* Top Bar: Applicant Info & Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-dark/15 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-[8px] bg-brand-dark text-brand-lime border border-brand-dark flex items-center justify-center font-mono font-extrabold text-sm shrink-0">
-                        {item.user?.username ? item.user.username[0].toUpperCase() : 'U'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/user/${encodeURIComponent(item.user?.username || '')}`}
-                            className="font-extrabold text-sm text-brand-dark dark:text-white hover:underline flex items-center gap-1 font-mono"
+          <>
+            <p className="text-sm text-muted-foreground">
+              Đang hiển thị {requests.length} yêu cầu · tối đa 50 kết quả
+            </p>
+            <Table>
+              <caption className="sr-only">Yêu cầu cấp quyền Creator</caption>
+              <thead className="hidden md:table-header-group">
+                <tr>
+                  <TableHead>Người đăng ký</TableHead>
+                  <TableHead>Hồ sơ đăng ký</TableHead>
+                  <TableHead>Trạng thái & thao tác</TableHead>
+                </tr>
+              </thead>
+              <tbody className="block md:table-row-group">
+                {requests.map((item) => {
+                  const isActionRunning = actionLoadingId === item.id;
+                  return (
+                    <tr key={item.id} className="block border-b last:border-0 md:table-row">
+                      <TableCell className="block border-0 pb-2 md:table-cell md:w-1/4 md:pb-4">
+                        <Link
+                          className="text-link break-all font-medium"
+                          href={`/user/${encodeURIComponent(item.user?.username || '')}`}
+                        >
+                          @{item.user?.username || 'Không rõ người dùng'}
+                        </Link>
+                        <p className="mt-2 break-all text-xs text-muted-foreground">
+                          {item.user?.email}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {item.user?.rankTier || 'Novice'} ·{' '}
+                          {item.user?.expPoints?.toLocaleString() ?? 0} EXP
+                        </p>
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Gửi ngày {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                        </p>
+                      </TableCell>
+                      <TableCell className="block border-0 md:table-cell">
+                        <p className="font-medium">{item.specialty}</p>
+                        <details className="mt-3">
+                          <summary className="cursor-pointer py-2 text-sm underline underline-offset-4">
+                            Kinh nghiệm & ý tưởng
+                          </summary>
+                          <p className="whitespace-pre-wrap break-words py-3 text-sm leading-relaxed text-muted-foreground">
+                            {item.motivation}
+                          </p>
+                        </details>
+                        {item.portfolioUrl ? (
+                          <a
+                            href={item.portfolioUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-link inline-flex min-h-11 items-center text-sm"
                           >
-                            <span>@{item.user?.username || 'Unknown Operator'}</span>
-                            <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                          </Link>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-lime text-brand-dark font-extrabold border border-brand-dark/20">
-                            {item.user?.rankTier || 'Novice'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-mono text-muted-foreground">
-                          {item.user?.email} • {item.user?.expPoints?.toLocaleString() ?? 0} EXP
+                            Xem portfolio (mở tab mới)
+                          </a>
+                        ) : (
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Chưa cung cấp portfolio
+                          </p>
+                        )}
+                        {item.rejectionReason && (
+                          <p className="mt-3 text-sm text-destructive">
+                            Lý do từ chối: {item.rejectionReason}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell className="block border-0 pt-2 md:table-cell md:w-56 md:pt-4">
+                        <p className="text-sm">
+                          {statusLabels[item.status as keyof typeof statusLabels] || item.status}
                         </p>
-                      </div>
-                    </div>
-
-                    {/* Status Badge & Timestamp */}
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                      </span>
-
-                      {item.status === 'pending' && (
-                        <Badge
-                          variant="outline"
-                          className="bg-amber-100 text-amber-900 border-amber-500 font-mono text-[10px] font-extrabold"
-                        >
-                          PENDING
-                        </Badge>
-                      )}
-                      {item.status === 'approved' && (
-                        <Badge variant="lime" className="font-mono text-[10px] font-extrabold">
-                          APPROVED
-                        </Badge>
-                      )}
-                      {item.status === 'rejected' && (
-                        <Badge
-                          variant="outline"
-                          className="bg-rose-100 text-rose-900 border-rose-500 font-mono text-[10px] font-extrabold"
-                        >
-                          REJECTED
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Specialty & Motivation */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold block">
-                        Domain Specialty
-                      </span>
-                      <span className="inline-block px-2.5 py-1 bg-brand-gray border border-brand-dark/20 rounded-[6px] font-mono text-xs font-extrabold text-brand-dark">
-                        {item.specialty}
-                      </span>
-                    </div>
-
-                    <div className="md:col-span-3 space-y-1">
-                      <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold block">
-                        Experience & Challenge Concept
-                      </span>
-                      <p className="text-xs text-brand-dark/90 dark:text-white/90 leading-relaxed bg-brand-gray/30 p-3 rounded-[8px] border border-brand-dark/10">
-                        &ldquo;{item.motivation}&rdquo;
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Portfolio Link & Review Information */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                    <div>
-                      {item.portfolioUrl ? (
-                        <a
-                          href={item.portfolioUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-primary hover:underline"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>
-                            Inspect Candidate Portfolio (
-                            {item.portfolioUrl.replace(/https?:\/\//, '').slice(0, 30)}...)
-                          </span>
-                        </a>
-                      ) : (
-                        <span className="text-[11px] font-mono text-muted-foreground">
-                          No external portfolio provided
-                        </span>
-                      )}
-
-                      {item.rejectionReason && (
-                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium pt-1">
-                          Reason: {item.rejectionReason}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Action Controls for Pending Items */}
-                    {item.status === 'pending' && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isActionRunning}
-                          onClick={() => {
-                            setRejectingItem(item);
-                            setRejectionReason('');
-                          }}
-                          className="font-mono text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-300"
-                        >
-                          <X className="w-3.5 h-3.5 mr-1" />
-                          <span>Reject</span>
-                        </Button>
-
-                        <Button
-                          variant="lime"
-                          size="sm"
-                          disabled={isActionRunning}
-                          onClick={() => handleApprove(item)}
-                          className="font-mono text-xs font-extrabold flex items-center gap-1"
-                        >
-                          {isActionRunning ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Check className="w-3.5 h-3.5" />
-                          )}
-                          <span>Approve Clearance</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                        {item.status === 'pending' && (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              disabled={isActionRunning}
+                              onClick={() => handleApprove(item)}
+                            >
+                              {isActionRunning && <Loader2 className="h-4 w-4 animate-spin" />}Duyệt
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isActionRunning}
+                              onClick={() => {
+                                setRejectingItem(item);
+                                setRejectionReason('');
+                              }}
+                            >
+                              Từ chối
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </>
         )}
-      </div>
-
-      {/* Reject Reason Dialog */}
+      </main>
       <Dialog open={!!rejectingItem} onOpenChange={(open) => !open && setRejectingItem(null)}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-card border-2 border-brand-dark shadow-neo-lg rounded-[14px] p-6">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="text-lg font-extrabold font-mono text-brand-dark dark:text-white flex items-center gap-2">
-              <X className="w-5 h-5 text-rose-600" />
-              <span>Reject Application</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Provide feedback for @{rejectingItem?.user?.username}. This note will be visible on
-              their application status.
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Từ chối yêu cầu</DialogTitle>
+            <DialogDescription>
+              Gửi lý do để @{rejectingItem?.user?.username} có thể bổ sung và cải thiện hồ sơ.
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleRejectConfirm} className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-brand-dark dark:text-white font-mono">
-                Rejection Reason / Guidance *
+          <form onSubmit={handleRejectConfirm} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="rejection-reason" className="field-label">
+                Lý do từ chối
               </label>
               <textarea
-                rows={3}
+                id="rejection-reason"
+                rows={4}
                 required
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g. Please solve at least 5 medium rooms, or provide public writeups before applying."
-                className="w-full p-2.5 bg-white dark:bg-brand-dark/40 border-2 border-brand-dark rounded-[10px] shadow-neo-sm font-sans text-xs text-brand-dark dark:text-white outline-none focus:ring-2 focus:ring-rose-500 resize-none"
+                aria-describedby="rejection-help"
+                className="w-full"
               />
+              <p id="rejection-help" className="text-xs text-muted-foreground">
+                Nhập ít nhất 5 ký tự.
+              </p>
             </div>
-
-            <div className="flex items-center justify-end gap-2.5">
-              <Button type="button" variant="outline" onClick={() => setRejectingItem(null)}>
-                Cancel
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={actionLoadingId !== null}
+                onClick={() => setRejectingItem(null)}
+              >
+                Hủy
               </Button>
               <Button
                 type="submit"
                 variant="destructive"
-                disabled={rejectionReason.trim().length < 5}
-                className="font-bold"
+                disabled={rejectionReason.trim().length < 5 || actionLoadingId !== null}
               >
-                Confirm Rejection
+                {actionLoadingId && <Loader2 className="h-4 w-4 animate-spin" />}Xác nhận từ chối
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

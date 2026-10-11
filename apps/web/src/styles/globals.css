@@ -4,194 +4,111 @@
 
 @layer base {
   :root {
-    /* -----------------------------------------------------------------
-       NEO-BRUTALISM / SOFT BRUTALISM (POSITIVUS THEME)
-       ----------------------------------------------------------------- */
-    /* 1. Core Brand Colors */
-    --brand-lime: #B9FF66;        /* Primary Electric Lime Highlighter */
-    --brand-lime-hover: #A6F24D;
-    --brand-dark: #191A23;        /* Deep Charcoal Ink Black */
-    --brand-gray: #F3F3F3;        /* Soft Warm Gray Surface */
-    --brand-white: #FFFFFF;
-
-    /* 2. Semantic Surfaces */
-    --canvas: #FFFFFF;
-    --surface-card: #F3F3F3;
-    --surface-card-alt: #B9FF66;
-    --surface-card-dark: #191A23;
-
-    /* 3. Neo-Brutalist 1px-2px Crisp Borders */
-    --border-neo: #191A23;
-    --border-subtle: rgba(25, 26, 35, 0.12);
-
-    /* 4. Hard Flat Drop Shadows (Signature Neo-Brutalist Depth) */
-    --shadow-neo: 0 5px 0 #191A23;
-    --shadow-neo-lg: 0 8px 0 #191A23;
-    --shadow-neo-sm: 0 3px 0 #191A23;
-
-    /* 5. Pronounced Generous Radii */
-    --radius-card: 40px;          /* Main service cards */
-    --radius-btn: 14px;           /* Primary action buttons */
-    --radius-badge: 7px;          /* Highlighter heading chips */
-    --radius-pill: 9999px;        /* Circular arrow buttons */
-
-    /* 6. Typography */
-    --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-
-    /* Semantic Mappings for components & Tailwind utilities */
-    --background: var(--canvas);
-    --foreground: var(--brand-dark);
-
-    --card: var(--surface-card);
-    --card-foreground: var(--brand-dark);
-    --card-hover: #EBEBEB;
-
-    --primary: #B9FF66;
-    --primary-foreground: #191A23;
-    --primary-hover: #A6F24D;
-
-    --secondary: #191A23;
-    --secondary-foreground: #FFFFFF;
-
-    --muted: #F3F3F3;
-    --muted-foreground: #5B5F6C;
-
-    --accent: #B9FF66;
-    --accent-foreground: #191A23;
-
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
-
-    --warning: #F59E0B;
-    --warning-foreground: var(--brand-dark);
-
-    --border: var(--border-neo);
-    --border-active: var(--brand-dark);
-    --ring: var(--brand-lime);
+    color-scheme: light;
+    --background: #f9f9fb;
+    --canvas: #f9f9fb;
+    --foreground: #182031;
+    --card: #ffffff;
+    --card-foreground: #182031;
+    --card-hover: #f0f2f5;
+    --muted: #f0f2f5;
+    --muted-foreground: #596579;
+    --border: #dfe3e9;
+    --control-border: #727c92;
+    --primary: #a3ea2a;
+    --primary-hover: #92d323;
+    --primary-foreground: #151c2b;
+    --secondary: #f0f2f5;
+    --secondary-foreground: #182031;
+    --accent: #f0f2f5;
+    --accent-foreground: #182031;
+    --destructive: #b42318;
+    --destructive-foreground: #ffffff;
+    --warning: #8a5700;
+    --warning-foreground: #ffffff;
+    --ring: #486b16;
+    --brand-lime: #a3ea2a;
+    --brand-lime-hover: #92d323;
+    --brand-dark: #151c2b;
+    --brand-gray: var(--muted);
+    --brand-white: #ffffff;
+    --surface-card-dark: #182031;
+    --radius-card: 8px;
+    --radius-btn: 4px;
+    --radius-badge: 4px;
   }
-
   .dark {
-    /* Dark Mode Adaptation */
-    --canvas: #11141B;
-    --surface-card: #1B1F2B;
-    --surface-card-alt: #B9FF66;
-    --surface-card-dark: #0B0D13;
-    --brand-dark: #0B0D13;
-    --brand-gray: #1B1F2B;
-
-    --border-neo: rgba(255, 255, 255, 0.20);
-    --border-subtle: rgba(255, 255, 255, 0.10);
-    --shadow-neo: 0 5px 0 rgba(0, 0, 0, 0.65);
-    --shadow-neo-lg: 0 8px 0 rgba(0, 0, 0, 0.75);
-    --shadow-neo-sm: 0 3px 0 rgba(0, 0, 0, 0.55);
-
-    --background: var(--canvas);
-    --foreground: #F8FAFC;
-
-    --card: var(--surface-card);
-    --card-foreground: #F8FAFC;
-    --card-hover: #232838;
-
-    --primary: var(--brand-lime);
-    --primary-foreground: #0B0D13;
-    --primary-hover: var(--brand-lime-hover);
-
-    --secondary: #1B1F2B;
-    --secondary-foreground: #F8FAFC;
-
-    --muted: #1B1F2B;
-    --muted-foreground: #94A3B8;
-
-    --accent: var(--brand-lime);
-    --accent-foreground: #0B0D13;
-
-    --border: var(--border-neo);
-    --border-active: rgba(255, 255, 255, 0.40);
-    --ring: var(--brand-lime);
+    color-scheme: dark;
+    --background: #151c2b;
+    --canvas: #151c2b;
+    --foreground: #f9f9fb;
+    --card: #182031;
+    --card-foreground: #f9f9fb;
+    --card-hover: #212c42;
+    --muted: #212c42;
+    --muted-foreground: #b8c1d1;
+    --border: #344158;
+    --control-border: #727c92;
+    --secondary: #212c42;
+    --secondary-foreground: #f9f9fb;
+    --accent: #212c42;
+    --accent-foreground: #f9f9fb;
+    --destructive: #ffb4ab;
+    --destructive-foreground: #601410;
+    --warning: #efc778;
+    --ring: #a3ea2a;
   }
-
   * {
-    border-color: var(--border);
+    @apply border-border;
   }
-
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  ::selection {
+    background: #a3ea2a;
+    color: #151c2b;
+  }
+  html {
+    scroll-padding-top: 6rem;
+  }
+  input,
+  textarea,
+  select {
+    @apply text-base sm:text-sm;
+  }
+  textarea,
+  select {
+    @apply rounded-btn border border-control bg-card text-foreground p-3;
+  }
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
-
-/* Neo-Brutalist Utility Classes */
-@layer utilities {
-  .shadow-neo {
-    box-shadow: var(--shadow-neo);
+@layer components {
+  .page-container {
+    @apply mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 md:py-12;
   }
-
-  .shadow-neo-lg {
-    box-shadow: var(--shadow-neo-lg);
+  .field-label {
+    @apply block text-sm font-medium text-foreground;
   }
-
-  .shadow-neo-sm {
-    box-shadow: var(--shadow-neo-sm);
+  .text-link {
+    @apply underline underline-offset-4 decoration-border hover:decoration-current;
   }
-
-  .border-neo {
-    border-color: var(--border-neo);
-    border-width: 1px;
-  }
-
-  .rounded-card {
-    border-radius: var(--radius-card);
-  }
-
-  .rounded-btn {
-    border-radius: var(--radius-btn);
-  }
-
-  .rounded-badge {
-    border-radius: var(--radius-badge);
-  }
-
-  /* Tactile Interactive States */
-  .neo-pressable {
-    transition: transform 120ms ease, box-shadow 120ms ease;
-  }
-
-  .neo-pressable:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-neo-lg);
-  }
-
-  .neo-pressable:active {
-    transform: translateY(2px);
-    box-shadow: var(--shadow-neo-sm);
-  }
-}
-
-/* Custom Neo-Brutalist Clean Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--brand-dark);
-  border: 1px solid var(--border-neo);
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: var(--surface-card);
-  border-color: var(--border-neo);
-}
-
-/* Subtle Neo Grid Pattern */
-.bg-neo-grid {
-  background-image: radial-gradient(var(--border-subtle) 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
 }

@@ -1,27 +1,18 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { authApi, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import {
-  ShieldAlert,
-  KeyRound,
-  Mail,
-  CheckCircle2,
-  AlertTriangle,
-  Loader2,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  X,
-  RefreshCw,
-} from 'lucide-react';
-
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 export interface AccountLinkingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -168,319 +159,126 @@ export function AccountLinkingModal({
   const formattedProvider = provider.charAt(0).toUpperCase() + provider.slice(1).toLowerCase();
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/75 backdrop-blur-sm animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="linking-dialog-title"
-    >
-      <Card className="w-full max-w-lg bg-white dark:bg-card border-2 border-brand-dark shadow-neo-lg relative overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Header Action Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-brand-dark bg-brand-gray/40 dark:bg-brand-dark/20">
-          <div className="flex items-center gap-2">
-            <Badge variant="lime" className="font-extrabold text-[10px] tracking-wider">
-              SUB-FLOW 1.2
-            </Badge>
-            <span className="text-xs font-mono font-bold uppercase text-brand-dark dark:text-white">
-              ACCOUNT LINKING
-            </span>
-          </div>
-
-          {/* Sub-flow 1.2.1: Safe Cancel Action */}
-          <button
-            onClick={onClose}
-            className="p-1 rounded-btn hover:bg-brand-gray dark:hover:bg-white/10 text-muted-foreground hover:text-brand-dark dark:hover:text-white transition-colors"
-            title="Cancel linking"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Success State */}
-        {isSuccess ? (
-          <div className="p-8 text-center space-y-6">
-            <div className="mx-auto h-16 w-16 rounded-badge bg-primary border-2 border-brand-dark flex items-center justify-center shadow-neo">
-              <CheckCircle2 className="w-8 h-8 text-brand-dark" />
-            </div>
-
-            <div className="space-y-2">
-              <Badge variant="lime" className="font-extrabold text-[11px]">
-                CLEARANCE CONSOLIDATED
-              </Badge>
-              <h3 className="text-2xl font-extrabold text-brand-dark dark:text-white">
-                Account Linked Successfully!
-              </h3>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Your {formattedProvider} identity is now securely linked to{' '}
-                <strong className="text-brand-dark dark:text-white font-mono">{email}</strong>.
-                Redirecting to Command Center...
-              </p>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-xs font-bold text-brand-dark dark:text-white">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>Initializing workspace session...</span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6 md:p-8 space-y-6">
-            {/* Context Card Header */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
-                <ShieldAlert className="w-5 h-5" />
-                <CardTitle
-                  id="linking-dialog-title"
-                  className="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight"
-                >
-                  Existing Account Detected
-                </CardTitle>
-              </div>
-              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                An account registered with{' '}
-                <strong className="text-brand-dark dark:text-white font-mono">{email}</strong>{' '}
-                already exists in CyberForce. To link your incoming{' '}
-                <span className="font-bold text-brand-dark dark:text-white">
-                  {formattedProvider}
-                </span>{' '}
-                identity, verify ownership using your existing credentials.
-              </CardDescription>
-            </div>
-
-            {/* Verification Method Switcher */}
-            <div className="grid grid-cols-2 p-1 rounded-btn bg-brand-gray/60 dark:bg-brand-dark/40 border border-brand-dark text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod('password');
-                  setErrorMessage(null);
-                }}
-                className={`py-2 px-3 rounded-[10px] transition-all flex items-center justify-center gap-2 ${
-                  method === 'password'
-                    ? 'bg-primary text-brand-dark shadow-neo-sm border border-brand-dark'
-                    : 'text-muted-foreground hover:text-brand-dark dark:hover:text-white'
-                }`}
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Password</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod('otp');
-                  setErrorMessage(null);
-                }}
-                className={`py-2 px-3 rounded-[10px] transition-all flex items-center justify-center gap-2 ${
-                  method === 'otp'
-                    ? 'bg-primary text-brand-dark shadow-neo-sm border border-brand-dark'
-                    : 'text-muted-foreground hover:text-brand-dark dark:hover:text-white'
-                }`}
-              >
-                <Mail className="w-3.5 h-3.5" />
-                <span>Email OTP</span>
-              </button>
-            </div>
-
-            {/* Error Banner */}
-            {errorMessage && (
-              <div className="p-3.5 rounded-btn bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-2.5">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
-                <span className="leading-snug">{errorMessage}</span>
-              </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isSuccess ? 'Đã liên kết tài khoản' : 'Xác minh tài khoản'}</DialogTitle>
+          <DialogDescription>
+            {isSuccess ? (
+              'Đang chuyển đến trang chủ…'
+            ) : (
+              <>
+                Email <span className="break-all">{email}</span> đã được đăng ký. Xác minh tài khoản
+                để liên kết với {formattedProvider}.
+              </>
             )}
-
-            {/* Method 1: Password Form (Sub-flow 1.2.2) */}
-            {method === 'password' && (
-              <form onSubmit={handleVerifyPassword} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-brand-dark dark:text-white uppercase tracking-wider">
-                    Current Password
+          </DialogDescription>
+        </DialogHeader>
+        {isSuccess ? (
+          <p role="status" className="text-sm">
+            Liên kết thành công.
+          </p>
+        ) : (
+          <>
+            <div className="flex gap-2 border-b pb-3" aria-label="Phương thức xác minh">
+              {(['password', 'otp'] as const).map((option) => (
+                <Button
+                  key={option}
+                  variant={method === option ? 'secondary' : 'ghost'}
+                  aria-pressed={method === option}
+                  onClick={() => {
+                    setMethod(option);
+                    setErrorMessage(null);
+                  }}
+                >
+                  {option === 'password' ? 'Mật khẩu' : 'Mã qua email'}
+                </Button>
+              ))}
+            </div>
+            {errorMessage && (
+              <p role="alert" className="text-sm text-destructive">
+                {errorMessage}
+              </p>
+            )}
+            {method === 'password' ? (
+              <form onSubmit={handleVerifyPassword} className="space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="link-password" className="field-label">
+                    Mật khẩu hiện tại
                   </label>
                   <div className="relative">
                     <Input
+                      id="link-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••••••"
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
-                      autoFocus
-                      className="pr-10"
+                      className="pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-brand-dark dark:hover:text-white"
-                      tabIndex={-1}
+                      aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                      className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Enter the password associated with {email}.
+                </div>
+                <Button type="submit" disabled={isLoading || !password} className="w-full">
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}Xác minh & liên kết
+                </Button>
+              </form>
+            ) : !otpSent ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Gửi mã xác minh 6 chữ số đến email đã đăng ký.
+                </p>
+                <Button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full">
+                  {isSendingOtp && <Loader2 className="h-4 w-4 animate-spin" />}Gửi mã xác minh
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="link-otp" className="field-label">
+                    Mã xác minh
+                  </label>
+                  <Input
+                    id="link-otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    disabled={isLoading}
+                    mono
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Kiểm tra hộp thư đến hoặc thư rác của bạn.
                   </p>
                 </div>
-
-                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-                  <Button
-                    type="submit"
-                    variant="lime"
-                    size="default"
-                    disabled={isLoading || !password}
-                    className="w-full sm:flex-1 font-bold flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Verifying...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Link Account</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </Button>
-
-                  {/* Cancel Button (Sub-flow 1.2.1) */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="default"
-                    onClick={onClose}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto font-bold"
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={handleSendOtp}
+                  disabled={isSendingOtp || resendCooldown > 0}
+                >
+                  {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : 'Gửi lại mã'}
+                </Button>
+                <Button type="submit" disabled={isLoading || otp.length !== 6} className="w-full">
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}Xác minh & liên kết
+                </Button>
               </form>
             )}
-
-            {/* Method 2: Email OTP Form (Sub-flow 1.2.3, 1.2.4, 1.2.5) */}
-            {method === 'otp' && (
-              <div className="space-y-4">
-                {!otpSent ? (
-                  <div className="p-5 rounded-btn border border-brand-dark bg-brand-gray/30 dark:bg-brand-dark/20 text-center space-y-3">
-                    <div className="h-10 w-10 mx-auto rounded-badge bg-primary/20 border border-brand-dark flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-brand-dark dark:text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-brand-dark dark:text-white">
-                        Send Verification Code to Email
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        We will send a 6-digit confirmation code to{' '}
-                        <span className="font-mono font-medium text-brand-dark dark:text-white">
-                          {email}
-                        </span>
-                        . Valid for 5 minutes.
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="lime"
-                      size="default"
-                      onClick={handleSendOtp}
-                      disabled={isSendingOtp}
-                      className="w-full font-bold flex items-center justify-center gap-2"
-                    >
-                      {isSendingOtp ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Generating Code...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Send 6-Digit OTP</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-brand-dark dark:text-white uppercase tracking-wider">
-                          6-Digit Verification Code
-                        </label>
-                        {resendCooldown > 0 ? (
-                          <span className="text-[11px] font-mono font-bold text-muted-foreground">
-                            Resend in {resendCooldown}s
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleSendOtp}
-                            disabled={isSendingOtp}
-                            className="text-[11px] font-bold text-brand-dark dark:text-primary hover:underline flex items-center gap-1"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>Resend Code</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
-                        placeholder="123456"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        disabled={isLoading}
-                        autoFocus
-                        mono
-                        className="text-center text-lg font-mono font-bold tracking-[0.35em]"
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Code sent to {email}. Check your spam or inbox folder.
-                      </p>
-                    </div>
-
-                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-                      <Button
-                        type="submit"
-                        variant="lime"
-                        size="default"
-                        disabled={isLoading || otp.length !== 6}
-                        className="w-full sm:flex-1 font-bold flex items-center justify-center gap-2"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Verifying Code...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Verify & Link</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </Button>
-
-                      {/* Cancel Button (Sub-flow 1.2.1) */}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="default"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="w-full sm:w-auto font-bold"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-          </div>
+            <Button variant="outline" onClick={onClose} disabled={isLoading}>
+              Hủy
+            </Button>
+          </>
         )}
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
