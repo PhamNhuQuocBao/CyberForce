@@ -7,12 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { rolesApi, type RoleRequestItem } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import { Sparkles, Clock, AlertCircle, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface BecomeCreatorDialogProps {
   isOpen: boolean;
@@ -94,201 +95,131 @@ export function BecomeCreatorDialog({ isOpen, onClose }: BecomeCreatorDialogProp
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-white dark:bg-card border-2 border-brand-dark shadow-neo-lg rounded-[14px] p-6 overflow-hidden">
-        <DialogHeader className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-[8px] bg-brand-lime border-2 border-brand-dark flex items-center justify-center shadow-neo-sm">
-              <Sparkles className="w-4 h-4 text-brand-dark" />
-            </div>
-            <DialogTitle className="text-xl font-extrabold text-brand-dark dark:text-white font-mono">
-              Apply for Creator Clearance
-            </DialogTitle>
-          </div>
-          <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-            Elevate from an Operator to a <strong>Lab Creator</strong>. Build custom attack/defense
-            rooms, author challenge scenarios, and train the next generation of security
-            researchers.
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Đăng ký trở thành Creator</DialogTitle>
+          <DialogDescription>
+            Chia sẻ chuyên môn và ý tưởng nội dung để quản trị viên xem xét.
           </DialogDescription>
         </DialogHeader>
-
         {isLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-dark dark:text-white" />
-            <p className="text-xs font-mono text-muted-foreground">
-              Checking application registry...
-            </p>
-          </div>
+          <p role="status" className="flex items-center gap-2 py-8 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Đang tải yêu cầu…
+          </p>
         ) : isPending ? (
-          <div className="space-y-4 py-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-600/40 rounded-[10px] space-y-3">
-              <div className="flex items-center justify-between">
-                <Badge
-                  variant="outline"
-                  className="bg-amber-100 text-amber-900 border-amber-500 font-mono text-[10px] font-extrabold flex items-center gap-1.5"
-                >
-                  <Clock className="w-3.5 h-3.5 animate-pulse" />
-                  <span>STATUS: PENDING REVIEW</span>
-                </Badge>
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  {new Date(existingRequest.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-brand-dark dark:text-white">
-                  Specialty:{' '}
-                  <span className="font-mono text-primary font-extrabold">
-                    {existingRequest.specialty}
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground line-clamp-3">
-                  &ldquo;{existingRequest.motivation}&rdquo;
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your dossier is currently undergoing clearance verification by the platform
-              administration team. Once approved, your role will be upgraded to{' '}
-              <strong>Creator</strong> and the <em>Lab Creator Studio</em> will unlock
-              automatically.
+          <div className="space-y-4">
+            <p role="status" className="font-medium">
+              Yêu cầu đang chờ duyệt
             </p>
-
-            <Button variant="outline" onClick={onClose} className="w-full font-bold">
-              Close
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Ngày gửi</dt>
+                <dd>{new Date(existingRequest.createdAt).toLocaleDateString('vi-VN')}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Chuyên môn</dt>
+                <dd>{existingRequest.specialty}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Kinh nghiệm & ý tưởng</dt>
+                <dd className="mt-1 whitespace-pre-wrap break-words leading-relaxed">
+                  {existingRequest.motivation}
+                </dd>
+              </div>
+            </dl>
+            <Button variant="outline" onClick={onClose}>
+              Đóng
             </Button>
           </div>
         ) : isApproved && user?.role === 'creator' ? (
-          <div className="space-y-4 py-4 text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-brand-lime border-2 border-brand-dark flex items-center justify-center shadow-neo-sm">
-              <CheckCircle2 className="w-6 h-6 text-brand-dark" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-lg font-extrabold text-brand-dark dark:text-white">
-                Clearance Granted: Creator
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                You already hold verified Creator clearance. Access your challenge builder anytime
-                from the navigation header.
-              </p>
-            </div>
-            <Button variant="lime" onClick={onClose} className="w-full font-extrabold">
-              Acknowledge
+          <div className="space-y-4">
+            <p role="status">Bạn đã được cấp quyền Creator.</p>
+            <Button variant="outline" onClick={onClose}>
+              Đóng
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {errorMessage && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-500 rounded-[8px] flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
+              <p role="alert" className="text-sm text-destructive">
+                {errorMessage}
+              </p>
             )}
-
             {isRejected && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-400 rounded-[8px] space-y-1">
-                <div className="text-[11px] font-bold text-rose-700 dark:text-rose-300 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Previous Application Feedback:</span>
-                </div>
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  {existingRequest.rejectionReason || 'Application was not approved at this time.'}
+              <div className="rounded-btn border p-3 text-sm">
+                <p className="font-medium">Phản hồi lần đăng ký trước</p>
+                <p className="mt-1 text-muted-foreground">
+                  {existingRequest.rejectionReason || 'Yêu cầu chưa được chấp thuận.'}
                 </p>
               </div>
             )}
-
             {successMessage && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500 rounded-[8px] flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{successMessage}</span>
-              </div>
+              <p role="status" className="text-sm">
+                {successMessage}
+              </p>
             )}
-
-            {/* Specialty Selection */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-brand-dark dark:text-white font-mono">
-                Primary Cybersecurity Domain *
+            <div className="space-y-2">
+              <label htmlFor="creator-specialty" className="field-label">
+                Chuyên môn
               </label>
               <select
+                id="creator-specialty"
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
-                className="w-full h-10 px-3 bg-white dark:bg-brand-dark/40 border-2 border-brand-dark rounded-[10px] shadow-neo-sm font-mono text-xs text-brand-dark dark:text-white outline-none focus:ring-2 focus:ring-brand-lime cursor-pointer"
+                className="min-h-11 w-full"
               >
-                <option value="Web Exploitation & AppSec">
-                  Web Exploitation & AppSec (OWASP Top 10)
-                </option>
+                <option value="Web Exploitation">Web Exploitation</option>
+                <option value="Web Exploitation & AppSec">Web Exploitation & AppSec</option>
                 <option value="Binary Exploitation & Pwn">
                   Binary Exploitation & Reverse Engineering
                 </option>
-                <option value="Active Directory & Cloud">
-                  Active Directory, Kerberos & Cloud Pentest
-                </option>
+                <option value="Active Directory & Cloud">Active Directory & Cloud</option>
                 <option value="Digital Forensics & Incident Response">
-                  Digital Forensics & Threat Hunting (DFIR)
+                  Digital Forensics & Incident Response
                 </option>
-                <option value="Cryptography & Steganography">
-                  Cryptography & Protocol Security
-                </option>
-                <option value="DevSecOps & CI/CD Security">
-                  DevSecOps & Supply Chain Security
-                </option>
+                <option value="Cryptography & Steganography">Cryptography & Steganography</option>
+                <option value="DevSecOps & CI/CD Security">DevSecOps & CI/CD Security</option>
               </select>
             </div>
-
-            {/* Motivation & Experience */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-brand-dark dark:text-white font-mono">
-                Experience & Motivation *
+            <div className="space-y-2">
+              <label htmlFor="creator-motivation" className="field-label">
+                Kinh nghiệm & ý tưởng
               </label>
               <textarea
+                id="creator-motivation"
                 rows={4}
                 required
                 value={motivation}
                 onChange={(e) => setMotivation(e.target.value)}
-                placeholder="Describe your background in cybersecurity, CTF challenge authoring, or educational experience..."
-                className="w-full p-3 bg-white dark:bg-brand-dark/40 border-2 border-brand-dark rounded-[10px] shadow-neo-sm font-sans text-xs text-brand-dark dark:text-white outline-none focus:ring-2 focus:ring-brand-lime resize-none placeholder:text-muted-foreground/70"
+                className="w-full"
+                aria-describedby="motivation-help"
               />
-              <span className="text-[10px] text-muted-foreground font-mono">
-                Minimum 10 characters. Explain the labs you intend to build.
-              </span>
+              <p id="motivation-help" className="text-xs text-muted-foreground">
+                Ít nhất 10 ký tự. Mô tả kinh nghiệm và nội dung bạn muốn xây dựng.
+              </p>
             </div>
-
-            {/* Portfolio / Profile URL */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-brand-dark dark:text-white font-mono">
-                Portfolio / GitHub / HackTheBox Profile (Optional)
+            <div className="space-y-2">
+              <label htmlFor="creator-portfolio" className="field-label">
+                Portfolio (không bắt buộc)
               </label>
-              <input
+              <Input
+                id="creator-portfolio"
                 type="url"
                 value={portfolioUrl}
                 onChange={(e) => setPortfolioUrl(e.target.value)}
-                placeholder="https://github.com/username or blog URL"
-                className="w-full h-10 px-3 bg-white dark:bg-brand-dark/40 border-2 border-brand-dark rounded-[10px] shadow-neo-sm font-mono text-xs text-brand-dark dark:text-white outline-none focus:ring-2 focus:ring-brand-lime placeholder:text-muted-foreground/70"
+                placeholder="https://github.com/username"
               />
             </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2.5">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancel
+                Hủy
               </Button>
-              <Button
-                type="submit"
-                variant="lime"
-                disabled={isSubmitting || motivation.trim().length < 10}
-                className="flex items-center gap-2 font-extrabold"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Submit Application</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
+              <Button type="submit" disabled={isSubmitting || motivation.trim().length < 10}>
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Đang gửi…' : 'Gửi yêu cầu'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         )}
       </DialogContent>

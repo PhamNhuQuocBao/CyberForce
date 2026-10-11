@@ -1,28 +1,9 @@
 'use client';
-
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  ShieldAlert,
-  ShieldCheck,
-  Lock,
-  Globe,
-  Share2,
-  Settings,
-  Flame,
-  Award,
-  CheckCircle2,
-  UserCheck,
-  Check,
-  AlertTriangle,
-  FileCheck,
-  ArrowLeft,
-  Compass,
-  Trophy,
-} from 'lucide-react';
+import { Loader2, Lock, Share2, Settings, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -38,7 +19,16 @@ import { ProfileSettingsDialog } from '@/components/profile/ProfileSettingsDialo
 import { userApi, type UserDossierResponse } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
-
+const skills = [
+  ['webExploitation', 'Web Exploitation'],
+  ['cloudSecurity', 'Cloud Security'],
+  ['networkPentest', 'Network Pentest'],
+  ['devSecOps', 'DevSecOps'],
+  ['cryptography', 'Cryptography'],
+  ['reverseEngineering', 'Reverse Engineering'],
+  ['osint', 'OSINT'],
+  ['binaryExploitation', 'Binary Exploitation'],
+] as const;
 export default function UserProfilePage() {
   const params = useParams();
   const rawUsername = params?.username as string;
@@ -118,128 +108,56 @@ export default function UserProfilePage() {
     }
   };
 
-  const getProficiencyTier = (pts: number) => {
-    if (pts >= 85) return 'Master Operator';
-    if (pts >= 70) return 'Adept Specialist';
-    if (pts >= 50) return 'Skilled Practitioner';
-    return 'Apprentice';
-  };
-
-  // Skeleton loading screen
-  if (isLoading || authLoading) {
+  if (isLoading || authLoading)
     return (
-      <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col items-center justify-center p-6">
-        <div className="w-16 h-16 border-4 border-brand-dark border-t-brand-lime rounded-full animate-spin shadow-neo-sm mb-4" />
-        <p className="font-mono text-sm font-bold text-brand-dark animate-pulse">
-          ACCESSING OPERATOR DOSSIER // CALLSIGN: {username || '...'}
-        </p>
-      </div>
-    );
-  }
-
-  // Error / Not found screen
-  if (error || !dossier) {
-    return (
-      <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col">
-        {/* Navigation */}
+      <>
         <Navbar />
-
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white border-2 border-brand-dark rounded-card p-8 shadow-neo-lg text-center space-y-5">
-            <div className="w-14 h-14 bg-red-100 border-2 border-brand-dark rounded-badge mx-auto flex items-center justify-center shadow-neo-sm">
-              <ShieldAlert className="w-7 h-7 text-red-600" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-brand-dark font-sans">
-              OPERATOR NOT FOUND
-            </h1>
-            <p className="text-sm text-muted-foreground font-mono">
-              {error || `No tactical dossier registered under callsign "${username}".`}
+        <main id="main-content" className="page-container py-24" role="status">
+          <Loader2 className="mb-4 h-6 w-6 animate-spin" />
+          <p>Đang tải hồ sơ {username}…</p>
+        </main>
+      </>
+    );
+  if (error || !dossier)
+    return (
+      <>
+        <Navbar />
+        <main id="main-content" className="page-container">
+          <Card className="mx-auto max-w-lg p-6">
+            <h1 className="text-2xl font-semibold">Không thể tải hồ sơ</h1>
+            <p className="mt-3 break-words text-sm text-muted-foreground" role="alert">
+              {error || 'Không tìm thấy người dùng này.'}
             </p>
-            <div className="pt-2">
-              <Link href="/">
-                <Button variant="default" className="w-full gap-2">
-                  <ArrowLeft className="w-4 h-4" /> Return to Platform
-                </Button>
-              </Link>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button onClick={fetchDossier}>Thử lại</Button>
+              <Button asChild variant="outline">
+                <Link href="/">Về trang chủ</Link>
+              </Button>
             </div>
-          </div>
+          </Card>
         </main>
-      </div>
+      </>
     );
-  }
-
-  // PERSPECTIVE A: Visitor viewing a Private Profile (Wireframe 2.2)
-  if (!dossier.isPublic && !dossier.isSelf) {
+  if (!dossier.isPublic && !dossier.isSelf)
     return (
-      <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
-        {/* Top Header */}
+      <>
         <Navbar />
-
-        {/* Wireframe 2.2 Perspective A Classified Shield */}
-        <main className="max-w-3xl mx-auto px-6 py-16 flex-1 flex items-center justify-center w-full">
-          <div className="w-full bg-white border-2 border-brand-dark rounded-card p-8 sm:p-12 shadow-neo-lg text-center space-y-6 relative overflow-hidden">
-            {/* Top decorative accent */}
-            <div className="absolute top-0 left-0 right-0 h-2 bg-brand-dark" />
-
-            <div className="w-16 h-16 bg-brand-dark border-2 border-brand-dark rounded-badge mx-auto flex items-center justify-center shadow-neo-sm">
-              <Lock className="w-8 h-8 text-brand-lime" />
-            </div>
-
-            <div className="space-y-2">
-              <Badge variant="dark" className="font-mono text-xs px-3 py-1">
-                US-01.03 // CLASSIFIED RESTRICTED
-              </Badge>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-dark tracking-tight">
-                DOSSIER CLASSIFIED (PRIVATE)
-              </h1>
-            </div>
-
-            <div className="max-w-lg mx-auto bg-brand-gray/80 border border-brand-dark/15 p-4 rounded-btn font-mono text-xs sm:text-sm text-brand-dark leading-relaxed">
-              The operator{' '}
-              <span className="font-bold text-black bg-brand-lime/50 px-1.5 py-0.5 rounded">
-                @{username}
-              </span>{' '}
-              has designated their portfolio as private. Skill telemetry, 8-axis radar analysis,
-              badges, and capstone credentials are restricted from public disclosure.
-            </div>
-
-            <div className="pt-4 border-t border-brand-dark/10 space-y-4">
-              <p className="text-xs font-mono font-bold text-brand-dark uppercase tracking-wider">
-                Are you this operator?
-              </p>
-              <div>
-                <Link href="/login">
-                  <Button variant="dark" className="gap-2 px-6">
-                    <UserCheck className="w-4 h-4 text-brand-lime" />
-                    Sign In to Access Your Dossier
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href="/" className="w-full sm:w-auto">
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <Compass className="w-4 h-4" /> Explore Public Labs
-                  </Button>
-                </Link>
-                <Link href="/" className="w-full sm:w-auto">
-                  <Button variant="secondary" size="sm" className="w-full gap-2">
-                    <Trophy className="w-4 h-4" /> View Global Leaderboard
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
+        <main id="main-content" className="page-container">
+          <Card className="mx-auto max-w-lg p-8">
+            <Lock className="mb-5 h-6 w-6 text-muted-foreground" />
+            <h1 className="text-2xl font-semibold">Hồ sơ riêng tư</h1>
+            <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">
+              @{username} chưa chia sẻ hồ sơ công khai. Kỹ năng, thành tích và chứng chỉ chỉ hiển
+              thị với chủ tài khoản.
+            </p>
+            <p className="mt-6 text-sm">Đây là hồ sơ của bạn?</p>
+            <Button asChild className="mt-3">
+              <Link href="/login">Đăng nhập để xem hồ sơ</Link>
+            </Button>
+          </Card>
         </main>
-
-        <footer className="border-t border-brand-dark/15 py-6 text-center text-xs font-mono text-muted-foreground">
-          CyberForce Cloud Cyber Range &bull; Zero-Knowledge Portfolio Privacy Shield
-        </footer>
-      </div>
+      </>
     );
-  }
-
-  // PERSPECTIVE B & C: Public profile view OR Self viewing private profile
   const telemetry = dossier.telemetry || {
     webExploitation: 0,
     cloudSecurity: 0,
@@ -250,518 +168,240 @@ export default function UserProfilePage() {
     osint: 0,
     binaryExploitation: 0,
   };
-
   return (
-    <div className="min-h-screen bg-canvas bg-neo-grid flex flex-col justify-between">
-      {/* Top Header */}
+    <div className="min-h-screen">
       <Navbar />
-
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-8 flex-1 w-full">
-        {/* Perspective B Amber Notice Banner: Only shown to Owner if Profile is Private */}
+      <main id="main-content" className="page-container space-y-6">
         {!dossier.isPublic && dossier.isSelf && (
-          <div className="p-4 bg-amber-50 border-2 border-amber-500 rounded-card shadow-neo-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-500 text-white rounded-badge border border-brand-dark shadow-neo-sm shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-extrabold text-sm text-brand-dark font-sans flex items-center gap-2">
-                  <span>OPERATOR NOTICE // DOSSIER CURRENTLY PRIVATE</span>
-                  <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-mono font-bold">
-                    PREVIEWING AS SELF
-                  </span>
-                </h4>
-                <p className="text-xs text-amber-900 font-medium">
-                  Visitors and recruiters cannot view your telemetry radar or badges. They receive
-                  the Classified Shield screen.
-                </p>
-              </div>
+          <section
+            className="flex flex-col justify-between gap-4 rounded-card border bg-card p-4 sm:flex-row sm:items-center"
+            aria-label="Quyền riêng tư"
+          >
+            <div>
+              <p className="font-medium">Hồ sơ đang ở chế độ riêng tư</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Chỉ bạn có thể xem thông tin bên dưới.
+              </p>
             </div>
-
-            <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSettingsOpen(true)}
-                className="gap-1.5 text-xs bg-white"
-              >
-                <Settings className="w-3.5 h-3.5" /> Privacy Settings
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleQuickMakePublic}
-                className="gap-1.5 text-xs bg-brand-lime text-brand-dark hover:bg-brand-lime-hover"
-              >
-                <Globe className="w-3.5 h-3.5" /> Switch to Public Mode Now
-              </Button>
-            </div>
-          </div>
+            <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
+              Thay đổi quyền riêng tư
+            </Button>
+          </section>
         )}
-
-        {/* SECTION 1: OPERATOR DOSSIER HEADER */}
-        <section className="bg-white border-2 border-brand-dark rounded-card p-6 sm:p-8 shadow-neo-lg relative overflow-hidden">
-          {/* Subheader callsign & Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-brand-dark/10">
-            <div className="flex items-center gap-2 font-mono text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              <span className="w-2.5 h-2.5 rounded-full bg-brand-lime border border-brand-dark" />
-              <span>OPERATOR DOSSIER // CALLSIGN: {dossier.username}</span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              {dossier.isSelf && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="gap-1.5 text-xs font-mono font-bold"
-                >
-                  <Settings className="w-3.5 h-3.5" /> Edit Dossier
-                </Button>
-              )}
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCopyLink}
-                className="gap-1.5 text-xs font-mono font-bold"
-              >
-                {copiedLink ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-800" /> Copied!
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-3.5 h-3.5" /> Copy CV Share Link
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Operator Profile Details */}
-          <div className="pt-6 flex flex-col md:flex-row items-start gap-6">
-            {/* Avatar block */}
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-card border-2 border-brand-dark bg-brand-lime flex items-center justify-center font-extrabold text-3xl sm:text-4xl text-brand-dark shadow-neo select-none">
-                {dossier.username.slice(0, 2).toUpperCase()}
-              </div>
-              <div
-                className="absolute -bottom-2 -right-2 p-1.5 bg-brand-dark text-white rounded-badge border border-brand-dark shadow-neo-sm"
-                title="Verified CyberForce Operator"
-              >
-                <ShieldCheck className="w-4 h-4 text-brand-lime" />
-              </div>
-            </div>
-
-            {/* Core Info */}
-            <div className="space-y-4 flex-1">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-dark font-sans">
-                    {dossier.username}
-                  </h1>
-                  <Badge variant="lime" className="gap-1 font-mono text-[11px] font-bold">
-                    VERIFIED OPERATOR ✓
-                  </Badge>
-                  {dossier.isPublic ? (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 font-mono text-[11px] border border-brand-dark/20"
-                    >
-                      <Globe className="w-3 h-3 text-emerald-600" /> PUBLIC DOSSIER
-                    </Badge>
-                  ) : (
-                    <Badge variant="dark" className="gap-1 font-mono text-[11px]">
-                      <Lock className="w-3 h-3 text-brand-lime" /> CLASSIFIED DOSSIER
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-sm font-bold text-brand-dark/80 font-mono">
-                  Specialty:{' '}
-                  <span className="text-black font-extrabold">
-                    {dossier.specialty || 'General Cybersecurity Operator'}
-                  </span>
-                </p>
-              </div>
-
-              {/* Bio summary */}
+        <Card className="p-6 sm:p-8">
+          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
+            <div className="min-w-0">
+              <p className="mb-2 text-sm text-muted-foreground">
+                Hồ sơ năng lực · {dossier.isPublic ? 'Công khai' : 'Riêng tư'}
+              </p>
+              <h1 className="break-words text-3xl font-semibold tracking-tight">
+                {dossier.username}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {dossier.specialty || 'An ninh mạng tổng quát'}
+              </p>
               {dossier.bio && (
-                <p className="text-sm text-brand-dark/90 leading-relaxed font-sans max-w-2xl bg-brand-gray/60 p-3 rounded-btn border border-brand-dark/10">
+                <p className="mt-4 max-w-2xl whitespace-pre-wrap break-words text-sm leading-7">
                   {dossier.bio}
                 </p>
               )}
-
-              {/* Metric stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <div className="p-3 bg-brand-gray rounded-btn border border-brand-dark/15 shadow-neo-sm">
-                  <div className="text-[10px] font-mono font-bold text-muted-foreground uppercase">
-                    Rank Tier
-                  </div>
-                  <div className="text-sm font-extrabold text-brand-dark font-mono truncate">
-                    {dossier.rankTier}
-                  </div>
-                </div>
-                <div className="p-3 bg-brand-gray rounded-btn border border-brand-dark/15 shadow-neo-sm">
-                  <div className="text-[10px] font-mono font-bold text-muted-foreground uppercase">
-                    Total EXP
-                  </div>
-                  <div className="text-sm font-extrabold text-brand-dark font-mono">
-                    {dossier.expPoints?.toLocaleString()} pts
-                  </div>
-                </div>
-                <div className="p-3 bg-brand-gray rounded-btn border border-brand-dark/15 shadow-neo-sm">
-                  <div className="text-[10px] font-mono font-bold text-muted-foreground uppercase">
-                    Active Streak
-                  </div>
-                  <div className="text-sm font-extrabold text-brand-dark font-mono flex items-center gap-1">
-                    <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>{dossier.streakDays} Days</span>
-                  </div>
-                </div>
-                <div className="p-3 bg-brand-gray rounded-btn border border-brand-dark/15 shadow-neo-sm">
-                  <div className="text-[10px] font-mono font-bold text-muted-foreground uppercase">
-                    Labs Cleared
-                  </div>
-                  <div className="text-sm font-extrabold text-brand-dark font-mono">
-                    {dossier.labsCleared} Cleared
-                  </div>
-                </div>
-              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {dossier.isSelf && (
+                <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
+                  <Settings className="h-4 w-4" />
+                  Chỉnh sửa
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleCopyLink}>
+                {copiedLink ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+                {copiedLink ? 'Đã sao chép' : 'Chia sẻ'}
+              </Button>
             </div>
           </div>
-        </section>
-
-        {/* SECTION 2: 2-COLUMN ASYMMETRIC SHOWCASE */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: 8-AXIS CYBER RADAR TELEMETRY (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="border-2 border-brand-dark shadow-neo rounded-card bg-white overflow-hidden">
-              <CardHeader className="border-b border-brand-dark/15 bg-brand-gray/40 py-4 px-6 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-extrabold font-sans text-brand-dark">
-                    8-AXIS CYBER RADAR TELEMETRY
-                  </CardTitle>
-                  <p className="text-[11px] font-mono text-muted-foreground">
-                    Real-time operational capability assessment
-                  </p>
-                </div>
-                <Badge variant="lime" className="font-mono text-[10px] font-bold">
-                  8-D MATRIX
-                </Badge>
-              </CardHeader>
-
-              <CardContent className="p-6 space-y-6">
-                {/* SVG Radar Chart */}
-                <SkillRadarChart telemetry={telemetry} />
-
-                {/* Radar Metrics Breakdown */}
-                <div className="space-y-2.5 pt-4 border-t border-brand-dark/10">
-                  <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-brand-dark">
-                    Competency Breakdown:
-                  </h4>
-                  <div className="space-y-1.5 font-mono text-xs">
-                    <div className="flex items-center justify-between p-2 bg-brand-gray/50 rounded-btn">
-                      <span className="font-medium text-brand-dark">Web Exploitation:</span>
-                      <span className="font-bold text-black">
-                        {telemetry.webExploitation} pts (
-                        {getProficiencyTier(telemetry.webExploitation)})
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-brand-gray/50 rounded-btn">
-                      <span className="font-medium text-brand-dark">Cloud & Containers:</span>
-                      <span className="font-bold text-black">
-                        {telemetry.cloudSecurity} pts ({getProficiencyTier(telemetry.cloudSecurity)}
-                        )
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-brand-gray/50 rounded-btn">
-                      <span className="font-medium text-brand-dark">Network Pentesting:</span>
-                      <span className="font-bold text-black">
-                        {telemetry.networkPentest} pts (
-                        {getProficiencyTier(telemetry.networkPentest)})
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-brand-gray/50 rounded-btn">
-                      <span className="font-medium text-brand-dark">DevSecOps Pipeline:</span>
-                      <span className="font-bold text-black">
-                        {telemetry.devSecOps} pts ({getProficiencyTier(telemetry.devSecOps)})
-                      </span>
-                    </div>
+          <dl className="mt-8 grid grid-cols-2 gap-6 border-t pt-6 md:grid-cols-4">
+            {[
+              ['Cấp bậc', dossier.rankTier || 'Chưa có'],
+              ['Điểm kinh nghiệm', `${dossier.expPoints?.toLocaleString() ?? 0} EXP`],
+              ['Chuỗi học tập', `${dossier.streakDays ?? 0} ngày`],
+              ['Lab hoàn thành', dossier.labsCleared ?? 0],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-sm text-muted-foreground">{label}</dt>
+                <dd className="mt-2 text-lg font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Năng lực đã tích lũy</CardTitle>
+              <p className="text-sm text-muted-foreground">Điểm kỹ năng theo 8 lĩnh vực</p>
+            </CardHeader>
+            <CardContent>
+              <SkillRadarChart telemetry={telemetry} />
+              <dl className="mt-4 divide-y">
+                {skills.map(([key, label]) => (
+                  <div key={key} className="flex justify-between gap-4 py-3 text-sm">
+                    <dt>{label}</dt>
+                    <dd className="shrink-0 font-mono">{telemetry[key]} điểm</dd>
                   </div>
-                </div>
-
-                {/* Privacy Guarantee Note */}
-                <div className="p-3 bg-brand-dark/5 rounded-btn border border-brand-dark/15 text-[11px] font-mono text-muted-foreground flex items-start gap-2">
-                  <Lock className="w-3.5 h-3.5 text-brand-dark shrink-0 mt-0.5" />
-                  <span>
-                    Note: Private details (Email, billing, failed challenge attempts) are
-                    permanently withheld from dossiers.
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* RIGHT COLUMN: CAPSTONE CREDENTIALS & ACHIEVEMENTS (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Card 1: Verified Practical Certificates */}
-            <Card className="border-2 border-brand-dark shadow-neo rounded-card bg-white">
-              <CardHeader className="border-b border-brand-dark/15 bg-brand-gray/40 py-4 px-6 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-extrabold font-sans text-brand-dark">
-                    CAPSTONE CREDENTIALS & CERTIFICATIONS
-                  </CardTitle>
-                  <p className="text-[11px] font-mono text-muted-foreground">
-                    Cryptographically verifiable offensive security examinations
-                  </p>
-                </div>
-                <Badge variant="default" className="font-mono text-[10px] font-bold">
-                  {dossier.certificates?.length || 0} VERIFIED
-                </Badge>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Chứng chỉ</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {dossier.certificates?.length || 0} chứng chỉ đã cấp
+                </p>
               </CardHeader>
-
-              <CardContent className="p-6 space-y-4">
-                {dossier.certificates && dossier.certificates.length > 0 ? (
-                  dossier.certificates.map((cert) => (
-                    <div
-                      key={cert.code}
-                      className="p-4 sm:p-5 rounded-btn border-2 border-brand-dark bg-white shadow-neo-sm space-y-3 hover:-translate-y-0.5 transition-transform"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-brand-lime text-brand-dark rounded-badge border border-brand-dark shadow-neo-sm">
-                            <Award className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-extrabold text-sm sm:text-base text-brand-dark font-sans">
-                              {cert.title}
-                            </h4>
-                            <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
-                              <span>Code: {cert.code}</span>
-                              <span>&bull;</span>
-                              <span>Issued: {cert.issuedAt}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-extrabold px-2.5 py-1 bg-brand-gray border border-brand-dark rounded-badge">
-                            Score: {cert.scorePercentage}%
+              <CardContent>
+                {dossier.certificates?.length ? (
+                  <ul className="divide-y">
+                    {dossier.certificates.map((cert) => (
+                      <li key={cert.code} className="py-4 first:pt-0">
+                        <h3 className="font-medium">{cert.title}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Cấp ngày {cert.issuedAt} · Kết quả {cert.scorePercentage}%
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <span className="break-all font-mono text-xs text-muted-foreground">
+                            {cert.code}
                           </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-brand-dark/10 font-mono text-xs">
-                        <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Signed with RSA-4096 Key</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setActiveCertModal(cert.verificationHash)}
-                            className="h-7 px-3 text-[11px] font-mono gap-1"
                           >
-                            <FileCheck className="w-3 h-3" /> Verify Online
+                            Xem mã xác minh
                           </Button>
                         </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="py-3 text-sm text-muted-foreground">Chưa có chứng chỉ được cấp.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Thành tích</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Đã đạt {dossier.badges?.filter((b) => b.isUnlocked).length || 0} /{' '}
+                  {dossier.badges?.length || 0} thành tích
+                </p>
+              </CardHeader>
+              <CardContent>
+                {dossier.badges?.length ? (
+                  <ul className="divide-y">
+                    {dossier.badges.map((badge) => (
+                      <li
+                        key={badge.id}
+                        className="flex items-start justify-between gap-4 py-4 first:pt-0"
+                      >
+                        <div>
+                          <h3 className="text-sm font-medium">{badge.name}</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                            {badge.description}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {badge.isUnlocked ? 'Đã đạt' : 'Chưa đạt'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="py-3 text-sm text-muted-foreground">Chưa có thành tích.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Lộ trình học tập</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {dossier.completedPaths?.length ? (
+                  dossier.completedPaths.map((path) => (
+                    <div key={path.title}>
+                      <div className="mb-3 flex flex-wrap justify-between gap-2 text-sm">
+                        <h3 className="font-medium">{path.title}</h3>
+                        <span className="text-muted-foreground">
+                          {path.completedRooms}/{path.totalRooms} phòng ·{' '}
+                          {path.completionPercentage}%
+                        </span>
+                      </div>
+                      <div
+                        role="progressbar"
+                        aria-label={path.title}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={path.completionPercentage}
+                        className="h-2 overflow-hidden rounded-btn bg-muted"
+                      >
+                        <div
+                          className="h-full bg-primary"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, path.completionPercentage))}%`,
+                          }}
+                        />
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center border-2 border-dashed border-brand-dark/20 rounded-btn font-mono text-xs text-muted-foreground">
-                    No Capstone Certifications issued yet. Complete a proctored examination to earn
-                    cryptographically verifiable credentials.
-                  </div>
+                  <p className="text-sm text-muted-foreground">Chưa có lộ trình hoàn thành.</p>
                 )}
               </CardContent>
             </Card>
-
-            {/* Card 2: Badges Cabinet */}
-            <Card className="border-2 border-brand-dark shadow-neo rounded-card bg-white">
-              <CardHeader className="border-b border-brand-dark/15 bg-brand-gray/40 py-4 px-6 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-extrabold font-sans text-brand-dark">
-                    OPERATOR BADGES CABINET
-                  </CardTitle>
-                  <p className="text-[11px] font-mono text-muted-foreground">
-                    Tactical achievements and cyber range milestones
-                  </p>
-                </div>
-                <span className="font-mono text-xs font-bold text-brand-dark">
-                  ({dossier.badges?.filter((b) => b.isUnlocked).length || 0}/
-                  {dossier.badges?.length || 0} Unlocked)
-                </span>
-              </CardHeader>
-
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {dossier.badges?.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className={`p-3 rounded-btn border-2 text-center flex flex-col items-center justify-between gap-2 transition-all ${
-                        badge.isUnlocked
-                          ? 'border-brand-dark bg-brand-gray shadow-neo-sm'
-                          : 'border-brand-dark/20 bg-brand-gray/30 opacity-40'
-                      }`}
-                    >
-                      <div className="text-2xl pt-1">{badge.icon}</div>
-                      <div className="space-y-0.5">
-                        <div className="text-xs font-extrabold text-brand-dark font-sans leading-tight">
-                          {badge.name}
-                        </div>
-                        <div className="text-[10px] font-mono text-muted-foreground line-clamp-2">
-                          {badge.isUnlocked ? badge.description : 'Locked Milestone'}
-                        </div>
-                      </div>
-                      <div className="pt-1">
-                        {badge.isUnlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-800 bg-brand-lime px-2 py-0.5 rounded-badge border border-brand-dark">
-                            EARNED
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-muted-foreground bg-brand-gray px-2 py-0.5 rounded-badge border border-brand-dark/20">
-                            LOCKED
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Card 3: Completed Learning Paths */}
-            {dossier.completedPaths && dossier.completedPaths.length > 0 && (
-              <Card className="border-2 border-brand-dark shadow-neo rounded-card bg-white">
-                <CardHeader className="border-b border-brand-dark/15 bg-brand-gray/40 py-4 px-6">
-                  <CardTitle className="text-base font-extrabold font-sans text-brand-dark">
-                    TRAINING TRACK PROGRESSION
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {dossier.completedPaths.map((path) => (
-                    <div key={path.title} className="space-y-1.5 font-mono text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-brand-dark font-sans">{path.title}</span>
-                        <span className="font-bold text-black">
-                          {path.completionPercentage}% ({path.completedRooms}/{path.totalRooms}{' '}
-                          Rooms)
-                        </span>
-                      </div>
-                      <div className="h-3 w-full bg-brand-gray border border-brand-dark rounded-pill overflow-hidden p-0.5 shadow-neo-sm">
-                        <div
-                          className="h-full bg-brand-lime rounded-pill transition-all duration-500"
-                          style={{ width: `${path.completionPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-brand-dark/15 py-8 mt-12 bg-white text-center text-xs font-mono text-muted-foreground">
-        CyberForce Platform &bull; Operator Dossier Engine &bull; Positivus Neo-Brutalism
-      </footer>
-
-      {/* DIALOG 1: PROFILE & PRIVACY SETTINGS */}
       <ProfileSettingsDialog
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         dossier={dossier}
-        onProfileUpdated={(updated) => {
-          setDossier((prev) => (prev ? { ...prev, ...updated } : null));
-        }}
+        onProfileUpdated={(updated) =>
+          setDossier((prev) => (prev ? { ...prev, ...updated } : null))
+        }
       />
-
-      {/* DIALOG 2: COPY LINK WHILE PRIVATE WARNING */}
       <Dialog open={isPrivacyWarningOpen} onOpenChange={setIsPrivacyWarningOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <span className="p-1 bg-amber-500 text-white rounded-badge border border-brand-dark">
-                <AlertTriangle className="w-4 h-4" />
-              </span>
-              <DialogTitle>WARNING: DOSSIER IS PRIVATE</DialogTitle>
-            </div>
-            <DialogDescription className="font-mono text-xs text-brand-dark pt-2">
-              Your profile is currently configured as{' '}
-              <span className="font-bold text-red-600">CLASSIFIED (PRIVATE)</span>. Anyone who opens
-              this share link will be blocked by the Classified Shield instead of seeing your CV
-              telemetry.
+            <DialogTitle>Hồ sơ chưa công khai</DialogTitle>
+            <DialogDescription>
+              Người nhận liên kết sẽ thấy thông báo riêng tư. Bạn có thể sao chép liên kết hoặc thay
+              đổi chế độ hiển thị.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="py-2 text-xs font-sans text-muted-foreground leading-relaxed">
-            Would you like to make your dossier Public now before copying, or proceed with copying
-            the private link anyway?
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
+          <DialogFooter>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 setIsPrivacyWarningOpen(false);
                 executeCopy();
               }}
-              className="text-xs"
             >
-              Copy Private Link Anyway
+              Sao chép liên kết
             </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleQuickMakePublic}
-              className="text-xs bg-brand-lime text-brand-dark hover:bg-brand-lime-hover font-bold"
-            >
-              Make Public & Copy
-            </Button>
+            <Button onClick={handleQuickMakePublic}>Chuyển sang công khai</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* DIALOG 3: CERTIFICATE HASH VERIFICATION */}
       <Dialog open={!!activeCertModal} onOpenChange={() => setActiveCertModal(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <span className="p-1 bg-brand-lime text-brand-dark rounded-badge border border-brand-dark">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-              </span>
-              <DialogTitle>CRYPTOGRAPHIC PROOF OF MASTERY</DialogTitle>
-            </div>
-            <DialogDescription className="font-mono text-xs text-brand-dark pt-2">
-              This credential has been validated against the CyberForce immutable ledger using
-              RSA-4096 cryptographic signatures.
-            </DialogDescription>
+            <DialogTitle>Mã xác minh chứng chỉ</DialogTitle>
+            <DialogDescription>Mã được lưu cùng chứng chỉ trong hồ sơ của bạn.</DialogDescription>
           </DialogHeader>
-
-          <div className="p-3 bg-brand-gray rounded-btn border border-brand-dark/20 space-y-2">
-            <div className="text-[10px] font-mono text-muted-foreground uppercase font-bold">
-              Verification Hash
-            </div>
-            <div className="font-mono text-xs break-all bg-white p-2 rounded border border-brand-dark/10 font-bold text-brand-dark">
-              {activeCertModal}
-            </div>
-            <div className="text-[10px] font-mono text-emerald-700 flex items-center gap-1 font-bold">
-              <CheckCircle2 className="w-3 h-3" /> Status: Cryptographically Authentic & Valid
-            </div>
-          </div>
-
+          <p className="break-all rounded-btn bg-muted p-4 font-mono text-xs">{activeCertModal}</p>
           <DialogFooter>
-            <Button variant="default" size="sm" onClick={() => setActiveCertModal(null)}>
-              Close Verification
+            <Button variant="outline" onClick={() => setActiveCertModal(null)}>
+              Đóng
             </Button>
           </DialogFooter>
         </DialogContent>

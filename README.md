@@ -1,3 +1,5 @@
+> **Thiết kế UI/UX mới (2026-10-10):** [Modern Minimal v3](DESIGN.md) và [wireframe desktop/mobile](docs/07-wireframes/modern-minimal/README.md) là chuẩn cho đợt tái thiết kế đã duyệt. Frontend hiện tại vẫn dùng style cũ; các phần Neo-Brutalism/Tactical HUD bên dưới mô tả lịch sử triển khai, không phải hướng thiết kế mới.
+
 # 🛡️ CyberForce (CyberForge)
 
 > **Next-Generation Cloud Cyber Range, Hands-on Security Training & Verifiable Digital Certification Platform**  

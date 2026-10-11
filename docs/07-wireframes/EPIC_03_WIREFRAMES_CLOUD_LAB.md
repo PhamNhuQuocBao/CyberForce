@@ -1,3 +1,5 @@
+> **Thiết kế cũ — chỉ dùng đối chiếu nghiệp vụ.** Bố cục và style trong file này đã được thay thế bởi [bộ Modern Minimal](modern-minimal/README.md). Xem [bảng đối chiếu](modern-minimal/TRACEABILITY.md) để tìm màn hình mới; không dùng token, emoji hay hiệu ứng của bản cũ để triển khai.
+
 # 🖥️ EPIC 3: Wireframe Architecture & Low-Fidelity UI Specifications
 ## Zero-Setup Cloud Lab & In-Browser Practice
 
