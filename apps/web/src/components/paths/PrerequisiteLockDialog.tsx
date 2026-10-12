@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { PathRoomDetail } from '@/lib/api';
 
@@ -44,9 +45,18 @@ export function PrerequisiteLockDialog({
               {progress.percentage}%
             </p>
           )}
-          <p className="text-sm text-muted-foreground">Phòng học chưa mở trên phiên bản này.</p>
+          <p className="text-sm text-muted-foreground">
+            Hoàn thành câu hỏi trong phòng tiên quyết để mở khóa.
+          </p>
         </div>
         <DialogFooter>
+          {prerequisite.requiredRoomSlug && (
+            <Button asChild>
+              <Link href={`/rooms/${encodeURIComponent(prerequisite.requiredRoomSlug)}`}>
+                Xem phòng tiên quyết
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>
             Đóng
           </Button>

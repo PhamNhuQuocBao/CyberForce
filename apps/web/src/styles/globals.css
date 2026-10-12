@@ -112,3 +112,103 @@
     @apply underline underline-offset-4 decoration-border hover:decoration-current;
   }
 }
+
+.room-prose {
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+  font-size: 0.9375rem;
+}
+.room-prose > * + * {
+  margin-top: 1rem;
+}
+.room-prose h1,
+.room-prose h2,
+.room-prose h3 {
+  font-weight: 600;
+  line-height: 1.4;
+}
+.room-prose h1 {
+  font-size: 1.5rem;
+}
+.room-prose h2 {
+  font-size: 1.25rem;
+}
+.room-prose h3 {
+  font-size: 1.125rem;
+}
+.room-prose ul,
+.room-prose ol {
+  padding-left: 1.5rem;
+}
+.room-prose ul {
+  list-style: disc;
+}
+.room-prose ol {
+  list-style: decimal;
+}
+.room-prose a {
+  text-decoration: underline;
+  color: var(--link);
+}
+.room-prose pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--muted);
+}
+.room-prose code {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.875em;
+}
+.room-prose blockquote {
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--control-border);
+  background: var(--muted);
+}
+.room-prose table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.room-prose th,
+.room-prose td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+}
+.room-prose img {
+  max-width: 100%;
+  height: auto;
+}
+.room-prose .hljs-keyword,
+.room-prose .hljs-selector-tag {
+  color: #6e35a5;
+}
+.room-prose .hljs-string,
+.room-prose .hljs-attr {
+  color: #236b35;
+}
+.room-prose .hljs-number,
+.room-prose .hljs-literal {
+  color: #a33b16;
+}
+.room-prose .hljs-comment {
+  color: var(--muted-foreground);
+}
+.dark .room-prose .hljs-keyword,
+.dark .room-prose .hljs-selector-tag {
+  color: #d4b4ff;
+}
+.dark .room-prose .hljs-string,
+.dark .room-prose .hljs-attr {
+  color: #a6e3ad;
+}
+.dark .room-prose .hljs-number,
+.dark .room-prose .hljs-literal {
+  color: #f9ba87;
+}
+/* Panel classes apply to the inner content; size the library's outer wrappers. */
+.room-lesson-only > [data-panel][id="lab"],
+.room-lab-only > [data-panel][id="lesson"] { display: none !important; }
+.room-lesson-only > [data-panel][id="lesson"],
+.room-lab-only > [data-panel][id="lab"] { flex: 1 1 100% !important; }

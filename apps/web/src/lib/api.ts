@@ -575,3 +575,33 @@ export const pathsApi = {
     });
   },
 };
+
+export interface RoomDetail {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  difficulty: string;
+  roomType: string;
+  estimatedMinutes: number;
+  pointsReward: number;
+  hasLab: boolean;
+  path: { title: string; slug: string } | null;
+  totalQuestions: number;
+  completedQuestions: number;
+  tasks: Array<{
+    id: string;
+    title: string;
+    order: number;
+    content: string;
+    questions: Array<{ id: string; text: string; pointsReward: number; isCompleted: boolean }>;
+  }>;
+}
+
+export const roomsApi = {
+  getRoom(slug: string, accessToken: string) {
+    return request<{ success: true; data: RoomDetail }>(`/rooms/${encodeURIComponent(slug)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+};

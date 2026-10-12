@@ -12,6 +12,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { rolesRoutes } from './modules/roles/roles.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { roomsRoutes } from './modules/rooms/rooms.routes.js';
 import { pathsRoutes } from './modules/paths/paths.routes.js';
 
 export function buildApp() {
@@ -84,6 +85,7 @@ export function buildApp() {
   app.register(usersRoutes, { prefix: '/api/v1/users' });
   app.register(rolesRoutes, { prefix: '/api/v1/roles' });
   app.register(adminRoutes, { prefix: '/api/v1/admin' });
+  app.register(roomsRoutes, { prefix: '/api/v1/rooms' });
   app.register(pathsRoutes, { prefix: '/api/v1/paths' });
 
   // ---------------------------------------------------------------------------
