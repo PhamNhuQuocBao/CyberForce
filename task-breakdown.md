@@ -1,8 +1,8 @@
 # 📋 CyberForce - Kế Hoạch Phân Rã Công Việc & Nhiệm Vụ (Task Breakdown & Work Breakdown Structure)
 
 > **Document Owner:** Project Planning Agent (`@project-planner`)  
-> **Status:** Approved / Ready for Execution  
-> **Version:** 1.0.0  
+> **Status:** In Progress — cập nhật đến 2026-10-12
+> **Version:** 1.1.0
 > **Traceability References:**
 > - Product Requirements: [`docs/01-product/PRD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/01-product/PRD_CYBERFORCE.md)
 > - Technical Design: [`docs/02-architecture/TDD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/02-architecture/TDD_CYBERFORCE.md)
@@ -48,6 +48,25 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 1. **INPUT:** Dữ liệu đầu vào, tài liệu tham chiếu, phụ thuộc tiên quyết.
 2. **OUTPUT:** Mã nguồn cụ thể, schema, API endpoint hoặc component hoàn thiện.
 3. **VERIFY:** Lệnh kiểm thử tự động, curl test, unit test hoặc thao tác UI kiểm chứng kết quả thực tế.
+
+---
+
+### 2.3. Trạng thái thực tế đến 2026-10-12
+
+`[x]` = hoàn thành phạm vi ghi rõ; `[~]` = hoàn thành một phần, còn phụ thuộc; chưa đánh dấu = chưa triển khai. Trạng thái code không đồng nghĩa đã merge/deploy hoặc đã áp dụng SQL vào DB chính.
+
+| Task | Tiến độ đã xác minh | Phần còn lại / bằng chứng |
+| --- | --- | --- |
+| CF-004 | [x] Design system và các trang hiện có chuyển sang Modern Minimal | `2b7470f` / PR #15; DESIGN.md v3.0.0 thay thế Positivus cũ |
+| CF-101–103 | [x] Auth API/UI; bổ sung khôi phục phiên, refresh dùng chung và retry | `3d505e7` / PR #16; OAuth bên ngoài và gửi OTP email thật chưa kiểm chứng |
+| CF-104 | [x] UI hồ sơ, chỉnh sửa và quyền riêng tư; sửa race khi refresh | PR #10, #16; telemetry kỹ năng/lab/lộ trình ở backend còn mô phỏng, chưa nghiệm thu như dữ liệu thật |
+| CF-105 | [x] RBAC, yêu cầu Creator, admin duyệt/từ chối và phân trang | `4a30710` / PR #12; PR #16 xác minh 22 requests, approve/reject và chuyển trang |
+| CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
+| CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Runtime/timer/terminal/Guacamole chờ CF-301–304 |
+| CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; luồng tạo/chọn phiên và inject cờ chờ CF-301. Chưa đo SLA <300ms dưới tải |
+| CF-204 | Chưa triển khai | Bước tiếp theo: gợi ý theo cấp và khấu trừ EXP |
+
+Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
 ---
 
@@ -157,10 +176,10 @@ gantt
 #### [x] Task CF-004: Xây dựng Hệ thống Design System Tokens & Base Layout Shell (Hoàn thành)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `design-spec`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-001
-* **Mô tả:** Cài đặt Tailwind CSS v3 / Shadcn UI trên `apps/web`, cấu hình bảng màu Neo-Brutalism / Soft Brutalism (Positivus Theme: `#B9FF66` Electric Lime, `#191A23` Charcoal Ink Black, `#F3F3F3` Surface, 40px Card Radius, 14px Button Radius, 0-blur hard offset shadows). Dựng khung Top Navigation và Footer.
-* **INPUT:** `DESIGN.md` (v2.0.0).
+* **Mô tả:** Cài đặt Tailwind CSS v3 / Shadcn UI trên `apps/web`, cấu hình Modern Minimal — Navy & Electric Lime theo DESIGN.md v3.0.0. Dựng khung Top Navigation và Footer.
+* **INPUT:** `DESIGN.md` (v3.0.0).
 * **OUTPUT:** `apps/web/src/styles/globals.css`, `tailwind.config.ts`, components `Button`, `Card`, `Badge`, `Input`, `Navbar`.
-* **VERIFY:** Khởi chạy `pnpm --filter @cyberforce/web dev`, truy cập `http://localhost:3000` hiển thị giao diện Neo-Brutalist Positivus chuẩn xác với Electric Lime.
+* **VERIFY:** Khởi chạy `pnpm --filter @cyberforce/web dev`, truy cập `http://localhost:3000` hiển thị giao diện Modern Minimal; đã merge redesign qua PR #15.
 
 ---
 
@@ -212,7 +231,7 @@ gantt
 
 ### 📖 PHASE 1 - EPIC 2: STRUCTURED LEARNING PATHS & INTERACTIVE ROOMS
 
-#### Task CF-201: Xây dựng Catalog Khám phá Lộ trình Học tập (Learning Paths)
+#### [x] Task CF-201: Xây dựng Catalog Khám phá Lộ trình Học tập (Learning Paths)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `nextjs-react-expert`, `api-patterns`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-003, CF-004
 * **Mô tả:** Triển khai trang danh mục Lộ trình học `/paths` và chi tiết lộ trình `/paths/[slug]`. Hiển thị danh sách Modules, Rooms, điều kiện tiên quyết (Prerequisites), thanh tiến độ hoàn thành theo Story `US-02.01`.
@@ -220,7 +239,7 @@ gantt
 * **OUTPUT:** API `/api/v1/paths`, `/api/v1/paths/:slug`, giao diện `apps/web/src/app/paths/page.tsx`.
 * **VERIFY:** Truy cập `/paths`, chọn lộ trình "Web Application Security", thấy các module mở khóa theo thứ tự và các phòng chưa đủ điều kiện bị gắn cờ `Locked`.
 
-#### Task CF-202: Phát triển Giao diện Phòng học Tương tác Tích hợp (All-in-One Split-Pane Room)
+#### [~] Task CF-202: Phát triển Giao diện Phòng học Tương tác Tích hợp (All-in-One Split-Pane Room)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `nextjs-react-expert`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-004
 * **Mô tả:** Xây dựng không gian làm bài All-in-One Split-Pane tại `/rooms/[slug]` gồm: Cột trái (MDX lý thuyết + thanh điều khiển thời gian lab), Cột giữa (Danh sách câu hỏi & form nộp cờ), Cột phải (Khung Terminal xterm.js / Màn hình Guacamole) theo Wireframe 2.2.
@@ -228,13 +247,13 @@ gantt
 * **OUTPUT:** Component `apps/web/src/components/room/SplitPaneWorkspace.tsx`, tích hợp thanh chia kích thước co giãn linh hoạt (resizable pane).
 * **VERIFY:** Mở phòng lab, kéo thả thanh chia kích thước mượt mà, chuyển đổi giữa chế độ Fullscreen terminal và Split-view không bị giật lag.
 
-#### Task CF-203: Xây dựng Động cơ Chấm Cờ (Flag Validation Engine) & Chống Brute-force
+#### [x] Task CF-203: Xây dựng Động cơ Chấm Cờ (Flag Validation Engine) & Chống Brute-force
 * **Agent:** `backend-specialist` & `security-auditor` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-003
 * **Mô tả:** Viết API nộp bài `/api/v1/tasks/:id/submit`. Hỗ trợ 3 kiểu cờ: `static` (chuỗi cố định băm bcrypt/SHA), `regex` (mẫu biểu thức chính quy) và `dynamic_hmac` (sinh theo phiên lab). Tích hợp chặn brute-force: sai 5 lần/phút -> khóa nộp 3 phút (Story `US-02.03`).
 * **INPUT:** `docs/02-architecture/TDD_CYBERFORCE.md` Mục 5.1 & 9.1.
 * **OUTPUT:** Service `FlagValidatorService`, API endpoint `/api/v1/tasks/:id/submit`.
-* **VERIFY:** Nộp cờ đúng -> Nhận 200 OK + cộng EXP. Nộp cờ sai 6 lần liên tiếp -> Bị khóa 3 phút với mã HTTP 429.
+* **VERIFY:** Nộp cờ đúng -> Nhận 200 OK + cộng EXP. Nộp cờ sai lần thứ 5 trong 60 giây -> Bị khóa 3 phút với mã HTTP 429.
 
 #### Task CF-204: Triển khai Hệ thống Gợi ý Bậc thang (Tiered Hint System) & Khấu trừ EXP
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `clean-code`
@@ -497,15 +516,15 @@ gantt
 | **CF-001** | Foundation | [x] Monorepo Setup & Git Guidelines | `devops-engineer` | P0 |
 | **CF-002** | Foundation | [x] Docker Compose Dev Infrastructure | `devops-engineer` | P0 |
 | **CF-003** | Foundation | [x] PostgreSQL Schema & Migrations | `database-architect` | P0 |
-| **CF-004** | Foundation | [x] Neo-Brutalism (Positivus) Theme & Base Shell | `frontend-specialist` | P1 |
+| **CF-004** | Foundation | [x] Modern Minimal Theme & Base Shell | `frontend-specialist` | P1 |
 | **CF-101** | Epic 1 | [x] US-01.01: 1-Click OAuth2 (Google/GitHub) & Auth UI | `backend-specialist` | P0 |
 | **CF-102** | Epic 1 | [x] US-01.01: Email Conflict & Account Linking | `backend-specialist` | P1 |
 | **CF-103** | Epic 1 | [x] US-01.02: Password Auth + Rate Limiting | `security-auditor` | P0 |
 | **CF-104** | Epic 1 | [x] US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
 | **CF-105** | Epic 1 | [x] US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
-| **CF-201** | Epic 2 | US-02.01: Learning Paths Catalog & Detail | `frontend-specialist` | P0 |
-| **CF-202** | Epic 2 | US-02.02: All-in-One Split-Pane Room View | `frontend-specialist` | P0 |
-| **CF-203** | Epic 2 | US-02.03: Flag Validation & Anti-Bruteforce | `backend-specialist` | P0 |
+| **CF-201** | Epic 2 | [x] US-02.01: Learning Paths Catalog, Detail & Enrollment | `frontend-specialist` | P0 |
+| **CF-202** | Epic 2 | [~] US-02.02: Workspace complete; lab runtime pending | `frontend-specialist` | P0 |
+| **CF-203** | Epic 2 | [x] US-02.03: Flag Validation & Anti-Bruteforce | `backend-specialist` | P0 |
 | **CF-204** | Epic 2 | US-02.04: Tiered Hints & EXP Deduction | `backend-specialist` | P1 |
 | **CF-301** | Epic 3 | US-03.01: Docker Sandbox Spawner Daemon | `backend-specialist` | P0 |
 | **CF-302** | Epic 3 | US-03.02: Lease Lifecycle & Reaper Sweeper | `backend-specialist` | P0 |
@@ -554,11 +573,31 @@ gantt
 
 ---
 
+### Ngày 2026-10-04: CF-105 và CF-201
+
+- CF-105: RBAC, workflow Creator, admin console; merge PR #12 (`4a30710`).
+- CF-201: catalog/detail lộ trình, module/phòng và prerequisite; merge PR #13/#14 (`1493d12`, `3db8c36`).
+
+### Ngày 2026-10-11: CF-004 và tích hợp API/UI
+
+- Modern Minimal cho các trang hiện có, PR #15 (`2b7470f`).
+- PR #16 (`3d505e7`): session dùng chung, refresh/retry, nối paths/profile/roles với API, PathEnrollment persistence, phân trang admin và xử lý response cũ.
+- Kiểm chứng: 71 backend tests, 11 frontend tests; lint/typecheck/build pass; browser kiểm tra login, enroll/reload, sửa profile, yêu cầu Creator và approve/reject/phân trang.
+- Giới hạn: chưa áp dụng SQL enrollment vào DB chính; profile telemetry còn mô phỏng.
+
+### Ngày 2026-10-12: CF-202 và CF-203
+
+- CF-202 commit `13fd2e4`, nhánh `codex/cf-202-room-workspace` đã push. Hoàn thành phần workspace được duyệt; không dựng terminal giả. 76 backend tests, 14 frontend tests và build/lint pass.
+- CF-203 trên nhánh `codex/cf-203-flag-validation`: static SHA-256, regex có timeout, dynamic HMAC, submit API, EXP transaction chống thưởng trùng, Redis sliding window, form desktop và countdown.
+- Người dùng chốt: khóa ngay lần sai thứ 5/60s trong 180s; dynamic `flag{24 hex HMAC}`.
+- Kiểm chứng cuối: 93 backend tests / 9 suites, 14 frontend tests / 2 suites; lint/typecheck/build pass. Browser desktop: sai giữ nháp, đúng +50 EXP, progress1/2, menu50 EXP, lần5 khóa03:00, reload không vượt khóa.
+- Seed mới lưu static hash; SQL chuyển plaintext cũ đã chuẩn bị nhưng chưa áp dụng DB chính. Chưa đo SLA dưới tải; lab runtime thuộc CF-301–304, hints thuộc CF-204, radar thật thuộc CF-703.
+- Chi tiết: [CF-203 handoff](docs/handoffs/CF-203.md), [handoff hiện tại](docs/handoffs/CURRENT_TASK.md).
+
+---
+
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **Task CF-105: Phân quyền Granular RBAC & Quy trình Xét duyệt Creator (US-01.04):**
-   - Middleware RBAC phân quyền `Student`, `Creator`, `Instructor`, `Admin`.
-   - Luồng nộp đơn "Become a Creator" (Wireframe 3.1) và giao diện xét duyệt `/admin/roles`.
-2. **Task CF-201 & CF-202 (Epic 2):**
-   - Bắt đầu triển khai Catalog Lộ trình Học tập (`/paths`) và không gian thực hành All-in-One Split-Pane (`/rooms/[slug]`).
-
+1. **CF-204:** Gợi ý theo cấp, xác nhận chi phí và khấu trừ EXP; triển khai tuần tự sau CF-203.
+2. **CF-301–304:** Provisioning, vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202.
+3. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

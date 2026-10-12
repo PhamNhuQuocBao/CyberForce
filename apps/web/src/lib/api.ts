@@ -605,3 +605,24 @@ export const roomsApi = {
     });
   },
 };
+
+export interface SubmissionResult {
+  questionId: string;
+  isCorrect: boolean;
+  alreadyCompleted: boolean;
+  pointsEarned: number;
+  totalExp: number;
+}
+
+export const submissionsApi = {
+  submit(taskId: string, questionId: string, answer: string, accessToken: string) {
+    return request<{ success: true; data: SubmissionResult }>(
+      `/tasks/${encodeURIComponent(taskId)}/submit`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ questionId, answer }),
+      },
+    );
+  },
+};

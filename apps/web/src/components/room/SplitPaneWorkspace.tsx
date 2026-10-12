@@ -2,12 +2,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import type { RoomDetail } from '@/lib/api';
+import { QuestionAnswerForm } from './QuestionAnswerForm';
+import type { RoomDetail, SubmissionResult } from '@/lib/api';
 import { LessonContent } from './LessonContent';
 import { readWorkspace } from './workspace-state';
 
-export function SplitPaneWorkspace({ room, userId }: { room: RoomDetail; userId: string }) {
+export function SplitPaneWorkspace({
+  room,
+  userId,
+  onCompleted,
+}: {
+  room: RoomDetail;
+  userId: string;
+  onCompleted: (result: SubmissionResult) => void;
+}) {
   const storageKey = `cf-room-v1:${userId}:${room.id}`;
   const [state, setState] = useState(() => readWorkspace(null));
   const [ready, setReady] = useState(false);
@@ -152,43 +160,26 @@ export function SplitPaneWorkspace({ room, userId }: { room: RoomDetail; userId:
                   >
                     <LessonContent content={task.content} />
                     {task.questions.map((question) => (
-                      <div key={question.id} className="space-y-2 border-t pt-4">
-                        <label
-                          htmlFor={`answer-${question.id}`}
-                          className="block text-sm font-medium"
-                        >
-                          {question.text}
-                        </label>
-                        <p className="text-sm text-muted-foreground">
-                          {question.pointsReward} EXP ·{' '}
-                          {question.isCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
-                        </p>
-                        {!question.isCompleted && (
-                          <Input
-                            id={`answer-${question.id}`}
-                            autoComplete="off"
-                            spellCheck={false}
-                            maxLength={10000}
-                            value={state.answers[question.id] ?? ''}
-                            aria-describedby="submission-status"
-                            onChange={(event) => {
-                              const answer = event.target.value;
-                              setState((previous) => ({
-                                ...previous,
-                                answers: { ...previous.answers, [question.id]: answer },
-                              }));
-                            }}
-                          />
-                        )}
-                      </div>
+                      <QuestionAnswerForm
+                        key={question.id}
+                        taskId={task.id}
+                        question={question}
+                        answer={state.answers[question.id] ?? ''}
+                        onCompleted={onCompleted}
+                        onAnswer={(answer) =>
+                          setState((previous) => ({
+                            ...previous,
+                            answers: { ...previous.answers, [question.id]: answer },
+                          }))
+                        }
+                      />
                     ))}
                   </div>
                 </section>
               ))}
             </div>
             <p id="submission-status" className="mt-6 text-sm text-muted-foreground">
-              Bạn có thể lưu nháp câu trả lời. Chấm bài và mở gợi ý chưa khả dụng trong phiên bản
-              này.
+              Bản nháp được lưu trên trình duyệt này. Mở gợi ý chưa khả dụng.
             </p>
           </div>
         </Panel>

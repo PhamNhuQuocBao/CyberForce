@@ -53,12 +53,12 @@
   - Hỗ trợ 3 cơ chế chấm cờ:
     1. Static Flag: Chuỗi cờ cố định định dạng `CF{...}` (dành cho bài lab lý thuyết/căn bản).
     2. Regex Flag: Chấp nhận đáp án khớp biểu thức chính quy (dành cho câu hỏi mở/IP/chuỗi hash).
-    3. Dynamic Salted Flag: Mã cờ sinh động theo phiên của từng học viên bằng thuật toán HMAC-SHA256 (`CF{user_id_salt_hash}`), ngăn chặn hoàn toàn việc sao chép cờ giữa các tài khoản.
-  - Quy tắc chống dò đáp án (Brute-force Protection): Cho phép tối đa 5 lần nộp cờ sai trong vòng 60 giây. Nếu vượt quá, khóa quyền nộp cờ của câu hỏi đó trong vòng 3 phút.
+    3. Dynamic Salted Flag: Mã cờ sinh động theo phiên của từng học viên bằng thuật toán HMAC-SHA256 (`flag{24 ký tự hex HMAC}`, theo TDD 9.1; người dùng chốt 2026-10-12), ngăn chặn hoàn toàn việc sao chép cờ giữa các tài khoản.
+  - Quy tắc chống dò đáp án (Brute-force Protection): Ngay lần nộp sai thứ 5 trong cửa sổ 60 giây, khóa quyền nộp câu hỏi đó của tài khoản trong 3 phút (người dùng chốt 2026-10-12).
   - Khi nộp cờ đúng: Cộng điểm EXP vào tổng điểm học viên, cộng điểm vào các trục Radar kỹ năng tương ứng và kích hoạt hiệu ứng chúc mừng.
 * **Acceptance Criteria:**
   - **Scenario 1 (Thành công - Nộp đúng Dynamic Flag và nhận thưởng EXP tức thì):**
-    - **Given** Học viên đang giải Task 2 của phòng lab có gán cờ động `CF{f8a1290bc4d_sql_master}` (trị giá 50 EXP).
+    - **Given** Học viên đang giải Task 2 của phòng lab có gán cờ động `flag{f8a1290bc4d0123456789abc0}` (trị giá 50 EXP).
     - **When** Học viên dán chuỗi cờ vào ô nộp bài và nhấn nút "Submit".
     - **Then** Hệ thống phản hồi tức thì ($< 300\text{ms}$) với thông báo thành công "Correct Answer! +50 EXP".
     - **And** Ô nộp bài chuyển sang màu xanh lá cây, hiển thị biểu tượng hoàn thành và khóa ô nhập.
