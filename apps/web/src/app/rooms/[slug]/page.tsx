@@ -88,7 +88,31 @@ export default function RoomPage() {
                   {room.pointsReward} EXP
                 </p>
               </header>
-              <SplitPaneWorkspace key={`${user.id}:${room.id}`} room={room} userId={user.id} />
+              <SplitPaneWorkspace
+                key={`${user.id}:${room.id}`}
+                room={room}
+                userId={user.id}
+                onCompleted={(result) =>
+                  setRoom((previous) => {
+                    if (!previous) return previous;
+                    const tasks = previous.tasks.map((task) => ({
+                      ...task,
+                      questions: task.questions.map((question) =>
+                        question.id === result.questionId
+                          ? { ...question, isCompleted: true }
+                          : question,
+                      ),
+                    }));
+                    return {
+                      ...previous,
+                      tasks,
+                      completedQuestions: tasks
+                        .flatMap((task) => task.questions)
+                        .filter((question) => question.isCompleted).length,
+                    };
+                  })
+                }
+              />
             </>
           )
         )}

@@ -1,5 +1,6 @@
 import { PrismaClient, UserRole, RoomType, FlagType } from '@prisma/client';
 import argon2 from 'argon2';
+import { createHash } from 'node:crypto';
 
 const prisma = new PrismaClient();
 
@@ -511,13 +512,13 @@ async function main() {
         create: [
           {
             questionText: 'What is the boolean true condition payload?',
-            flagPattern: "' OR 1=1 --",
+            answerHash: createHash('sha256').update("' OR 1=1 --").digest('hex'),
             flagType: FlagType.static,
             pointsReward: 75,
           },
           {
             questionText: 'Submit the extracted admin password hash.',
-            flagPattern: 'CF{sqli_admin_hash_99a8}',
+            answerHash: createHash('sha256').update('CF{sqli_admin_hash_99a8}').digest('hex'),
             flagType: FlagType.static,
             pointsReward: 75,
           },
@@ -539,13 +540,13 @@ async function main() {
         create: [
           {
             questionText: 'What function pauses execution in PostgreSQL?',
-            flagPattern: 'pg_sleep',
+            answerHash: createHash('sha256').update('pg_sleep').digest('hex'),
             flagType: FlagType.static,
             pointsReward: 100,
           },
           {
             questionText: 'Submit the blind flag extracted from the database table.',
-            flagPattern: 'CF{blind_time_delay_success}',
+            answerHash: createHash('sha256').update('CF{blind_time_delay_success}').digest('hex'),
             flagType: FlagType.static,
             pointsReward: 100,
           },
@@ -568,13 +569,15 @@ async function main() {
           {
             questionText:
               'Identify the vulnerable user registration field that stores the malicious payload.',
-            flagPattern: 'username',
+            answerHash: createHash('sha256').update('username').digest('hex'),
             flagType: FlagType.static,
             pointsReward: 125,
           },
           {
             questionText: 'Submit the flag from the administrative logs table.',
-            flagPattern: 'CF{sqli_2nd_order_waf_bypassed}',
+            answerHash: createHash('sha256')
+              .update('CF{sqli_2nd_order_waf_bypassed}')
+              .digest('hex'),
             flagType: FlagType.static,
             pointsReward: 125,
           },
@@ -596,7 +599,7 @@ async function main() {
         create: [
           {
             questionText: 'Submit the captured DNS exfiltration token.',
-            flagPattern: 'CF{oast_dns_callback_received}',
+            answerHash: createHash('sha256').update('CF{oast_dns_callback_received}').digest('hex'),
             flagType: FlagType.static,
             pointsReward: 250,
           },

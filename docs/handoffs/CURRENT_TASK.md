@@ -98,3 +98,9 @@ pnpm exec prisma generate
 
 CyberForce ưu tiên giao diện web desktop. Không cần kiểm thử giao diện mobile trừ khi người dùng yêu cầu rõ ràng. Áp dụng cho các giai đoạn tiếp theo.
 Người dùng đã yêu cầu commit và push CF-202; chưa yêu cầu merge/deploy.
+
+## Tiếp nối CF-203 — trạng thái hiện tại
+
+CF-202 đã commit/push `13fd2e4`. CF-203 ở nhánh `codex/cf-203-flag-validation` dựa trên commit đó, chưa commit/push. Người dùng duyệt triển khai tuần tự và đã chốt khóa ngay lần sai5/60s trong180s, dynamic prefix `flag{24 hex}`.
+
+Chi tiết API, dữ liệu cũ, kiểm thử và giới hạn: [CF-203.md](CF-203.md). Đã triển khai validator, submission API + EXP transaction, Redis chống brute-force, form desktop và countdown. Không mở rộng sang CF-204/CF-301. Người dùng đã yêu cầu commit/push CF-203 và cập nhật task-breakdown; dùng git log/status kiểm tra kết quả thực tế.
