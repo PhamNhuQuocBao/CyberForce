@@ -140,8 +140,7 @@ export default function LearningPathDetailPage() {
                 </p>
               )}
               <p className="text-sm text-muted-foreground">
-                Phòng học chưa mở trên phiên bản này. Bạn có thể xem nội dung và điều kiện tiên
-                quyết bên dưới.
+                Chọn phòng học bên dưới để đọc bài và soạn câu trả lời.
               </p>
             </Card>
             {path.modules.length === 0 && <p>Chưa có học phần trong lộ trình này.</p>}
@@ -175,7 +174,11 @@ export default function LearningPathDetailPage() {
                             Xem điều kiện tiên quyết
                           </Button>
                         ) : (
-                          <p className="text-sm text-muted-foreground">Phòng học chưa mở</p>
+                          <Button asChild variant="outline">
+                            <Link href={`/rooms/${encodeURIComponent(room.slug)}`}>
+                              Mở phòng học
+                            </Link>
+                          </Button>
                         )}
                       </li>
                     ))}

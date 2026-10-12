@@ -80,3 +80,21 @@ pnpm exec prisma generate
 4. Kiểm tra thêm biểu mẫu khi lỗi mạng/403 và refresh token trong trình duyệt thực; các trường hợp refresh đã được test tự động bằng fetch mock, chưa chờ TTL thật trong browser.
 5. Cân nhắc kiểm thử toàn bộ responsive và trạng thái riêng tư bằng hai tài khoản trước nghiệm thu đầy đủ.
 6. Commit/push đã được người dùng duyệt. Merge/deploy và áp dụng DB chính chưa được yêu cầu.
+
+## Tiếp nối CF-202 — 2026-10-12 (thay thế phạm vi phòng học bên trên)
+
+- Người dùng đã duyệt triển khai CF-202. Branch hiện tại `codex/cf-202-room-workspace`, nền main `3d505e7` sau PR16. Chưa commit/push phần CF-202.
+- Đã thêm GET `/api/v1/rooms/:slug`, bắt buộc đăng nhập, chặn phòng chưa xuất bản/future, path chưa xuất bản, phòng trả phí và prerequisite chưa hoàn thành. Response không chứa answerHash/pattern/hints/VM spec; cache private,no-store.
+- `/rooms/[slug]` nối từ paths; Markdown an toàn, task accordion, câu trả lời nháp, progress thật. Lý thuyết toàn chiều rộng, lab chia đôi desktop và chuyển vùng mobile. Chưa có chấm bài/gợi ý (CF-203/204) hoặc provisioning/terminal (CF-301); UI ghi rõ chưa khả dụng.
+- Bản nháp, accordion, scroll, tỷ lệ pane lưu localStorage với khóa `cf-room-v1:<userId>:<roomId>`; không đồng bộ lên server. Có thông báo khi storage bị chặn/mất mạng.
+- Kiểm thử phát hiện race trong enrollment upsert cũ: đổi sang createMany skipDuplicates rồi đọc bản ghi, giữ timestamp và tính idempotent.
+- Backend 76 tests/7 suites pass, frontend 14 tests/2 suites pass. Frontend/backend lint, typecheck/build pass. Test vẫn dùng schema `cf_integration_20261011_9a93`, Redis15; không đổi DB chính.
+- Fixture local mới: `room_check`, `room_other`; phòng `cf202-practice`, `cf202-theory`. Launcher `/tmp/cf202-run.cjs` đọc env từ checkout gốc và ép schema test; file/process có thể mất ở lượt sau.
+- Browser đã xác minh đăng nhập, đọc Markdown, giữ draft và tỷ lệ 50/50 sau reload, mở rộng/khôi phục, draft qua tab mobile, phòng khác không dùng nháp cũ. Phát hiện wrapper panel vẫn chiếm 50% khi nội dung bị ẩn, đã bổ sung CSS nhắm wrapper ngoài.
+- Còn giới hạn: chưa kiểm thử offline/storage bị chặn thực tế và toàn bộ ma trận viewport/theme. Dữ liệu profile mô phỏng vẫn ngoài phạm vi như ghi ở trên.
+- Kiểm tra cuối sau build: mobile lesson wrapper rộng 341px, lab 0px (đúng toàn vùng); tài khoản `room_other` mở cùng phòng thấy ô nháp trống. Viewport override đã reset. Frontend build cuối exit 0.
+
+## Ưu tiên người dùng xác nhận 2026-10-12
+
+CyberForce ưu tiên giao diện web desktop. Không cần kiểm thử giao diện mobile trừ khi người dùng yêu cầu rõ ràng. Áp dụng cho các giai đoạn tiếp theo.
+Người dùng đã yêu cầu commit và push CF-202; chưa yêu cầu merge/deploy.

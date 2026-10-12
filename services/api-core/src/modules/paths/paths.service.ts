@@ -48,10 +48,12 @@ export interface PathModuleGroup {
 export class PathsService {
   async enroll(slug: string, userId: string) {
     const path = await this.getPathBySlug(slug, userId);
-    const enrollment = await prisma.pathEnrollment.upsert({
+    await prisma.pathEnrollment.createMany({
+      data: [{ userId, pathId: path.id }],
+      skipDuplicates: true,
+    });
+    const enrollment = await prisma.pathEnrollment.findUniqueOrThrow({
       where: { userId_pathId: { userId, pathId: path.id } },
-      create: { userId, pathId: path.id },
-      update: {},
     });
     return {
       pathId: path.id,
