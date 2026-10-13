@@ -16,6 +16,8 @@ const envSchema = z.object({
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
+  ORCHESTRATOR_URL: z.url().default('http://127.0.0.1:8081'),
+  ORCHESTRATOR_TOKEN: z.string().min(32).default('cyberforce_local_orchestrator_token_2026'),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
