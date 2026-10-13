@@ -1,4 +1,4 @@
-> **Thiết kế UI/UX mới (2026-10-10):** [Modern Minimal v3](DESIGN.md) và [wireframe desktop/mobile](docs/07-wireframes/modern-minimal/README.md) là chuẩn cho đợt tái thiết kế đã duyệt. Frontend hiện tại vẫn dùng style cũ; các phần Neo-Brutalism/Tactical HUD bên dưới mô tả lịch sử triển khai, không phải hướng thiết kế mới.
+> **Thiết kế UI/UX hiện hành (2026-10-13):** [Modern Minimal v3](DESIGN.md), [wireframe](docs/07-wireframes/modern-minimal/README.md) và [gói prompt Stitch](docs/07-wireframes/modern-minimal/STITCH.md) là nguồn thiết kế. Web desktop là ưu tiên. Một số route đã dùng style mới; [ma trận hiện trạng](docs/07-wireframes/modern-minimal/IMPLEMENTATION-STATUS.md) phân biệt phần đã triển khai và ý tưởng. Các đoạn Neo-Brutalism/Tactical HUD còn lại chỉ là lịch sử dự án.
 
 # 🛡️ CyberForce (CyberForge)
 
@@ -206,7 +206,7 @@ graph TB
 | Tầng Hệ thống | Công nghệ Sử dụng | Lý do Lựa chọn Kỹ thuật |
 | :--- | :--- | :--- |
 | **Frontend Framework** | **Next.js 14 (App Router, TypeScript)** | Server-Side Rendering (SSR) chuẩn SEO, React Server Components, tối ưu hóa hiệu năng. |
-| **Giao diện & Thẩm mỹ** | **Vanilla CSS Tokens / Tailwind CSS v4** | **Tactical Cyber-HUD**, góc bo sắc nhọn `0px - 2px`, Dark Obsidian (`#070A0F`), triệt để **không sử dụng màu tím** (*Strict Purple Ban*). |
+| **Giao diện & Thẩm mỹ** | **CSS tokens / Tailwind CSS v4** | **Modern Minimal v3**: light mặc định, navy và electric lime, Inter + JetBrains Mono; xem [DESIGN.md](DESIGN.md). |
 | **Web Terminal** | **xterm.js + WebSockets** | Trải nghiệm dòng lệnh chân thực, mượt mà chuẩn 60 FPS, hỗ trợ copy/paste và resize PTY động. |
 | **In-Browser GUI** | **Apache Guacamole (guacd)** | Chuyển mã RDP/VNC sang giao thức HTML5 Canvas nhẹ nhàng, không yêu cầu cài plugin trình duyệt. |
 | **Backend Core** | **Go (Golang) / NestJS** | Khả năng xử lý đồng thời cao (concurrency), độ trễ thấp, quản lý tiến trình mạng an toàn. |
@@ -300,17 +300,17 @@ Dự án hiện đang trong giai đoạn triển khai **Phase 1: Core MVP** theo
 - **Monorepo & Workspace (`CF-001`):** Cấu trúc pnpm workspaces tách biệt rõ ràng giữa `apps/web` (Next.js 14) và `services/api-core` (Fastify + Prisma), cấu hình chuẩn TypeScript, ESLint, Prettier, Husky và Commitlint.
 - **Docker Compose Stack (`CF-002`):** Cụm hạ tầng gồm PostgreSQL 16, Redis 7.2, MinIO, Apache Guacamole `guacd`, Traefik v3.
 - **CSDL & Seed Data (`CF-003`):** Lược đồ Prisma 9 bảng thực thể cốt lõi (`users`, `refresh_tokens`, `learning_paths`, `rooms`, `tasks`, `questions`, `lab_instances`, `submissions`, `certificates`) kèm seed script nạp dữ liệu mẫu ban đầu.
-- **Design System Neo-Brutalism (`CF-004`):** Triển khai toàn diện theo phong cách **Neo-Brutalism / Soft Brutalism (Positivus Theme)** tại [`DESIGN.md`](DESIGN.md) với bảng màu `#B9FF66` Electric Lime, `#191A23` Charcoal Ink Black, bo góc `40px` cho Card, `14px` cho Button/Input, đổ bóng phẳng `shadow-neo` (0 blur).
+- **Design System (`CF-004`):** Bản Neo-Brutalism là mốc lịch sử. Hướng đang áp dụng là [Modern Minimal v3](DESIGN.md); xem [hiện trạng từng màn hình](docs/07-wireframes/modern-minimal/IMPLEMENTATION-STATUS.md).
 
 #### 2. Phân hệ Định danh & Xác thực (Phase 1 - Epic 1: Identity & RBAC):
 - **1-Click OAuth2 PKCE (`CF-101`):** Hỗ trợ đăng nhập nhanh bằng **Google** và **GitHub** theo chuẩn RFC 7636 (Authorization Code Flow với PKCE `code_challenge`, `code_verifier`, CSRF `state`).
 - **Xác thực Mật khẩu & Chống Brute-force (`CF-103`):** Băm mật khẩu bằng Argon2id, quản lý phiên làm việc bằng HTTP-only Refresh Cookie, tích hợp Redis Rate Limiting tự động khóa tài khoản 15 phút nếu nhập sai 5 lần liên tiếp (HTTP 429).
 - **Bộ Giao diện Authentication Hoàn chỉnh (Next.js 14 Web App):**
-  - **Auth Layout:** Bố cục Asymmetric Split (40% Telemetry Card Cyber Range trực quan, 60% Form Neo-Brutalist).
+  - **Auth Layout:** Form Modern Minimal tập trung vào tác vụ xác thực, phản hồi lỗi ở cạnh trường liên quan.
   - **Trang Đăng nhập (`/login`):** Tích hợp nút 1-Click OAuth2 Google & GitHub, form Email/Password kèm bộ đếm ngược thời gian thực (Live Countdown Timer) khi tài khoản bị tạm khóa.
   - **Trang Đăng ký (`/register`):** Đăng ký định danh `@handle` và thanh kiểm tra tiêu chuẩn bảo mật mật khẩu trực quan 4 tiêu chí.
   - **Trang OAuth Callback (`/auth/callback`):** Bọc trong `Suspense`, tự động nhận diện JWT và xác thực người dùng.
-  - **Navbar Trang chủ:** Hiển thị thẻ người dùng (`@handle`, rank badge `Novice`, chuỗi streak).
+  - **Navbar Trang chủ:** Điều hướng gọn theo quyền; tiến độ và thành tích nằm trong hồ sơ/dashboard khi có dữ liệu thật.
 - **Kiểm thử Tự động:** Đạt **38/38 tests passing** cho toàn bộ API xác thực (`api-core`), typecheck & build Next.js thành công 100%.
 
 ---
@@ -419,12 +419,9 @@ Chúng tôi luôn chào đón sự đóng góp của cộng đồng an ninh mạ
 2. **Quy chuẩn Thông điệp Commit (Conventional Commits):**
    - Cú pháp: `<type>(<scope>): <short summary>`
    - Ví dụ: `feat(auth): CF-101 implement 1-click OAuth2 authentication with PKCE`
-3. **Quy chuẩn Thiết kế Giao diện (Neo-Brutalism / Positivus Theme):**
-   - Tuân thủ tài liệu chuẩn thiết kế [`DESIGN.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/DESIGN.md):
-     - **Bảng màu chủ đạo:** Electric Lime (`#B9FF66`), Charcoal Ink Black (`#191A23`), Soft Warm Gray (`#F3F3F3`).
-     - **Kiểu dáng đặc trưng:** Viền sắc nét 1px-2px, đổ bóng phẳng không blur (`shadow-neo`, `shadow-neo-lg`), bo góc hào phóng (`rounded-[40px]` cho Card, `rounded-[14px]` cho Button/Input).
-     - **Font chữ:** `Plus Jakarta Sans` cho văn bản/tiêu đề và `JetBrains Mono` cho terminal/code/flag.
-     - **Quy tắc Purple Ban:** Nghiêm cấm sử dụng sắc tím/violet theo quy chuẩn thương hiệu.
+3. **Quy chuẩn Thiết kế Giao diện (Modern Minimal v3):**
+   - Theo [DESIGN.md](DESIGN.md) và [gói Stitch](docs/07-wireframes/modern-minimal/STITCH.md): light mặc định, navy `#212C42`, electric lime `#A3EA2A`, Inter + JetBrains Mono, control bo 4px, panel bo 8px.
+   - Dùng trạng thái và dữ liệu do backend xác nhận; không thêm telemetry, terminal hoặc thành tích giả để trang trí.
 
 ---
 

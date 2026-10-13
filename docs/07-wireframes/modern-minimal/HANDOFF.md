@@ -2,7 +2,7 @@
 
 ## Đã được phê duyệt
 
-Toàn bộ 8 epic cộng trang chủ/dashboard; wireframe desktop/mobile và trạng thái; light mặc định/dark; Inter + JetBrains Mono; hai vùng phòng học; phản hồi tại chỗ thay popup chúc mừng; danh sách thành tích thay badges trang trí. DESIGN.md là hướng thiết kế mới, không mô tả CSS hiện đang chạy.
+Toàn bộ 8 epic cộng trang chủ/dashboard; desktop web ưu tiên, responsive là tham khảo; light mặc định/dark; Inter + JetBrains Mono; hai vùng cho phòng thực hành; phản hồi tại chỗ thay popup chúc mừng; danh sách thành tích thay badges trang trí. DESIGN.md cũng là nguồn token cho các trang Modern Minimal đã triển khai. Xem [hiện trạng](IMPLEMENTATION-STATUS.md) và [gói Stitch](STITCH.md).
 
 ## Đối chiếu nguồn và giới hạn
 
@@ -23,7 +23,7 @@ Các điểm này không được coi là thay đổi nghiệp vụ đã đượ
 
 ## Phạm vi thay đổi hiện tại
 
-Chỉ tài liệu và theme nguồn trong worktree. Không chỉnh React, CSS, API, database, dependencies, routing, dữ liệu hoặc môi trường triển khai. Các wireframe cũ được đánh dấu đã thay thế để giữ lịch sử đối chiếu. Chưa tạo PR, commit hoặc deploy.
+Đợt cập nhật Stitch chỉ sửa tài liệu. Không chỉnh React, CSS, API, database, dependencies, routing, dữ liệu hoặc môi trường triển khai. Các wireframe cũ giữ làm lịch sử đối chiếu. Không suy ra trạng thái commit, PR hay deploy từ tài liệu này.
 
 ## Tiêu chí nghiệm thu khi triển khai frontend sau này
 
@@ -35,7 +35,7 @@ Chỉ tài liệu và theme nguồn trong worktree. Không chỉnh React, CSS, A
 - [ ] Quyền riêng tư và RBAC: khách/private/Student/Creator/Admin/tổ chức không thấy dữ liệu ngoài quyền.
 - [ ] CMS và Creator: validation, test, gửi duyệt, duyệt đồng thời và bản nháp không mất khi lỗi.
 - [ ] B2B: người chưa học không bị đánh giá là năng lực 0; đơn vị/benchmark có nguồn rõ ràng.
-- [ ] Desktop 1440/1024, tablet 768, mobile 390/320, zoom 200%, light/dark và bàn phím.
+- [ ] Ưu tiên kiểm tra desktop 1440/1024, zoom 200%, light/dark và bàn phím. Chỉ kiểm thử mobile khi người dùng yêu cầu.
 - [ ] Đối chiếu đầy đủ 64 hàng TRACEABILITY và mọi user story trong 8 epic.
 
-Đây là checklist cho bước triển khai, chưa đánh dấu đã chạy test UI. Bản bàn giao hiện tại chỉ được kiểm tra cấu trúc tài liệu, liên kết, độ phủ đối chiếu và token màu.
+Đây là checklist cho phần chưa triển khai, không phủ nhận các kiểm thử UI/API đã ghi trong handoff kỹ thuật. Gói Stitch là đầu vào thiết kế, không phải bằng chứng tính năng đang chạy.

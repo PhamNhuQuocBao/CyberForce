@@ -1,6 +1,6 @@
 # Trang chủ và tổng quan
 
-Phiên bản wireframe Modern Minimal · 2026-10-10. Đây là thiết kế, chưa triển khai frontend.
+Wireframe Modern Minimal · cập nhật 2026-10-13. Một số màn hình đã có frontend/API, phần còn lại là ý tưởng; xem [hiện trạng](IMPLEMENTATION-STATUS.md) và [prompt Stitch](STITCH.md).
 
 [Chỉ mục](README.md) · [Quy tắc chung](FOUNDATION.md) · [Design system](../../../DESIGN.md)
 

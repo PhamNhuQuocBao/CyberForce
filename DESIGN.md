@@ -1,7 +1,7 @@
 ---
 name: CyberForce Modern Minimal — Navy & Electric Lime
 version: 3.0.0
-description: Approved redesign direction; frontend migration is not implemented in this documentation delivery.
+description: Approved Modern Minimal design system; implemented screens and future concepts share these tokens.
 colors:
   primary: "#A3EA2A"
   primary-foreground: "#151C2B"
@@ -134,7 +134,7 @@ components:
 
 Hệ thống đào tạo an ninh mạng cho học viên, người thi đấu, giảng viên, quản trị viên và tổ chức. Phân cấp theo nhiệm vụ: học tiếp, thực hành, nộp bài, kiểm tra kết quả. Dùng typography và khoảng cách để làm rõ thông tin; màu chỉ hỗ trợ hành động hoặc trạng thái.
 
-Nguồn màu là [cybersecurity-theme.md](docs/cybersecurity-theme.md). Người dùng đã duyệt light mặc định, dark mode, Inter + JetBrains Mono, workspace hai vùng và loại bỏ các hiệu ứng trang trí. Tài liệu này thay thế design system Neo-Brutalism v2. **Frontend hiện có chưa được chuyển sang v3.** Xem [wireframe](docs/07-wireframes/modern-minimal/README.md).
+Nguồn màu là [cybersecurity-theme.md](docs/cybersecurity-theme.md). Người dùng đã duyệt light mặc định, dark mode, Inter + JetBrains Mono, workspace hai vùng cho phòng thực hành và loại bỏ các hiệu ứng trang trí. Tài liệu này thay thế design system Neo-Brutalism v2. Các trang xác thực, hồ sơ, lộ trình, phòng học và phân quyền hiện đã dùng hướng Modern Minimal; các màn hình còn lại là thiết kế cho giai đoạn tiếp theo. Xem [wireframe và gói Stitch](docs/07-wireframes/modern-minimal/README.md).
 
 ## Colors
 
