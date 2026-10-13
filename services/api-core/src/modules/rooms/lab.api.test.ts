@@ -190,4 +190,57 @@ describe('CF-301 lab lifecycle API', () => {
       ).statusCode,
     ).toBe(200);
   });
+
+  it('extends only the owner session, at most three times, including grace', async () => {
+    const spawn = await app.inject({
+      method: 'POST',
+      url: `${url}/spawn`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(spawn.statusCode).toBe(201);
+    const id = spawn.json().data.instanceId as string;
+    const extend = (authorization?: string) =>
+      app.inject({
+        method: 'POST',
+        url: `${url}/extend`,
+        headers: authorization ? { authorization: `Bearer ${authorization}` } : {},
+      });
+    expect((await extend()).statusCode).toBe(401);
+    expect((await extend(otherToken)).statusCode).toBe(404);
+    const graceDeadline = new Date(Date.now() - 60_000);
+    await prisma.labInstance.update({
+      where: { id },
+      data: { expiresAt: graceDeadline },
+    });
+    const first = await extend(token);
+    expect(first.statusCode).toBe(200);
+    expect(first.json().data.extensionCount).toBe(1);
+    expect(first.json().data.remainingSeconds).toBeGreaterThan(3500);
+    expect((await extend(token)).json().data.extensionCount).toBe(2);
+    const concurrent = await Promise.all([extend(token), extend(token)]);
+    expect(concurrent.map((response) => response.statusCode).sort()).toEqual([200, 409]);
+    const fourth = await extend(token);
+    expect(fourth.statusCode).toBe(409);
+    expect(fourth.json().error.code).toBe('LAB_EXTENSION_LIMIT');
+    const afterThree = await prisma.labInstance.findUniqueOrThrow({ where: { id } });
+    expect(afterThree.extensionCount).toBe(3);
+    expect(afterThree.expiresAt.getTime()).toBe(graceDeadline.getTime() + 3 * 60 * 60_000);
+    await prisma.labInstance.update({
+      where: { id },
+      data: { extensionCount: 2, expiresAt: new Date(Date.now() - 4 * 60_000) },
+    });
+    const expired = await extend(token);
+    expect(expired.statusCode).toBe(409);
+    expect(expired.json().error.code).toBe('LAB_LEASE_EXPIRED');
+    expect((await prisma.labInstance.findUniqueOrThrow({ where: { id } })).extensionCount).toBe(2);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `${url}/stop`,
+          headers: { authorization: `Bearer ${token}` },
+        })
+      ).statusCode,
+    ).toBe(200);
+  });
 });

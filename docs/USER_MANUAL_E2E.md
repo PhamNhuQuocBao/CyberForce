@@ -107,16 +107,17 @@ Creator và Instructor hiện không có workflow tác giả riêng để kiểm
 
 **API quản trị bổ sung (tùy chọn, chỉ trên DB thử nghiệm):** Đăng nhập Superadmin bằng API như bước 7 để lấy access token. Lấy `data.user.id` của một tài khoản test từ response đăng nhập tài khoản đó, rồi gọi `POST /api/v1/admin/users/assign-role` với JSON `{"userId":"<UUID tài khoản test>","role":"instructor"}` hoặc `"org_admin"`. Đăng nhập lại tài khoản test: Instructor vẫn bị chặn ở `/admin/roles`, Org Admin mở được trang này. `GET /api/v1/admin/audit-logs` bằng token Admin cho phép xem lịch sử thao tác quyền. Student/Instructor gọi các API `/admin/*` phải bị từ chối 403. Gán role trực tiếp và audit log chưa có UI.
 
-## 7. Kiểm tra backend CF-301 bằng API client (tùy chọn)
+## 7. Kiểm tra backend CF-301–302 bằng API client (tùy chọn)
 
-Web hiện hiển thị **Khởi chạy máy (chưa khả dụng)**; chưa có terminal, bộ đếm giờ, gia hạn hay nút dừng. Muốn thử CF-301, dùng Postman/Insomnia hoặc công cụ API tương đương trên DB local thử nghiệm.
+Web hiện hiển thị **Khởi chạy máy (chưa khả dụng)**; chưa có terminal, bộ đếm giờ, gia hạn hay nút dừng. Muốn thử backend CF-301–302, dùng Postman/Insomnia hoặc công cụ API tương đương trên DB local thử nghiệm.
 
 1. Gửi `POST http://localhost:4000/api/v1/auth/login` với JSON `{"email":"<email Student>","password":"<mật khẩu>"}`; lấy `data.accessToken` trong response. Với các request tiếp theo, đặt header `Authorization: Bearer <accessToken>`. Không lưu token hoặc mật khẩu vào repo.
 2. Đảm bảo phòng `sql-injection-fundamentals` có image `cyberforce/sqli-basics:latest` **đã tồn tại sẵn trên Docker host**. Seed chỉ ghi tên image, không build/pull image. Nếu thiếu image, spawn có thể trả 503; đây là thiếu dữ liệu môi trường, chưa phải lỗi UI.
 3. Gửi `POST /api/v1/rooms/sql-injection-fundamentals/spawn` với Student đã đăng nhập. Kỳ vọng HTTP 201, `data.status=running`, `instanceId`, `targetIp` thuộc `100.64.0.0/10`, `expiresAt` khoảng 60 phút. Response không chứa container ID, image hoặc salt.
 4. Gửi lại spawn khi máy còn chạy: HTTP 409, mỗi tài khoản chỉ có một máy active. Dùng Student khác gửi `POST .../stop` cho phòng đó: HTTP 404; không được dừng máy của chủ phiên.
-5. Gửi `POST /api/v1/rooms/sql-injection-fundamentals/stop` bằng token chủ phiên: HTTP 200, `status=terminated`. Sau đó thử spawn lại để xác nhận đã được phép, rồi **stop lần nữa** để dọn container. Không để máy chạy chờ tự hết hạn: reaper chưa có.
-6. Nếu muốn kiểm tra bảo vệ API: spawn không token trả 401; spawn phòng trả phí trả 403; spawn phòng chưa đủ prerequisite trả 403. Các route này không thay thế giao diện người dùng.
+5. Gửi `POST /api/v1/rooms/sql-injection-fundamentals/extend` bằng token chủ phiên: hạn tăng 60 phút và `extensionCount` tăng một. Chỉ chủ phiên được gia hạn, tối đa 3 lần; sau đó API trả `LAB_EXTENSION_LIMIT`. Phiên vừa hết hạn vẫn được gia hạn trong 3 phút ân hạn. Đừng sửa đồng hồ hệ thống hoặc DB thật để thử grace; dùng DB test riêng.
+6. Gửi `POST /api/v1/rooms/sql-injection-fundamentals/stop` bằng token chủ phiên: HTTP 200, `status=terminated`. Sau đó thử spawn lại để xác nhận đã được phép, rồi **stop lần nữa** để dọn container. Nếu để phiên tự hết hạn, Go reaper kiểm tra mỗi 30 giây và dọn sau 3 phút ân hạn; không cần giữ máy chạy chỉ để đợi kiểm thử thời gian thật.
+7. Nếu muốn kiểm tra bảo vệ API: spawn không token trả 401; spawn phòng trả phí trả 403; spawn phòng chưa đủ prerequisite trả 403. Các route này không thay thế giao diện người dùng.
 
 ## 8. Ghi nhận kết quả
 

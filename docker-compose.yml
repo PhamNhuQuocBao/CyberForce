@@ -37,6 +37,8 @@ services:
     init: true
     environment:
       ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
+      REAPER_DATABASE_URL: postgresql://cyberforce_reaper@postgres:5432/${POSTGRES_DB:-cyberforce}
+      REAPER_DB_PASSWORD: ${REAPER_DB_PASSWORD:-cyberforce_local_reaper_password_2026}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -50,7 +52,13 @@ services:
   db-init:
     <<: *api
     restart: 'no'
-    command: ['pnpm', 'exec', 'prisma', 'db', 'push', '--skip-generate']
+    environment:
+      <<: *api-env
+      REAPER_DB_PASSWORD: ${REAPER_DB_PASSWORD:-cyberforce_local_reaper_password_2026}
+    command:
+      - sh
+      - -c
+      - pnpm exec prisma db push --skip-generate && node dist/scripts/setup-reaper-role.js
     depends_on:
       postgres:
         condition: service_healthy

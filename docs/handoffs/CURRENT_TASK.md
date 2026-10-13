@@ -121,3 +121,7 @@ Người dùng đã duyệt thiết kế bảng và API gợi ý. CF-204 nằm t
 ## Tiếp nối CF-301 — 2026-10-13
 
 Người dùng duyệt kế hoạch backend CF-301. Branch `codex/cf-301-lab-spawner` đã hợp nhất `origin/main` sau khi CF-204 được squash vào main. Go daemon, API Core spawn/stop, Compose và network lab `100.64.0.0/10` đã triển khai; không đổi schema. Go tests và 107 backend tests qua; Docker smoke xác nhận spawn, inspect cgroup/capability/network, chặn Internet và cleanup; full-stack Compose trên project riêng cũng healthy. Chi tiết: [CF-301.md](CF-301.md). Chưa có reaper/UI terminal/dynamic flag injection; xem giới hạn trong handoff.
+
+## Tiếp nối CF-302 — 2026-10-13
+
+Người dùng duyệt phương án Go reaper theo TDD. Branch `codex/cf-302-lease-reaper` dựa trên `main` tại `04196a5`. Đã thêm gia hạn, grace, role DB giới hạn và Go sweeper. 108 API tests, Go tests, typecheck/lint/build và Docker smoke trên project riêng qua; chi tiết ở [CF-302.md](CF-302.md). Chưa có UI timer/terminal; không suy ra commit/push từ handoff, kiểm tra Git thực tế trước khi tiếp tục.

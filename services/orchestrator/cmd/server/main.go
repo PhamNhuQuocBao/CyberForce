@@ -11,6 +11,7 @@ import (
 	"time"
 
 	labdocker "github.com/cyberforce/orchestrator/pkg/docker"
+	"github.com/cyberforce/orchestrator/pkg/reaper"
 )
 
 type labSpawner interface {
@@ -92,6 +93,22 @@ func main() {
 		log.Fatal(err)
 	}
 	defer spawner.Close()
+	databaseURL := os.Getenv("REAPER_DATABASE_URL")
+	password := os.Getenv("REAPER_DB_PASSWORD")
+	if databaseURL == "" {
+		log.Fatal("REAPER_DATABASE_URL is required")
+	}
+	if len(password) < 32 {
+		log.Fatal("REAPER_DB_PASSWORD must be at least 32 characters")
+	}
+	store, err := reaper.NewPostgresStore(context.Background(), databaseURL, password)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer store.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go (reaper.Sweeper{Store: store, Stopper: spawner}).Run(ctx)
 	server := &http.Server{Addr: ":8081", Handler: handler(spawner, token), ReadHeaderTimeout: 5 * time.Second}
 	log.Fatal(server.ListenAndServe())
 }
