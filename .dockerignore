@@ -7,3 +7,11 @@ dist
 .git
 .env*.local
 *.log
+.env
+.env.*
+**/.env
+**/.env.*
+.agents
+.codex
+*.tsbuildinfo
+**/*.tsbuildinfo

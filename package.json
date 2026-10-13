@@ -8,7 +8,7 @@
   "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" --filter \"./services/*\" run dev",
-    "docker:up": "docker compose up -d",
+    "docker:up": "docker compose up -d --build --wait",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "build": "pnpm --recursive run build",

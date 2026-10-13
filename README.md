@@ -319,57 +319,64 @@ Dự án hiện đang trong giai đoạn triển khai **Phase 1: Core MVP** theo
 
 ### 1. Yêu cầu Tiên quyết (Prerequisites)
 * **Hệ điều hành:** Linux (Ubuntu 22.04 LTS / Debian 12 khuyến nghị) hoặc macOS (với Docker Desktop).
-* **Docker & Docker Compose:** Docker Engine $\ge 24.0$ và Docker Compose $\ge v2.20$.
+* **Docker & Docker Compose:** Docker Engine $\ge 24.0$ và Docker Compose $\ge v2.20.3$.
 * **Môi trường Lập trình:** Node.js $\ge 20.x$ LTS, Go $\ge 1.22$.
 * **Công cụ bổ trợ:** WireGuard Tools (`wg`, `wg-quick`) nếu muốn kiểm thử kết nối VPN từ máy trạm.
 
-### 2. Khởi chạy Cụm Hạ tầng Cục bộ (Local Infrastructure)
-Clone kho lưu trữ mã nguồn và thiết lập biến môi trường:
+### 2. Chạy toàn bộ hệ thống bằng một lệnh Docker
+
+Tại thư mục gốc repository:
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/PhamNhuQuocBao/CyberForce.git
-cd CyberForge
+docker compose up -d --build --wait
+```
 
-# 2. Khởi tạo file cấu hình môi trường
+Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, backend Fastify và frontend Next.js. Dịch vụ `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma; backend chỉ chạy sau khi schema sẵn sàng và Redis khỏe, frontend chờ backend khỏe. `db-init` kết thúc với mã 0 là bình thường.
+
+Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
+
+| Dịch vụ | URL/cổng mặc định |
+| :--- | :--- |
+| Frontend | http://localhost:3000 |
+| Backend health | http://localhost:4000/health |
+| PostgreSQL / Redis | 5432 / 6379 |
+| MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
+| guacd | 4822 |
+| Traefik HTTP / dashboard | 8088 / http://localhost:8080 |
+
+```bash
+docker compose ps -a
+docker compose logs -f api web db-init
+# Dừng stack, giữ nguyên dữ liệu trong volume
+docker compose down
+```
+
+DB/Redis trong container được kết nối bằng hostname `postgres`/`redis`, không dùng `localhost`. Trình duyệt dùng `NEXT_PUBLIC_API_URL` (mặc định `http://localhost:4000/api/v1`). Nếu đổi cổng/host, cập nhật đồng bộ `API_PORT`, `WEB_PORT`, `API_BASE_URL`, `WEB_ORIGIN`, `NEXT_PUBLIC_API_URL` và rebuild. OAuth callback URLs cũng phải khớp URL mới. Traefik hiện chỉ là hạ tầng dự phòng, ứng dụng truy cập trực tiếp qua cổng 3000/4000.
+
+Volume hạ tầng hiện có được giữ theo tên `cyberforce_*`; không chạy `down -v` nếu muốn giữ dữ liệu. `db-init` không dùng `--accept-data-loss` hoặc reset: nếu Prisma báo thay đổi có nguy cơ mất dữ liệu, xử lý migration trước. Không tự chạy seed khi startup vì seed hiện có xóa task/submission mẫu. Chỉ nạp mẫu vào DB phát triển có thể thay thế:
+
+```bash
+docker compose run --rm api pnpm exec tsx prisma/seed.ts
+```
+
+Với dữ liệu static flag cũ, có thể áp dụng SQL chuyển sang hash sau khi kiểm tra đúng DB:
+
+```bash
+docker compose run --rm api pnpm exec prisma db execute --file prisma/sql/20261012_static_flag_hashes.sql --schema prisma/schema.prisma
+```
+
+Nếu cổng 3000/4000 đang được dùng bởi `pnpm dev/start` trên host, dừng tiến trình đó hoặc đổi cổng Compose. Muốn chạy stack thứ hai độc lập, đặt `COMPOSE_RESOURCE_PREFIX` khác, đổi các cổng host và dùng `docker compose -p <ten-project> ...`.
+
+### 3. Chạy ứng dụng ngoài Docker để phát triển (tùy chọn)
+
+```bash
 cp .env.example .env
-
-# 3. Khởi chạy cụm hạ tầng phụ trợ bằng Docker Compose
-docker compose up -d postgres redis minio traefik
-```
-
-Kiểm tra trạng thái các vùng chứa:
-```bash
-docker compose ps
-```
-
-| Dịch vụ | Cổng Mặc định | Mục đích Sử dụng |
-| :--- | :--- | :--- |
-| **Traefik Gateway** | `80`, `443`, `8080` (Dashboard) | Điểm tiếp nhận API, định tuyến WebSockets và SSL |
-| **PostgreSQL 16** | `5432` | Cơ sở dữ liệu chính |
-| **Redis 7.2** | `6379` | Quản lý Pub/Sub, Khóa phân tán và Rate Limiting |
-| **MinIO Console** | `9000` (API), `9001` (Web Console) | Lưu trữ tệp ảnh lab và chứng chỉ số PDF |
-
-### 3. Cài đặt Dependencies & Khởi tạo CSDL
-```bash
-# Cài đặt toàn bộ thư viện trong monorepo
 pnpm install
-
-# Đẩy schema Prisma vào PostgreSQL
+docker compose up -d postgres redis minio guacd traefik
 pnpm --filter @cyberforce/api-core run db:push
-
-# Nạp dữ liệu mẫu ban đầu (admin, student, sample path)
-pnpm --filter @cyberforce/api-core run db:seed
-```
-
-### 4. Khởi chạy Ứng dụng Phát triển (Development Servers)
-Khởi chạy đồng thời 2 dịch vụ phát triển:
-
-```bash
-# Terminal 1: Chạy Fastify Backend API Core (Cổng 4000)
+# Terminal 1
 pnpm --filter @cyberforce/api-core dev
-
-# Terminal 2: Chạy Next.js Frontend Web App (Cổng 3000)
+# Terminal 2
 pnpm --filter @cyberforce/web dev
 ```
 
