@@ -62,9 +62,10 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-104 | [x] UI hồ sơ, chỉnh sửa và quyền riêng tư; sửa race khi refresh | PR #10, #16; telemetry kỹ năng/lab/lộ trình ở backend còn mô phỏng, chưa nghiệm thu như dữ liệu thật |
 | CF-105 | [x] RBAC, yêu cầu Creator, admin duyệt/từ chối và phân trang | `4a30710` / PR #12; PR #16 xác minh 22 requests, approve/reject và chuyển trang |
 | CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
-| CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Runtime/timer/terminal/Guacamole chờ CF-301–304 |
-| CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; luồng tạo/chọn phiên và inject cờ chờ CF-301. Chưa đo SLA <300ms dưới tải |
+| CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Spawner backend CF-301 đã có; UI máy lab, timer, terminal/Guacamole chờ các bước sau |
+| CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; CF-301 tạo phiên thật nhưng chưa inject cờ vào container. Chưa đo SLA <300ms dưới tải |
 | CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
+| CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Reaper/terminal/VPN/inject flag thuộc các bước sau. [Handoff](docs/handoffs/CF-301.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -267,7 +268,7 @@ gantt
 
 ### 💻 PHASE 1 - EPIC 3: ZERO-SETUP CLOUD LAB & IN-BROWSER PRACTICE (CORE DOCKER)
 
-#### Task CF-301: Xây dựng Go Lab Orchestration Daemon (Docker Engine SDK)
+#### [x] Task CF-301: Xây dựng Go Lab Orchestration Daemon (Docker Engine SDK)
 * **Agent:** `backend-specialist` & `devops-engineer` | **Skills:** `bash-linux`, `server-management`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-002, CF-003
 * **Mô tả:** Viết daemon dịch vụ Go tương tác trực tiếp với Docker Unix Socket `/var/run/docker.sock`. Tiếp nhận yêu cầu spawn container máy mục tiêu, gán IP nội bộ thuộc subnet `100.64.0.0/10` (RFC 6598), áp dụng cgroup quotas (2 vCPU, 2GB RAM, 512 PIDs) và hủy `CapDrop: ["ALL"]` (TDD Mục 6.1).
@@ -600,9 +601,15 @@ gantt
 - 103 backend tests và 14 frontend tests pass; lint/typecheck/build pass. Browser desktop: hủy giữ điểm, mở Hint 1 còn 45/50 EXP, reload giữ gợi ý, nộp đúng +45 EXP.
 - SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`, không reset dữ liệu. Chi tiết ở [CF-204 handoff](docs/handoffs/CF-204.md).
 
+### Ngày 2026-10-13: CF-301
+
+- Người dùng duyệt backend Go Docker SDK, API spawn/stop, socket chỉ cho daemon, network `100.64.0.0/10`; không đổi schema. Nhánh `codex/cf-301-lab-spawner` tách từ CF-204 chưa merge.
+- 107 backend tests và Go unit tests qua; API typecheck/lint/build pass. Docker smoke: image có sẵn spawn trong `0.174s`, inspect xác nhận 2 vCPU, RAM + swap 2 GB, 512 PID, `CapDrop=ALL`, network `internal`, chặn Internet; stop xóa container/network. Full-stack Compose project riêng healthy.
+- Reaper, UI Start Machine/terminal, VPN và dynamic flag injection còn chờ bước sau. Chi tiết ở [CF-301 handoff](docs/handoffs/CF-301.md).
+
 ---
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-301–304:** Provisioning, vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202.
+1. **CF-302–304:** Reaper/vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202. CF-301 backend spawner đã qua Docker smoke.
 2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

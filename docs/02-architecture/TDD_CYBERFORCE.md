@@ -148,12 +148,12 @@ sequenceDiagram
     else Chưa có lab
         API->>Redis: Push Provision Task to Queue
         Redis->>Orch: Worker consumes Task
-        Orch->>Docker: Pull & Run Container (Isolated Subnet: 10.10.42.5)
+        Orch->>Docker: Run local image (Isolated IP: 100.64.12.5)
         Orch->>Net: Apply Zero Outbound Egress + Client Routing
         Orch->>Docker: Inject Dynamic Flag (HMAC) into /root/flag.txt
         Orch->>Redis: Set Lab Instance State (TTL: 3600s)
-        Orch-->>API: Provision Completed (IP: 10.10.42.5, ExpiresAt)
-        API-->>User: 201 Created { ip: "10.10.42.5", expiresIn: 3600 }
+        Orch-->>API: Provision Completed (IP: 100.64.12.5, ExpiresAt)
+        API-->>User: 201 Created { ip: "100.64.12.5", expiresIn: 3600 }
     end
 ```
 
@@ -318,7 +318,7 @@ CREATE TABLE certificates (
   "data": {
     "instanceId": "ins_8829a-99f1",
     "roomId": "room_sqli_basics",
-    "targetIp": "10.10.42.5",
+    "targetIp": "100.64.12.5",
     "status": "running",
     "allocatedAt": "2026-09-08T10:30:00Z",
     "expiresAt": "2026-09-08T11:30:00Z",
@@ -386,7 +386,7 @@ CREATE TABLE certificates (
 │                                   │                                     │
 │                                   ▼                                     │
 │                   [ Go Lab Controller Daemon ]                          │
-│                   ├── Instance Allocator (Subnet 10.10.x.y)             │
+│                   ├── Instance Allocator (Subnet 100.64.0.0/10)          │
 │                   ├── Flag Injector (HMAC Engine)                       │
 │                   └── Reaper Engine (Sweeper every 30s)                 │
 │                                   │                                     │
@@ -450,10 +450,10 @@ func (r *ReaperWorker) SweepExpiredInstances(ctx context.Context) {
 │  └───────────────────────────────────────────────────────────────────┘  │
 │             │                                       │                   │
 │             ▼                                       ▼                   │
-│  [ Target Lab A (10.10.2.5) ]         [ Target Lab B (10.10.3.5) ]      │
+│  [ Target Lab A (100.64.2.5) ]       [ Target Lab B (100.64.3.5) ]     │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                     EBPF ZERO-EGRESS FIREWALL                     │  │
-│  │   DROP all traffic to 0.0.0.0/0 except local subnet 10.10.0.0/16  │  │
+│  │   DROP all traffic to 0.0.0.0/0 except lab subnet 100.64.0.0/10  │  │
 │  │   (Ngăn chặn máy lab bị dùng làm botnet / đào tiền ảo)           │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -463,7 +463,7 @@ func (r *ReaperWorker) SweepExpiredInstances(ctx context.Context) {
 1. **Zero Outbound Internet Policy:**
 ```bash
 # Chặn toàn bộ traffic đi ra ngoài Internet từ dải máy Lab
-iptables -A FORWARD -s 10.10.0.0/16 ! -d 10.10.0.0/16 -j DROP
+iptables -A FORWARD -s 100.64.0.0/10 ! -d 100.64.0.0/10 -j DROP
 ```
 2. **Client-to-Client Isolation:**
 ```bash

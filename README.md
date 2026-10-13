@@ -223,16 +223,16 @@ graph TB
 Là một nền tảng huấn luyện tấn công mạng thực hành, an toàn thông tin là ưu tiên số một của CyberForce:
 
 1. **Chính sách Zero Outbound Egress (Chặn toàn bộ chiều đi ra ngoài):**
-   - Toàn bộ máy ảo và container bài lab của học viên bị chặn 100% lưu lượng truy cập ra ngoài Internet thông qua quy tắc `iptables` và `nftables`.
-   - Ngăn chặn triệt để hành vi lợi dụng máy lab để đào tiền ảo (cryptomining), tấn công DDoS hoặc phát tán thư rác (spam).
+   - Docker lab CF-301 chạy trong Docker network `internal`; thử nghiệm local xác nhận không truy cập được Internet. Chính sách iptables/nftables đa host còn thuộc CF-402.
+   - Cách ly mạng và giới hạn tài nguyên giảm khả năng lợi dụng máy lab cho các hoạt động ngoài bài học.
 2. **Cô lập Phân đoạn Mạng (Network Micro-Segmentation):**
-   - Mỗi người dùng khi khởi chạy lab sẽ được cấp một dải mạng ảo riêng biệt (`/24` subnet trong dải nội bộ `10.10.x.0/24`).
+   - Mỗi phiên Docker lab được cấp mạng bridge `internal` riêng (`/29` trong dải `100.64.0.0/10`).
    - Học viên ở các phiên khác nhau hoàn toàn không thể quét cổng hoặc tấn công lẫn nhau (ngoại trừ đấu trường KotH được cấu hình có chủ đích).
 3. **Giới hạn Tài nguyên Nghiêm ngặt (cgroups v2 Quotas):**
-   - Mỗi container bị giới hạn cứng: tối đa **1.0 Core CPU**, **1024 MB RAM**, và **5 GB dung lượng lưu trữ tạm thời** (ephemeral disk).
-   - Cơ chế tự động dọn dẹp (*Auto-Reap Daemon*): Tự động tiêu hủy các máy ảo không có hoạt động quá 15 phút hoặc hết hạn hợp đồng thuê (lease time 2 giờ).
+   - Container Docker lab giới hạn **2 vCPU**, **2 GB RAM** (RAM và swap cộng lại không quá 2 GB), **512 PID** và hủy mọi Linux capability.
+   - Reaper tự động dọn khi hết hạn thuộc CF-302; hiện có API dừng thủ công.
 4. **Chống Gian Lận Động (Dynamic Flag Engine):**
-   - Cờ bài tập được sinh theo công thức: `CYBERFORCE{FLAG_<USER_UUID>_<HMAC_SHA256(SECRET, USER_ID, ROOM_ID)>}`.
+   - Cờ động theo bộ chấm CF-203 có dạng `flag{24 ký tự hex HMAC}`; CF-301 đã lưu salt phiên, bước inject cờ vào container còn chờ triển khai.
    - Nếu học viên chia sẻ chuỗi cờ của mình lên mạng, hệ thống phát hiện được ngay danh tính người làm lộ đề.
 
 ---
@@ -331,7 +331,7 @@ Tại thư mục gốc repository:
 docker compose up -d --build --wait
 ```
 
-Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, backend Fastify và frontend Next.js. Dịch vụ `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma; backend chỉ chạy sau khi schema sẵn sàng và Redis khỏe, frontend chờ backend khỏe. `db-init` kết thúc với mã 0 là bình thường.
+Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma; backend chỉ chạy sau khi schema, Redis và orchestrator sẵn sàng, frontend chờ backend khỏe. `db-init` kết thúc với mã 0 là bình thường.
 
 Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
 
@@ -339,6 +339,7 @@ Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặ
 | :--- | :--- |
 | Frontend | http://localhost:3000 |
 | Backend health | http://localhost:4000/health |
+| Lab orchestrator | Chỉ trong Compose network, không mở cổng host |
 | PostgreSQL / Redis | 5432 / 6379 |
 | MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
 | guacd | 4822 |
@@ -352,6 +353,8 @@ docker compose down
 ```
 
 DB/Redis trong container được kết nối bằng hostname `postgres`/`redis`, không dùng `localhost`. Trình duyệt dùng `NEXT_PUBLIC_API_URL` (mặc định `http://localhost:4000/api/v1`). Nếu đổi cổng/host, cập nhật đồng bộ `API_PORT`, `WEB_PORT`, `API_BASE_URL`, `WEB_ORIGIN`, `NEXT_PUBLIC_API_URL` và rebuild. OAuth callback URLs cũng phải khớp URL mới. Traefik hiện chỉ là hạ tầng dự phòng, ứng dụng truy cập trực tiếp qua cổng 3000/4000.
+
+CF-301 dùng Docker socket chỉ trong container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image. Spawn/stop qua API Core đã có nhưng UI Start Machine, gia hạn/reaper và terminal thuộc các task tiếp theo.
 
 Volume hạ tầng hiện có được giữ theo tên `cyberforce_*`; không chạy `down -v` nếu muốn giữ dữ liệu. `db-init` không dùng `--accept-data-loss` hoặc reset: nếu Prisma báo thay đổi có nguy cơ mất dữ liệu, xử lý migration trước. Không tự chạy seed khi startup vì seed hiện có xóa task/submission mẫu. Chỉ nạp mẫu vào DB phát triển có thể thay thế:
 

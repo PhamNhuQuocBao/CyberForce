@@ -11,6 +11,8 @@ x-api: &api
     PORT: 4000
     DATABASE_URL: postgresql://${POSTGRES_USER:-cyberforce}:${POSTGRES_PASSWORD:-cyberforce_local_dev}@postgres:5432/${POSTGRES_DB:-cyberforce}?schema=public
     REDIS_URL: redis://redis:6379
+    ORCHESTRATOR_URL: http://orchestrator:8081
+    ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
     API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
     WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-cyberforce_local_access_secret_at_least_32_characters}
@@ -28,6 +30,23 @@ x-api: &api
     - cyberforce-net
 
 services:
+  orchestrator:
+    build:
+      context: ./services/orchestrator
+    restart: unless-stopped
+    init: true
+    environment:
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - cyberforce-net
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8081/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   db-init:
     <<: *api
     restart: 'no'
@@ -46,6 +65,8 @@ services:
       db-init:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      orchestrator:
         condition: service_healthy
     healthcheck:
       test:
