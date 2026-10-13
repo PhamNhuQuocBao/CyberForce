@@ -104,3 +104,12 @@ Người dùng đã yêu cầu commit và push CF-202; chưa yêu cầu merge/de
 CF-202 đã commit/push `13fd2e4`. CF-203 ở nhánh `codex/cf-203-flag-validation` dựa trên commit đó, chưa commit/push. Người dùng duyệt triển khai tuần tự và đã chốt khóa ngay lần sai5/60s trong180s, dynamic prefix `flag{24 hex}`.
 
 Chi tiết API, dữ liệu cũ, kiểm thử và giới hạn: [CF-203.md](CF-203.md). Đã triển khai validator, submission API + EXP transaction, Redis chống brute-force, form desktop và countdown. Không mở rộng sang CF-204/CF-301. Người dùng đã yêu cầu commit/push CF-203 và cập nhật task-breakdown; dùng git log/status kiểm tra kết quả thực tế.
+
+## Docker local full stack — 2026-10-13
+
+- Nhánh `chore/CF-904-docker-full-stack`; người dùng yêu cầu commit/push theo Git Guidelines.
+- Một lệnh: `docker compose up -d --build --wait` chạy postgres, redis, minio, guacd, traefik, db-init, api, web. README và .env.example đã cập nhật.
+- Dockerfile multi-stage, frontend standalone, loại env secrets khỏi build context. db-init dùng prisma db push không accept-data-loss/reset, không tự seed.
+- Sửa healthcheck MinIO dùng wget có sẵn; guacd kiểm tra mỗi5s thay vì mặc định5phút.
+- Đã chạy thực tế với project/volume/cổng riêng `cf-docker-smoke`: lệnh up/build/wait exit0; db-init exit0; các service có healthcheck đều healthy. Không thay đổi volume DB/Redis chính.
+- Đây là phần local Compose của CF-904; chưa nghiệm thu triển khai production hoặc toàn bộ phase cuối.
