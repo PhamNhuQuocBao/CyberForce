@@ -129,6 +129,8 @@ export async function spawnLab(slug: string, userId: string) {
         allocatedAt: new Date().toISOString(),
         expiresAt: expiresAt.toISOString(),
         remainingSeconds: 3600,
+        extensionCount: 0,
+        maxExtensions: 3,
       };
     } catch (error) {
       try {
@@ -160,5 +162,65 @@ export async function stopLab(slug: string, userId: string) {
     await stopInOrchestrator(instance.id);
     await prisma.labInstance.update({ where: { id: instance.id }, data: { status: 'terminated' } });
     return { instanceId: instance.id, status: 'terminated' };
+  });
+}
+
+export async function extendLab(slug: string, userId: string) {
+  return withUserLock(userId, async () => {
+    const updated = await prisma.$queryRaw<
+      { id: string; expiresAt: Date; extensionCount: number }[]
+    >`
+      UPDATE lab_instances AS li
+      SET expires_at = li.expires_at + INTERVAL '1 hour',
+          extension_count = li.extension_count + 1
+      FROM rooms AS r
+      WHERE li.room_id = r.id
+        AND r.slug = ${slug}
+        AND li.user_id = ${userId}::uuid
+        AND li.id = (
+          SELECT newest.id
+          FROM lab_instances AS newest
+          JOIN rooms AS room ON room.id = newest.room_id
+          WHERE newest.user_id = ${userId}::uuid
+            AND room.slug = ${slug}
+            AND newest.status IN ('running'::instance_status, 'terminating'::instance_status)
+          ORDER BY newest.created_at DESC
+          LIMIT 1
+        )
+        AND li.status = 'running'::instance_status
+        AND li.expires_at + INTERVAL '3 minutes' > NOW()
+        AND li.extension_count < 3
+      RETURNING li.id, li.expires_at AS "expiresAt", li.extension_count AS "extensionCount"
+    `;
+    const instance = updated[0];
+    if (instance) {
+      return {
+        instanceId: instance.id,
+        status: 'running',
+        expiresAt: instance.expiresAt.toISOString(),
+        remainingSeconds: Math.max(
+          0,
+          Math.ceil((instance.expiresAt.getTime() - Date.now()) / 1000),
+        ),
+        extensionCount: instance.extensionCount,
+        maxExtensions: 3,
+      };
+    }
+    const current = await prisma.labInstance.findFirst({
+      where: { userId, room: { slug }, status: { in: [...activeStatuses] } },
+      orderBy: { createdAt: 'desc' },
+      select: { status: true, expiresAt: true, extensionCount: true },
+    });
+    if (!current)
+      throw new AuthError(404, 'Bạn không có máy lab đang chạy trong phòng này.', 'LAB_NOT_FOUND');
+    if (current.extensionCount >= 3)
+      throw new AuthError(409, 'Bạn đã dùng hết 3 lần gia hạn.', 'LAB_EXTENSION_LIMIT');
+    if (current.status !== 'running' || current.expiresAt.getTime() + 180000 <= Date.now())
+      throw new AuthError(409, 'Phiên lab đã hết hạn hoặc đang được dọn dẹp.', 'LAB_LEASE_EXPIRED');
+    throw new AuthError(
+      409,
+      'Không thể gia hạn phiên lab. Vui lòng thử lại.',
+      'LAB_EXTENSION_CONFLICT',
+    );
   });
 }

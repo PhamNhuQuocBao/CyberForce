@@ -65,7 +65,8 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Spawner backend CF-301 đã có; UI máy lab, timer, terminal/Guacamole chờ các bước sau |
 | CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; CF-301 tạo phiên thật nhưng chưa inject cờ vào container. Chưa đo SLA <300ms dưới tải |
 | CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
-| CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Reaper/terminal/VPN/inject flag thuộc các bước sau. [Handoff](docs/handoffs/CF-301.md) |
+| CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Terminal/VPN/inject flag thuộc các bước sau. [Handoff](docs/handoffs/CF-301.md) |
+| CF-302 | [x] Backend lease lifecycle và reaper | Gia hạn 60 phút tối đa 3 lần; grace 3 phút; Go quét 30 giây và dọn Docker/DB; role DB giới hạn. UI đồng hồ/cảnh báo thuộc bước sau. [Handoff](docs/handoffs/CF-302.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -276,7 +277,7 @@ gantt
 * **OUTPUT:** Go Service `services/orchestrator/pkg/docker/spawner.go`, Docker isolation policy.
 * **VERIFY:** Gửi API spawn lab -> Container mục tiêu khởi động thành công trong $< 3$ giây, `docker inspect` xác nhận cgroup limits chính xác.
 
-#### Task CF-302: Triển khai Cơ chế Quản lý Vòng đời Thuê máy & Reaper Worker
+#### [x] Task CF-302: Triển khai Cơ chế Quản lý Vòng đời Thuê máy & Reaper Worker
 * **Agent:** `backend-specialist` | **Skills:** `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-301
 * **Mô tả:** Xây dựng tiến trình quét chạy ngầm (Reaper Worker) mỗi 30 giây trong Orchestrator: Quét các phiên lab hết hạn (mặc định 60 phút, cho phép gia hạn tối đa 3 lần). Khi hết hạn cho 3 phút grace period cảnh báo trước khi tự động gọi Docker kill & cleanup IP (Story `US-03.02`).
@@ -528,7 +529,7 @@ gantt
 | **CF-203** | Epic 2 | [x] US-02.03: Flag Validation & Anti-Bruteforce | `backend-specialist` | P0 |
 | **CF-204** | Epic 2 | US-02.04: Tiered Hints & EXP Deduction | `backend-specialist` | P1 |
 | **CF-301** | Epic 3 | US-03.01: Docker Sandbox Spawner Daemon | `backend-specialist` | P0 |
-| **CF-302** | Epic 3 | US-03.02: Lease Lifecycle & Reaper Sweeper | `backend-specialist` | P0 |
+| **CF-302** | Epic 3 | [x] US-03.02: Lease Lifecycle & Reaper Sweeper backend | `backend-specialist` | P0 |
 | **CF-303** | Epic 3 | US-03.04: Embedded xterm.js Web Terminal | `frontend-specialist` | P0 |
 | **CF-304** | Epic 3 | US-03.03: Apache Guacamole Kali AttackBox | `devops-engineer` | P1 |
 | **CF-401** | Epic 4 | US-04.01: WireGuard Gateway & Config Gen | `devops-engineer` | P0 |
@@ -607,9 +608,14 @@ gantt
 - 107 backend tests và Go unit tests qua; API typecheck/lint/build pass. Docker smoke: image có sẵn spawn trong `0.174s`, inspect xác nhận 2 vCPU, RAM + swap 2 GB, 512 PID, `CapDrop=ALL`, network `internal`, chặn Internet; stop xóa container/network. Full-stack Compose project riêng healthy.
 - Reaper, UI Start Machine/terminal, VPN và dynamic flag injection còn chờ bước sau. Chi tiết ở [CF-301 handoff](docs/handoffs/CF-301.md).
 
+### Ngày 2026-10-13: CF-302
+
+- Người dùng duyệt Go reaper trong Orchestrator, role DB giới hạn, `extension_count` và API gia hạn. Worker quét 30 giây; gia hạn tối đa 3 lần, mỗi lần 60 phút; 3 phút grace trước khi dọn.
+- 108 backend tests, Go unit tests, API typecheck/lint/build qua. Docker smoke project riêng xác nhận role không đọc được `users`, container/network bị xóa sau grace, bản ghi DB sang `terminated`, phiên `provisioning` mồ côi được dọn. UI timer/terminal chưa làm. [CF-302 handoff](docs/handoffs/CF-302.md).
+
 ---
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-302–304:** Reaper/vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202. CF-301 backend spawner đã qua Docker smoke.
+1. **CF-303–304:** UI điều khiển máy/terminal/Guacamole và inject dynamic flag; hoàn tất phần runtime còn lại của CF-202. CF-301–302 backend đã qua Docker smoke.
 2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.
