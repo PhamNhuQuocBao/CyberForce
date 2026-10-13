@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/lib/auth-store';
 import { pathsApi, type PathDetailResponse, type PathRoomDetail } from '@/lib/api';
 import { PrerequisiteLockDialog } from '@/components/paths/PrerequisiteLockDialog';
+import { CheckCircle2 } from 'lucide-react';
 
 const roomStatus = {
   completed: 'Đã hoàn thành',
@@ -24,7 +25,6 @@ export default function LearningPathDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [enrolling, setEnrolling] = useState(false);
-  const [enrollmentMessage, setEnrollmentMessage] = useState<string | null>(null);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
   const [lockedRoom, setLockedRoom] = useState<PathRoomDetail | null>(null);
 
@@ -53,11 +53,18 @@ export default function LearningPathDetailPage() {
     if (!accessToken || enrolling) return;
     setEnrolling(true);
     setEnrollmentError(null);
-    setEnrollmentMessage(null);
     try {
-      await pathsApi.enroll(slug, accessToken);
-      setEnrollmentMessage('Đã đăng ký lộ trình.');
-      setRetry((value) => value + 1);
+      const result = await pathsApi.enroll(slug, accessToken);
+      setPath((current) =>
+        current
+          ? {
+              ...current,
+              isEnrolled: true,
+              enrolledAt: result.data.enrolledAt,
+              nextUpRoom: result.data.nextUpRoom,
+            }
+          : current,
+      );
     } catch (err) {
       setEnrollmentError(
         err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.',
@@ -74,7 +81,6 @@ export default function LearningPathDetailPage() {
         <Link className="text-link inline-flex min-h-11 items-center text-sm" href="/paths">
           ← Danh mục lộ trình
         </Link>
-        {enrollmentMessage && <p role="status">{enrollmentMessage}</p>}
         {enrollmentError && (
           <p role="alert" className="text-destructive">
             {enrollmentError}
@@ -120,25 +126,33 @@ export default function LearningPathDetailPage() {
                   />
                 </div>
               )}
+              {accessToken && path.isEnrolled && (
+                <div
+                  role="status"
+                  className="flex items-start gap-3 rounded-card border border-primary/50 bg-primary/10 p-4"
+                >
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#486B16] dark:text-primary" />
+                  <div>
+                    <p className="font-semibold">
+                      {path.status === 'mastered'
+                        ? 'Đã hoàn thành lộ trình'
+                        : 'Đã đăng ký lộ trình'}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Bạn có thể chọn phòng học đủ điều kiện bên dưới để bắt đầu.
+                    </p>
+                  </div>
+                </div>
+              )}
               {!accessToken ? (
                 <Button asChild>
                   <Link href="/login">Đăng nhập để đăng ký</Link>
                 </Button>
               ) : !path.isEnrolled ? (
-                <Button disabled={enrolling || Boolean(enrollmentMessage)} onClick={enroll}>
-                  {enrolling
-                    ? 'Đang đăng ký…'
-                    : enrollmentMessage
-                      ? 'Đã đăng ký'
-                      : 'Đăng ký lộ trình'}
+                <Button disabled={enrolling} onClick={enroll}>
+                  {enrolling ? 'Đang đăng ký…' : 'Đăng ký lộ trình'}
                 </Button>
-              ) : (
-                <p className="text-sm font-medium">
-                  {path.status === 'mastered'
-                    ? 'Bạn đã hoàn thành lộ trình này.'
-                    : 'Bạn đã đăng ký lộ trình này.'}
-                </p>
-              )}
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 Chọn phòng học bên dưới để đọc bài và soạn câu trả lời.
               </p>

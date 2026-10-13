@@ -99,7 +99,7 @@ export default function RegisterPage() {
                 type="button"
                 variant="outline"
                 onClick={() => handleOAuthLogin(provider)}
-                disabled={isLoading || oauthLoading !== null || !isPasswordValid}
+                disabled={isLoading || oauthLoading !== null}
               >
                 {oauthLoading === provider && <Loader2 className="h-4 w-4 animate-spin" />}Tiếp tục
                 với {provider === 'google' ? 'Google' : 'GitHub'}
@@ -143,7 +143,9 @@ export default function RegisterPage() {
                 maxLength={50}
                 disabled={isLoading}
               />
-              <p className="text-xs text-muted-foreground">Từ 3–50 ký tự. Tên hiển thị trên hồ sơ của bạn.</p>
+              <p className="text-xs text-muted-foreground">
+                Từ 3–50 ký tự. Tên hiển thị trên hồ sơ của bạn.
+              </p>
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="field-label">

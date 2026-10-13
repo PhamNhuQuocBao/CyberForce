@@ -395,6 +395,7 @@ Truy cập giao diện:
 
 Để tìm hiểu chi tiết về từng khía cạnh kỹ thuật, vui lòng tham khảo các tài liệu chuyên sâu:
 
+* **Hướng dẫn kiểm thử thủ công theo vai trò:** [docs/USER_MANUAL_E2E.md](docs/USER_MANUAL_E2E.md)
 * **Tài liệu Yêu cầu Sản phẩm (PRD):** [`docs/01-product/PRD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/01-product/PRD_CYBERFORCE.md)
 * **Tài liệu Thiết kế Kỹ thuật (TDD):** [`docs/02-architecture/TDD_CYBERFORCE.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/02-architecture/TDD_CYBERFORCE.md)
 * **Kế hoạch Phân rã Công việc (Task Breakdown):** [`task-breakdown.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/task-breakdown.md)

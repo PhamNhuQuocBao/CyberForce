@@ -152,7 +152,7 @@ export function ProfileSettingsDialog({
           </fieldset>
           <div className="space-y-2">
             <label htmlFor="specialty" className="field-label">
-              Chuyên môn
+              Chuyên môn (nhập hoặc chọn gợi ý)
             </label>
             <Input
               id="specialty"
@@ -160,7 +160,11 @@ export function ProfileSettingsDialog({
               value={specialty}
               onChange={(e) => setSpecialty(e.target.value)}
               maxLength={100}
+              aria-describedby="specialty-help"
             />
+            <p id="specialty-help" className="mt-2 text-xs text-muted-foreground">
+              Bạn có thể chọn một gợi ý trong danh sách hoặc nhập chuyên môn khác.
+            </p>
             <datalist id="specialties">
               {PRESET_SPECIALTIES.map((preset) => (
                 <option key={preset} value={preset} />
