@@ -30,7 +30,7 @@ Menu phụ quản trị có thể là thanh bên 220 px trên desktop, drawer c�
 | Từ 1024 px | Gutter 32 px, container tối đa 1280 px; phòng học hai vùng co giãn |
 | Từ 1440 px | Workspace tối đa 1600 px hoặc toàn vùng khả dụng; không kéo dài đoạn đọc quá 72 ký tự mỗi dòng |
 
-Mẫu desktop được đọc ở 1440 × 900, mobile ở 390 × 844; triển khai cần kiểm tra thêm 320 px và zoom 200%. Trang thông thường không cuộn ngang. Terminal, canvas và ma trận có viewport cuộn riêng được gắn nhãn. Dùng min-height theo viewport động; không khóa chiều cao form khiến bàn phím che nút gửi.
+Mẫu desktop được đọc ở 1440 × 900; 1024 px và zoom 200% là các điểm kiểm tra web tiếp theo. Mobile 390 × 844 và 320 px vẫn là hướng responsive tham khảo, không thuộc phạm vi kiểm thử UI hiện tại trừ khi người dùng yêu cầu. Trang thông thường không cuộn ngang. Terminal, canvas và ma trận có viewport cuộn riêng được gắn nhãn. Dùng min-height theo viewport động; không khóa chiều cao form khiến bàn phím che nút gửi.
 
 Phòng lý thuyết không dùng chia cột hoặc tab Thực hành: vùng nhiệm vụ chiếm toàn chiều rộng. Mỗi nhiệm vụ là accordion chứa lý thuyết và câu hỏi, cuộn cả danh sách trong vùng bài học. Dashboard dùng card riêng cho bốn nhóm lộ trình, thành tích, tiến độ và năng lực theo góp ý đã duyệt.
 

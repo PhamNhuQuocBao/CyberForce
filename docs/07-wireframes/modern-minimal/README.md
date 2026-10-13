@@ -1,16 +1,17 @@
 # CyberForce — Wireframe Modern Minimal
 
-Bản thiết kế ngày 2026-10-10, theo phạm vi người dùng đã phê duyệt: toàn bộ 8 epic, trang chủ và dashboard; desktop/mobile; light mặc định và dark mode; Inter + JetBrains Mono; phòng học hai vùng; phản hồi tại chỗ; giữ thành tích nghiệp vụ dưới dạng danh sách.
+Bản thiết kế cập nhật 2026-10-13, theo hướng Modern Minimal đã được duyệt: toàn bộ 8 epic, trang chủ và dashboard; desktop web là ưu tiên; light mặc định và dark mode; Inter + JetBrains Mono; phòng thực hành hai vùng; phản hồi tại chỗ; thành tích nghiệp vụ dạng danh sách. Responsive vẫn là ràng buộc thiết kế nhưng không nằm trong đợt kiểm thử UI mobile theo ưu tiên hiện tại của người dùng.
 
-**Hình thức bàn giao:** tài liệu Markdown có sơ đồ low-fidelity bằng text, mô tả tương tác và bảng trạng thái. Không phải prototype HTML/Figma có thể bấm, không phải frontend đã kết nối API. Những chi tiết bố cục dưới đây là bản thiết kế để review, không phải thay đổi nghiệp vụ hoặc bằng chứng chức năng đã chạy.
+**Hình thức bàn giao:** tài liệu Markdown có sơ đồ low-fidelity, mô tả tương tác và bảng trạng thái. Một số màn hình đã có frontend/API thật; các màn hình khác là ý tưởng thiết kế. Trạng thái từng nhóm được ghi trong [ma trận hiện trạng](IMPLEMENTATION-STATUS.md). Chi tiết bố cục không tự chứng minh chức năng đã chạy.
 
 ## Đọc bộ thiết kế
 
 1. [Design system](../../../DESIGN.md): token màu, typography, layout và component.
 2. [Quy tắc chung](FOUNDATION.md): điều hướng, responsive, dark mode, trạng thái và accessibility.
-3. Xem từng nhóm màn hình bên dưới.
-4. [Đối chiếu 64 wireframe cũ](TRACEABILITY.md): kiểm tra luồng cũ còn ở đâu.
-5. [Bàn giao và các điểm cần đối chiếu](HANDOFF.md): ranh giới triển khai, mâu thuẫn nguồn và tiêu chí kiểm tra.
+3. [Gói prompt Stitch](STITCH.md): prompt nền, prompt màn hình và cách đưa bản thiết kế vào Stitch.
+4. Xem từng nhóm màn hình bên dưới.
+5. [Đối chiếu 64 wireframe cũ](TRACEABILITY.md): kiểm tra luồng cũ còn ở đâu.
+6. [Bàn giao và các điểm cần đối chiếu](HANDOFF.md): ranh giới triển khai, mâu thuẫn nguồn và tiêu chí kiểm tra.
 
 ## Các nhóm màn hình
 
@@ -37,7 +38,7 @@ Bắt đầu HOME-02 → LEARN-02 → LEARN-04 → LAB-01 để xem luồng họ
 - [Theme do người dùng chỉ định](../../cybersecurity-theme.md), sao chép nguyên văn từ repo gốc vào worktree này.
 - [PRD](../../01-product/PRD_CYBERFORCE.md), [TDD](../../02-architecture/TDD_CYBERFORCE.md).
 - [Danh mục epic/user story](../../05-epics/SUMMARY.md), các user flow trong `docs/06-user-flow` và 64 mục wireframe cũ được dẫn trong TRACEABILITY.
-- Các trang hiện có trong `apps/web/src/app`: trang chủ, login/register, OAuth callback, hồ sơ và admin roles. Route khác trong bộ này là đích thiết kế, không khẳng định đã triển khai.
+- Các trang hiện có trong `apps/web/src/app`: trang chủ, login/register, OAuth callback, hồ sơ, admin roles, danh mục/chi tiết lộ trình và phòng học. Xem ma trận hiện trạng để phân biệt UI/API hiện có với phần ý tưởng.
 
 Số IP, thời gian và điểm trong sơ đồ là minh họa bố cục. Khi triển khai phải dùng dữ liệu thật và quyền từ máy chủ.
 

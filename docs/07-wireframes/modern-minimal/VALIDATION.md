@@ -17,4 +17,4 @@ Thực hiện ngày 2026-10-10. Đây là kiểm tra tài liệu thiết kế, k
 
 Các cặp tương phản đã kiểm: foreground/background 15,48; muted-foreground/surface-muted 5,13; chữ CTA với primary/hover/active 11,65/9,38/7,40; link/surface 6,00; dark-foreground/dark-surface 15,48; dark-muted-foreground/dark-surface-muted 7,71; dark-link/dark-surface-interactive 5,14; chữ/nền success 6,49, warning 6,37, error 6,80, info 7,65; dark-success/warning/error/info trên dark-surface lần lượt 11,60/11,29/8,58/9,03.
 
-Chưa kiểm thử render thực tế, bàn phím, screen reader, responsive runtime, API hay phiên lab vì chưa triển khai frontend. Các tiêu chí đó nằm trong HANDOFF.md và không được đánh dấu hoàn thành.
+Tài liệu wireframe không tự xác nhận render, bàn phím, screen reader, responsive runtime, API hay phiên lab. Một số route đã được kiểm thử riêng theo handoff kỹ thuật; phần còn lại vẫn là ý tưởng. Xem IMPLEMENTATION-STATUS.md và HANDOFF.md.
