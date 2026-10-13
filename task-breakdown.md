@@ -603,7 +603,7 @@ gantt
 
 ### Ngày 2026-10-13: CF-301
 
-- Người dùng duyệt backend Go Docker SDK, API spawn/stop, socket chỉ cho daemon, network `100.64.0.0/10`; không đổi schema. Nhánh `codex/cf-301-lab-spawner` tách từ CF-204 chưa merge.
+- Người dùng duyệt backend Go Docker SDK, API spawn/stop, socket chỉ cho daemon, network `100.64.0.0/10`; không đổi schema. Nhánh `codex/cf-301-lab-spawner` đã hợp nhất main sau khi CF-204 được squash vào main.
 - 107 backend tests và Go unit tests qua; API typecheck/lint/build pass. Docker smoke: image có sẵn spawn trong `0.174s`, inspect xác nhận 2 vCPU, RAM + swap 2 GB, 512 PID, `CapDrop=ALL`, network `internal`, chặn Internet; stop xóa container/network. Full-stack Compose project riêng healthy.
 - Reaper, UI Start Machine/terminal, VPN và dynamic flag injection còn chờ bước sau. Chi tiết ở [CF-301 handoff](docs/handoffs/CF-301.md).
 
