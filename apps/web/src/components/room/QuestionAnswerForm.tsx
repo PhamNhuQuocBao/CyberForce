@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError, submissionsApi, type SubmissionResult } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { QuestionHints } from './QuestionHints';
 
 interface Props {
   taskId: string;
@@ -82,45 +83,49 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 border-t pt-4">
-      <label htmlFor={`answer-${question.id}`} className="block text-sm font-medium">
-        {question.text}
-      </label>
-      <p className="text-sm text-muted-foreground">
-        {question.pointsReward} EXP · {question.isCompleted ? '✓ Đã hoàn thành' : 'Chưa hoàn thành'}
-      </p>
-      {!question.isCompleted && (
-        <div className="flex flex-wrap gap-2">
-          <Input
-            id={`answer-${question.id}`}
-            value={answer}
-            onChange={(event) => onAnswer(event.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-            maxLength={4096}
-            required
-            disabled={pending || seconds > 0}
-            aria-describedby={`result-${question.id}`}
-            className="min-w-0 flex-1"
-          />
-          <Button type="submit" disabled={pending || seconds > 0 || !answer}>
-            {pending
-              ? 'Đang chấm…'
-              : seconds
-                ? `Thử lại sau ${Math.floor(seconds / 60)
-                    .toString()
-                    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
-                : 'Nộp đáp án'}
-          </Button>
-        </div>
-      )}
-      <p
-        id={`result-${question.id}`}
-        role="status"
-        className={`text-sm ${question.isCompleted ? 'text-primary' : 'text-muted-foreground'}`}
-      >
-        {message}
-      </p>
-    </form>
+    <div className="space-y-3 border-t pt-4">
+      <form onSubmit={submit} className="space-y-2">
+        <label htmlFor={`answer-${question.id}`} className="block text-sm font-medium">
+          {question.text}
+        </label>
+        <p className="text-sm text-muted-foreground">
+          Điểm gốc: {question.pointsReward} EXP ·{' '}
+          {question.isCompleted ? '✓ Đã hoàn thành' : 'Chưa hoàn thành'}
+        </p>
+        {!question.isCompleted && (
+          <div className="flex flex-wrap gap-2">
+            <Input
+              id={`answer-${question.id}`}
+              value={answer}
+              onChange={(event) => onAnswer(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={4096}
+              required
+              disabled={pending || seconds > 0}
+              aria-describedby={`result-${question.id}`}
+              className="min-w-0 flex-1"
+            />
+            <Button type="submit" disabled={pending || seconds > 0 || !answer}>
+              {pending
+                ? 'Đang chấm…'
+                : seconds
+                  ? `Thử lại sau ${Math.floor(seconds / 60)
+                      .toString()
+                      .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
+                  : 'Nộp đáp án'}
+            </Button>
+          </div>
+        )}
+        <p
+          id={`result-${question.id}`}
+          role="status"
+          className={`text-sm ${question.isCompleted ? 'text-primary' : 'text-muted-foreground'}`}
+        >
+          {message}
+        </p>
+      </form>
+      <QuestionHints questionId={question.id} isCompleted={question.isCompleted} />
+    </div>
   );
 }

@@ -179,7 +179,7 @@ export function SplitPaneWorkspace({
               ))}
             </div>
             <p id="submission-status" className="mt-6 text-sm text-muted-foreground">
-              Bản nháp được lưu trên trình duyệt này. Mở gợi ý chưa khả dụng.
+              Bản nháp được lưu trên trình duyệt này. Chi phí gợi ý được xác nhận trước khi mở.
             </p>
           </div>
         </Panel>

@@ -113,3 +113,7 @@ Chi tiết API, dữ liệu cũ, kiểm thử và giới hạn: [CF-203.md](CF-2
 - Sửa healthcheck MinIO dùng wget có sẵn; guacd kiểm tra mỗi5s thay vì mặc định5phút.
 - Đã chạy thực tế với project/volume/cổng riêng `cf-docker-smoke`: lệnh up/build/wait exit0; db-init exit0; các service có healthcheck đều healthy. Không thay đổi volume DB/Redis chính.
 - Đây là phần local Compose của CF-904; chưa nghiệm thu triển khai production hoặc toàn bộ phase cuối.
+
+## Tiếp nối CF-204 — 2026-10-13
+
+Người dùng đã duyệt thiết kế bảng và API gợi ý. CF-204 nằm trên branch `codex/cf-204-tiered-hints`: gợi ý theo cấp, xác nhận chi phí, lưu lượt mở và tích hợp điểm thưởng vào bộ chấm. 103 backend tests, 14 frontend tests, lint/typecheck/build và luồng browser desktop đã qua. Bảng `hint_unlocks` đã được tạo trong PostgreSQL local `cyberforce/public`; không sửa dữ liệu cũ. Chi tiết và giới hạn: [CF-204.md](CF-204.md). Khi tiếp nối, kiểm tra Git status/log để xác định commit/push thực tế, không suy ra từ handoff.
