@@ -8,15 +8,26 @@ import { QuestionHints } from './QuestionHints';
 
 interface Props {
   taskId: string;
+  questionNumber: number;
   question: { id: string; text: string; pointsReward: number; isCompleted: boolean };
   answer: string;
   onAnswer: (value: string) => void;
   onCompleted: (result: SubmissionResult) => void;
 }
 
-export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompleted }: Props) {
+export function QuestionAnswerForm({
+  taskId,
+  questionNumber,
+  question,
+  answer,
+  onAnswer,
+  onCompleted,
+}: Props) {
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<{
+    text: string;
+    tone: 'success' | 'error' | 'neutral';
+  } | null>(null);
   const [lockedUntil, setLockedUntil] = useState(0);
   const [now, setNow] = useState(Date.now);
   const inFlight = useRef(false);
@@ -28,7 +39,7 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
       setNow(current);
       if (current >= lockedUntil) {
         setLockedUntil(0);
-        setMessage('Bạn có thể nộp lại câu trả lời.');
+        setFeedback({ text: 'Bạn có thể nộp lại câu trả lời.', tone: 'neutral' });
       }
     }, 1000);
     return () => window.clearInterval(timer);
@@ -41,7 +52,7 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
     if (!session.accessToken || !session.user) return;
     inFlight.current = true;
     setPending(true);
-    setMessage('');
+    setFeedback(null);
     try {
       const { data } = await submissionsApi.submit(
         taskId,
@@ -52,23 +63,30 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
       const current = useAuthStore.getState();
       if (current.user?.id !== session.user.id) return;
       if (data.isCorrect) {
-        setMessage(
-          data.alreadyCompleted
+        setFeedback({
+          text: data.alreadyCompleted
             ? 'Câu hỏi đã hoàn thành trước đó.'
             : `Chính xác! +${data.pointsEarned} EXP`,
-        );
+          tone: 'success',
+        });
         useAuthStore.setState({
           user: { ...current.user, expPoints: Math.max(current.user.expPoints, data.totalExp) },
         });
         onCompleted(data);
-      } else setMessage('Đáp án chưa đúng. Hãy kiểm tra và thử lại.');
+      } else
+        setFeedback({
+          text: `Đáp án chưa đúng cho câu ${questionNumber}. Hãy kiểm tra đúng ô câu hỏi rồi thử lại.`,
+          tone: 'error',
+        });
     } catch (error) {
       if (useAuthStore.getState().user?.id !== session.user.id) return;
-      setMessage(
-        error instanceof ApiError
-          ? error.message
-          : 'Không thể nộp bài. Bản nháp vẫn được giữ, hãy thử lại.',
-      );
+      setFeedback({
+        text:
+          error instanceof ApiError
+            ? error.message
+            : 'Không thể nộp bài. Bản nháp vẫn được giữ, hãy thử lại.',
+        tone: 'error',
+      });
       if (error instanceof ApiError && error.code === 'SUBMISSION_LOCKED') {
         const retry = error.details?.retryAfterSeconds;
         const duration =
@@ -86,7 +104,7 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
     <div className="space-y-3 border-t pt-4">
       <form onSubmit={submit} className="space-y-2">
         <label htmlFor={`answer-${question.id}`} className="block text-sm font-medium">
-          {question.text}
+          Câu {questionNumber}: {question.text}
         </label>
         <p className="text-sm text-muted-foreground">
           Điểm gốc: {question.pointsReward} EXP ·{' '}
@@ -103,7 +121,7 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
               maxLength={4096}
               required
               disabled={pending || seconds > 0}
-              aria-describedby={`result-${question.id}`}
+              aria-describedby={feedback ? `result-${question.id}` : undefined}
               className="min-w-0 flex-1"
             />
             <Button type="submit" disabled={pending || seconds > 0 || !answer}>
@@ -117,13 +135,21 @@ export function QuestionAnswerForm({ taskId, question, answer, onAnswer, onCompl
             </Button>
           </div>
         )}
-        <p
-          id={`result-${question.id}`}
-          role="status"
-          className={`text-sm ${question.isCompleted ? 'text-primary' : 'text-muted-foreground'}`}
-        >
-          {message}
-        </p>
+        {feedback && (
+          <p
+            id={`result-${question.id}`}
+            role={feedback.tone === 'error' ? 'alert' : 'status'}
+            className={`rounded-btn border p-3 text-sm font-medium ${
+              feedback.tone === 'error'
+                ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                : feedback.tone === 'success'
+                  ? 'border-primary/50 bg-primary/10 text-foreground'
+                  : 'border-border bg-muted text-foreground'
+            }`}
+          >
+            {feedback.text}
+          </p>
+        )}
       </form>
       <QuestionHints questionId={question.id} isCompleted={question.isCompleted} />
     </div>

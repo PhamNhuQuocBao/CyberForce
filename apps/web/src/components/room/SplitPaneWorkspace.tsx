@@ -159,10 +159,11 @@ export function SplitPaneWorkspace({
                     className="space-y-6 pt-4"
                   >
                     <LessonContent content={task.content} />
-                    {task.questions.map((question) => (
+                    {task.questions.map((question, index) => (
                       <QuestionAnswerForm
                         key={question.id}
                         taskId={task.id}
+                        questionNumber={index + 1}
                         question={question}
                         answer={state.answers[question.id] ?? ''}
                         onCompleted={onCompleted}
