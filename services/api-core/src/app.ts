@@ -15,6 +15,7 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { roomsRoutes } from './modules/rooms/rooms.routes.js';
 import { pathsRoutes } from './modules/paths/paths.routes.js';
 import { submissionsRoutes } from './modules/submissions/submissions.routes.js';
+import { hintsRoutes } from './modules/hints/hints.routes.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -89,6 +90,7 @@ export function buildApp() {
   app.register(roomsRoutes, { prefix: '/api/v1/rooms' });
   app.register(pathsRoutes, { prefix: '/api/v1/paths' });
   app.register(submissionsRoutes, { prefix: '/api/v1/tasks' });
+  app.register(hintsRoutes, { prefix: '/api/v1/questions' });
 
   // ---------------------------------------------------------------------------
   // 4. CENTRALIZED ERROR HANDLER

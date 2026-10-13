@@ -79,6 +79,7 @@ model User {
 
   // Relations
   pathEnrollments  PathEnrollment[]
+  hintUnlocks      HintUnlock[]
   labInstances     LabInstance[]
   submissions      Submission[]
   certificates     Certificate[]
@@ -262,6 +263,7 @@ model Question {
   // Relations
   task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   submissions Submission[]
+  hintUnlocks HintUnlock[]
 
   @@index([taskId])
   @@map("questions")
@@ -348,4 +350,19 @@ model PathEnrollment {
   @@id([userId, pathId])
   @@index([pathId])
   @@map("path_enrollments")
+}
+
+model HintUnlock {
+  userId         String   @map("user_id") @db.Uuid
+  questionId     String   @map("question_id") @db.Uuid
+  tier           Int
+  pointsDeducted Int      @map("points_deducted")
+  unlockedAt     DateTime @default(now()) @map("unlocked_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, questionId, tier])
+  @@index([questionId])
+  @@map("hint_unlocks")
 }

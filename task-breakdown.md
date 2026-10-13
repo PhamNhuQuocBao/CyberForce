@@ -64,7 +64,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
 | CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Runtime/timer/terminal/Guacamole chờ CF-301–304 |
 | CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; luồng tạo/chọn phiên và inject cờ chờ CF-301. Chưa đo SLA <300ms dưới tải |
-| CF-204 | Chưa triển khai | Bước tiếp theo: gợi ý theo cấp và khấu trừ EXP |
+| CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -255,7 +255,7 @@ gantt
 * **OUTPUT:** Service `FlagValidatorService`, API endpoint `/api/v1/tasks/:id/submit`.
 * **VERIFY:** Nộp cờ đúng -> Nhận 200 OK + cộng EXP. Nộp cờ sai lần thứ 5 trong 60 giây -> Bị khóa 3 phút với mã HTTP 429.
 
-#### Task CF-204: Triển khai Hệ thống Gợi ý Bậc thang (Tiered Hint System) & Khấu trừ EXP
+#### [x] Task CF-204: Triển khai Hệ thống Gợi ý Bậc thang (Tiered Hint System) & Khấu trừ EXP
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-203
 * **Mô tả:** Triển khai tính năng mở gợi ý có trừ điểm: Mức 1 trừ 10% điểm thưởng, Mức 2 trừ 20% điểm thưởng, Mở Walkthrough trừ 100% điểm thưởng (Story `US-02.04`).
@@ -591,13 +591,18 @@ gantt
 - CF-203 trên nhánh `codex/cf-203-flag-validation`: static SHA-256, regex có timeout, dynamic HMAC, submit API, EXP transaction chống thưởng trùng, Redis sliding window, form desktop và countdown.
 - Người dùng chốt: khóa ngay lần sai thứ 5/60s trong 180s; dynamic `flag{24 hex HMAC}`.
 - Kiểm chứng cuối: 93 backend tests / 9 suites, 14 frontend tests / 2 suites; lint/typecheck/build pass. Browser desktop: sai giữ nháp, đúng +50 EXP, progress1/2, menu50 EXP, lần5 khóa03:00, reload không vượt khóa.
-- Seed mới lưu static hash; SQL chuyển plaintext cũ đã chuẩn bị nhưng chưa áp dụng DB chính. Chưa đo SLA dưới tải; lab runtime thuộc CF-301–304, hints thuộc CF-204, radar thật thuộc CF-703.
+- Seed mới lưu static hash; SQL chuyển plaintext cũ đã chuẩn bị nhưng chưa áp dụng DB chính. Chưa đo SLA dưới tải; lab runtime thuộc CF-301–304, radar thật thuộc CF-703.
 - Chi tiết: [CF-203 handoff](docs/handoffs/CF-203.md), [handoff hiện tại](docs/handoffs/CURRENT_TASK.md).
+
+### Ngày 2026-10-13: CF-204
+
+- Người dùng duyệt bảng `hint_unlocks` và API gợi ý. Đã triển khai Hint 1/2, lời giải, xác nhận chi phí, lưu lượt mở theo tài khoản/câu hỏi và điều chỉnh điểm thưởng trong transaction chấm bài.
+- 103 backend tests và 14 frontend tests pass; lint/typecheck/build pass. Browser desktop: hủy giữ điểm, mở Hint 1 còn 45/50 EXP, reload giữ gợi ý, nộp đúng +45 EXP.
+- SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`, không reset dữ liệu. Chi tiết ở [CF-204 handoff](docs/handoffs/CF-204.md).
 
 ---
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-204:** Gợi ý theo cấp, xác nhận chi phí và khấu trừ EXP; triển khai tuần tự sau CF-203.
-2. **CF-301–304:** Provisioning, vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202.
-3. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.
+1. **CF-301–304:** Provisioning, vòng đời phiên lab, inject dynamic flag, terminal/Guacamole; hoàn tất phần runtime còn lại của CF-202.
+2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

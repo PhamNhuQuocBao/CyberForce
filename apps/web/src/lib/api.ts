@@ -626,3 +626,35 @@ export const submissionsApi = {
     );
   },
 };
+
+export interface QuestionHintsState {
+  questionId: string;
+  isCompleted: boolean;
+  pointsAvailable: number;
+  hints: Array<{
+    tier: number;
+    unlocked: boolean;
+    available: boolean;
+    cost: number;
+    content?: string;
+  }>;
+}
+
+export const hintsApi = {
+  get(questionId: string, accessToken: string) {
+    return request<{ success: true; data: QuestionHintsState }>(
+      `/questions/${encodeURIComponent(questionId)}/hints`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  },
+  unlock(questionId: string, tier: number, expectedCost: number, accessToken: string) {
+    return request<{ success: true; data: QuestionHintsState }>(
+      `/questions/${encodeURIComponent(questionId)}/hints/${tier}`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ expectedCost }),
+      },
+    );
+  },
+};

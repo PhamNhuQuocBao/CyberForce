@@ -5,6 +5,7 @@ import { AuthError } from '../auth/auth.service.js';
 import { getRoom } from '../rooms/rooms.service.js';
 import { FlagConfigurationError, FlagValidatorService } from './flag-validator.service.js';
 import { submissionLimit, submissionLocked } from './submission-limit.js';
+import { remainingReward } from '../hints/hints.policy.js';
 
 const validator = new FlagValidatorService();
 type SubmitInput = { questionId: string; answer: string; labInstanceId?: string };
@@ -77,7 +78,13 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
           userId,
           roomId: question.task.roomId,
         });
-        pointsEarned = isCorrect ? Math.max(0, question.pointsReward) : 0;
+        if (isCorrect) {
+          const unlocks = await tx.hintUnlock.findMany({
+            where: { userId, questionId: question.id },
+            select: { pointsDeducted: true },
+          });
+          pointsEarned = remainingReward(question.pointsReward, unlocks);
+        }
         if (!isCorrect) retryAfterSeconds = await submissionLimit(userId, question.id, 'incorrect');
         await tx.submission.create({
           data: {
