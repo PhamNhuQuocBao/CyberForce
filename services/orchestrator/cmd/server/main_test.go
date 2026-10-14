@@ -10,10 +10,14 @@ import (
 	labdocker "github.com/cyberforce/orchestrator/pkg/docker"
 )
 
-type fakeSpawner struct{ spawned, stopped bool }
+type fakeSpawner struct {
+	spawned, stopped bool
+	flag             string
+}
 
-func (f *fakeSpawner) Spawn(_ context.Context, id, _ string) (labdocker.Instance, error) {
+func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.Instance, error) {
 	f.spawned = true
+	f.flag = flag
 	return labdocker.Instance{ID: id, ContainerID: "container", TargetIP: "100.64.0.2"}, nil
 }
 func (f *fakeSpawner) Stop(_ context.Context, _ string) error { f.stopped = true; return nil }
@@ -28,11 +32,12 @@ func TestPrivateAPI(t *testing.T) {
 	}
 
 	id := "11111111-1111-4111-8111-111111111111"
-	req := httptest.NewRequest(http.MethodPost, "/v1/instances", strings.NewReader(`{"instanceId":"`+id+`","image":"cyberforce/test:v1"}`))
+	flag := "flag{0123456789abcdef01234567}"
+	req := httptest.NewRequest(http.MethodPost, "/v1/instances", strings.NewReader(`{"instanceId":"`+id+`","image":"cyberforce/test:v1","dynamicFlag":"`+flag+`"}`))
 	req.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))
 	created := httptest.NewRecorder()
 	h.ServeHTTP(created, req)
-	if created.Code != http.StatusCreated || !fake.spawned {
+	if created.Code != http.StatusCreated || !fake.spawned || fake.flag != flag || strings.Contains(created.Body.String(), flag) {
 		t.Fatalf("spawn failed: %d", created.Code)
 	}
 

@@ -16,13 +16,14 @@ import (
 )
 
 type labSpawner interface {
-	Spawn(context.Context, string, string) (labdocker.Instance, error)
+	Spawn(context.Context, string, string, string) (labdocker.Instance, error)
 	Stop(context.Context, string) error
 }
 
 type spawnRequest struct {
-	InstanceID string `json:"instanceId"`
-	Image      string `json:"image"`
+	InstanceID  string `json:"instanceId"`
+	Image       string `json:"image"`
+	DynamicFlag string `json:"dynamicFlag"`
 }
 
 type terminalOpener interface {
@@ -114,7 +115,7 @@ func handler(spawner labSpawner, token string) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
-		instance, err := spawner.Spawn(ctx, input.InstanceID, input.Image)
+		instance, err := spawner.Spawn(ctx, input.InstanceID, input.Image, input.DynamicFlag)
 		if err != nil {
 			log.Printf("spawn failed: %v", err)
 			http.Error(w, "lab spawn failed", http.StatusBadGateway)

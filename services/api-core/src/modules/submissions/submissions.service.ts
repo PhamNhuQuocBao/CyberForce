@@ -3,7 +3,11 @@ import { prisma } from '../../lib/prisma.js';
 import { env } from '../../config/env.js';
 import { AuthError } from '../auth/auth.service.js';
 import { getRoom } from '../rooms/rooms.service.js';
-import { FlagConfigurationError, FlagValidatorService } from './flag-validator.service.js';
+import {
+  FlagConfigurationError,
+  FlagValidatorService,
+  requirePlatformMasterKey,
+} from './flag-validator.service.js';
 import { submissionLimit, submissionLocked } from './submission-limit.js';
 import { remainingReward } from '../hints/hints.policy.js';
 
@@ -34,9 +38,7 @@ async function validateAnswer(
         'Cần phiên lab đang chạy của bạn trong phòng này.',
         'LAB_SESSION_REQUIRED',
       );
-    const key = env.PLATFORM_MASTER_KEY;
-    if (key.length < 32 || key === 'cyberforce_platform_master_hmac_secret_2026')
-      throw new FlagConfigurationError();
+    const key = requirePlatformMasterKey(env.PLATFORM_MASTER_KEY);
     return validator.validate(context.answer, {
       flagType: 'dynamic_hmac',
       userId: context.userId,

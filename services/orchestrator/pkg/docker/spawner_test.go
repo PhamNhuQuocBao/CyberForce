@@ -1,9 +1,94 @@
 package docker
 
 import (
+	"archive/tar"
+	"context"
+	"crypto/rand"
+	"fmt"
+	"io"
 	"net/netip"
+	"os"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/moby/moby/client"
 )
+
+func TestDynamicFlagArchive(t *testing.T) {
+	flag := "flag{0123456789abcdef01234567}"
+	archive, err := flagArchive(flag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader := tar.NewReader(archive)
+	header, err := reader.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if header.Name != "flag.txt" || header.Mode != 0400 || header.Uid != 0 || header.Gid != 0 {
+		t.Fatal("flag archive has unsafe path or permissions")
+	}
+	content, err := io.ReadAll(reader)
+	if err != nil || string(content) != flag+"\n" {
+		t.Fatal("flag archive content differs from expected flag")
+	}
+	if _, err := reader.Next(); err != io.EOF {
+		t.Fatal("flag archive contains unexpected files")
+	}
+}
+
+func TestDynamicFlagDockerSmoke(t *testing.T) {
+	image := os.Getenv("CF_DOCKER_SMOKE_IMAGE")
+	if image == "" {
+		t.Skip("set CF_DOCKER_SMOKE_IMAGE to test against a local target image")
+	}
+	spawner, err := NewSpawner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spawner.Close()
+	var randomID [16]byte
+	if _, err := rand.Read(randomID[:]); err != nil {
+		t.Fatal(err)
+	}
+	id := fmt.Sprintf("%x-%x-%x-%x-%x", randomID[:4], randomID[4:6], randomID[6:8], randomID[8:10], randomID[10:])
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	flag := "flag{0123456789abcdef01234567}"
+	instance, err := spawner.Spawn(ctx, id, image, flag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := spawner.Stop(context.Background(), id); err != nil {
+			t.Errorf("stop lab: %v", err)
+		}
+	}()
+	file, err := spawner.cli.CopyFromContainer(ctx, instance.ContainerID, client.CopyFromContainerOptions{SourcePath: "/root/flag.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Content.Close()
+	reader := tar.NewReader(file.Content)
+	header, err := reader.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := io.ReadAll(reader)
+	if err != nil || string(content) != flag+"\n" || header.Mode != 0400 {
+		t.Fatal("target flag file has incorrect contents or permissions")
+	}
+	inspect, err := spawner.cli.ContainerInspect(ctx, instance.ContainerID, client.ContainerInspectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range inspect.Container.Config.Env {
+		if strings.Contains(value, flag) {
+			t.Fatal("dynamic flag leaked into container environment")
+		}
+	}
+}
 
 func TestSandboxPolicy(t *testing.T) {
 	id := "11111111-1111-4111-8111-111111111111"

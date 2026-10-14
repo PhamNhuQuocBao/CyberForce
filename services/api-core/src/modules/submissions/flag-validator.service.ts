@@ -15,6 +15,12 @@ export class FlagConfigurationError extends Error {
   }
 }
 
+export function requirePlatformMasterKey(key: string): string {
+  if (key.length < 32 || key === 'cyberforce_platform_master_hmac_secret_2026')
+    throw new FlagConfigurationError();
+  return key;
+}
+
 type FlagDefinition =
   | { flagType: 'static'; answerHash: string | null }
   | { flagType: 'regex'; flagPattern: string | null }

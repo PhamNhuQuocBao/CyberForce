@@ -3,6 +3,8 @@ import { buildApp } from '../../app.js';
 import { prisma } from '../../lib/prisma.js';
 import { generateTokens } from '../../lib/security.js';
 import { redis } from '../../lib/redis.js';
+import { env } from '../../config/env.js';
+import { createDynamicFlag } from '../submissions/flag-validator.service.js';
 
 describe('CF-301 lab lifecycle API', () => {
   const app = buildApp();
@@ -127,6 +129,9 @@ describe('CF-301 lab lifecycle API', () => {
     expect(spawn.statusCode).toBe(201);
     expect(spawn.json().data.targetIp).toBe('100.64.0.2');
     expect(spawn.body).not.toContain('containerId');
+    expect(JSON.parse(String(fetchMock.mock.lastCall?.[1]?.body))).not.toHaveProperty(
+      'dynamicFlag',
+    );
     const id = spawn.json().data.instanceId as string;
     const stored = await prisma.labInstance.findUniqueOrThrow({ where: { id } });
     expect(stored.roomId).toBe(roomId);
@@ -153,6 +158,57 @@ describe('CF-301 lab lifecycle API', () => {
     expect((await prisma.labInstance.findUniqueOrThrow({ where: { id } })).status).toBe(
       'terminated',
     );
+  });
+
+  it('injects a per-session dynamic flag that the submission API accepts', async () => {
+    const task = await prisma.task.create({
+      data: { roomId, title: 'Dynamic task', taskOrder: 1, contentMdx: 'Find the flag' },
+    });
+    const question = await prisma.question.create({
+      data: { taskId: task.id, questionText: 'Flag?', flagType: 'dynamic_hmac' },
+    });
+    const previousKey = env.PLATFORM_MASTER_KEY;
+    const headers = { authorization: `Bearer ${token}` };
+    try {
+      fetchMock.mockClear();
+      env.PLATFORM_MASTER_KEY = 'cyberforce_platform_master_hmac_secret_2026';
+      const unavailable = await app.inject({ method: 'POST', url: `${url}/spawn`, headers });
+      expect(unavailable.statusCode).toBe(503);
+      expect(unavailable.json().error.code).toBe('DYNAMIC_FLAG_UNAVAILABLE');
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      env.PLATFORM_MASTER_KEY = 'integration-only-key-with-at-least-32-characters';
+      const spawn = await app.inject({ method: 'POST', url: `${url}/spawn`, headers });
+      expect(spawn.statusCode).toBe(201);
+      const instance = await prisma.labInstance.findUniqueOrThrow({
+        where: { id: spawn.json().data.instanceId },
+      });
+      const flag = createDynamicFlag({
+        userId,
+        roomId,
+        instanceSalt: instance.dynamicSalt,
+        masterKey: env.PLATFORM_MASTER_KEY,
+      });
+      const request = JSON.parse(String(fetchMock.mock.lastCall?.[1]?.body));
+      expect(request.dynamicFlag).toBe(flag);
+      expect(request).not.toHaveProperty('masterKey');
+      expect(spawn.body).not.toContain(flag);
+      expect(spawn.body).not.toContain(instance.dynamicSalt);
+      const submission = await app.inject({
+        method: 'POST',
+        url: `/api/v1/tasks/${task.id}/submit`,
+        headers,
+        payload: { questionId: question.id, answer: flag, labInstanceId: instance.id },
+      });
+      expect(submission.statusCode).toBe(200);
+      expect(submission.json().data.isCorrect).toBe(true);
+      expect(submission.body).not.toContain(flag);
+      await app.inject({ method: 'POST', url: `${url}/stop`, headers });
+    } finally {
+      env.PLATFORM_MASTER_KEY = previousKey;
+      await prisma.question.delete({ where: { id: question.id } });
+      await prisma.task.delete({ where: { id: task.id } });
+    }
   });
 
   it('issues a one-use terminal ticket only for the running lab owner', async () => {

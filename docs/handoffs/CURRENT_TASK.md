@@ -133,3 +133,7 @@ Người dùng duyệt sidecar terminal riêng và scratch tmpfs 512 MB cho host
 ## Tiếp nối CF-304 — 2026-10-14
 
 Người dùng duyệt Guacamole/Kali trước, inject cờ động riêng; duyệt `guacd` dùng chung nối/ngắt mạng từng lab. Branch `codex/cf-304-guacamole-attackbox` dựa trên main `9ebd276`. Đã nối image Kali XFCE/VNC, Go orchestrator và Guacamole bridge, API ticket/stream và tab AttackBox desktop. Browser xác nhận XFCE, terminal `nmap` quét target cổng 80 và clipboard hai chiều; API 110/110 tests, Go tests và web build/lint qua. Desktop VNC cố định 1280×800, Canvas co giãn; chưa đổi độ phân giải Xvfb thực hoặc đo SLA <80ms. Chi tiết: [CF-304.md](CF-304.md). Kiểm tra Git thực tế để xác định commit/push/merge.
+
+## Tiếp nối CF-202 dynamic flag — 2026-10-14
+
+Người dùng duyệt API sinh cờ theo công thức HMAC đã chốt, truyền riêng cờ qua kết nối nội bộ có xác thực và Orchestrator ghi `/root/flag.txt` trước khi chạy target. Nhánh `codex/cf-202-dynamic-flag-injection` từ main `58c96be`. Chỉ phòng có câu hỏi `dynamic_hmac` mới cần cờ; khóa mặc định/placeholder bị từ chối. API 111 tests, Go tests, typecheck/lint và Docker smoke đều qua; chi tiết tại [CF-202-DYNAMIC-FLAG.md](CF-202-DYNAMIC-FLAG.md).
