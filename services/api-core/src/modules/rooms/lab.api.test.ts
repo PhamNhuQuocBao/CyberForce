@@ -14,6 +14,7 @@ describe('CF-301 lab lifecycle API', () => {
   let token: string;
   let otherToken: string;
   let roomId: string;
+  let attackBoxRunning = false;
   const url = `/api/v1/rooms/${suffix}`;
 
   beforeAll(async () => {
@@ -67,7 +68,17 @@ describe('CF-301 lab lifecycle API', () => {
         },
       ],
     });
-    fetchMock.mockImplementation(async (_input, init) => {
+    fetchMock.mockImplementation(async (input, init) => {
+      if (String(input).endsWith('/attackbox')) {
+        if (init?.method === 'DELETE') {
+          attackBoxRunning = false;
+          return new Response(null, { status: 204 });
+        }
+        if (init?.method === 'POST') attackBoxRunning = true;
+        return new Response(JSON.stringify({ running: attackBoxRunning }), {
+          status: init?.method === 'POST' ? 201 : 200,
+        });
+      }
       if (init?.method === 'DELETE') return new Response(null, { status: 204 });
       const body = JSON.parse(String(init?.body)) as { instanceId: string };
       return new Response(
@@ -177,6 +188,61 @@ describe('CF-301 lab lifecycle API', () => {
     expect(
       (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
     ).toBe(404);
+  });
+
+  it('requires a running owner lab and attackbox before issuing a one-use viewer ticket', async () => {
+    const ownerHeaders = { authorization: `Bearer ${token}` };
+    const ticketUrl = `${url}/attackbox/ticket`;
+    expect((await app.inject({ method: 'POST', url: ticketUrl })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/rooms/paid-${suffix}/attackbox`,
+          headers: ownerHeaders,
+        })
+      ).statusCode,
+    ).toBe(403);
+    const spawn = await app.inject({ method: 'POST', url: `${url}/spawn`, headers: ownerHeaders });
+    expect(spawn.statusCode).toBe(201);
+    expect(
+      (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `${url}/attackbox`,
+          headers: { authorization: `Bearer ${otherToken}` },
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (await app.inject({ method: 'POST', url: `${url}/attackbox`, headers: ownerHeaders }))
+        .statusCode,
+    ).toBe(201);
+    expect(
+      (await app.inject({ method: 'GET', url: `${url}/attackbox`, headers: ownerHeaders })).json()
+        .data.running,
+    ).toBe(true);
+    const response = await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders });
+    expect(response.statusCode).toBe(200);
+    const ticket = response.json().data.ticket as string;
+    expect(ticket).toMatch(/^[0-9a-f]{64}$/);
+    const key = `lab:attackbox:ticket:${ticket}`;
+    expect(JSON.parse((await redis.getdel(key))!).instanceId).toBe(spawn.json().data.instanceId);
+    expect(await redis.getdel(key)).toBeNull();
+    expect(
+      (await app.inject({ method: 'DELETE', url: `${url}/attackbox`, headers: ownerHeaders }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
+    ).toBe(404);
+    await app.inject({ method: 'POST', url: `${url}/stop`, headers: ownerHeaders });
   });
 
   it('cleans up a failed spawn and does not strand an active DB session', async () => {

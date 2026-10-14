@@ -6,10 +6,12 @@ import { prisma } from '../../lib/prisma.js';
 import { redis } from '../../lib/redis.js';
 import { AuthError } from '../auth/auth.service.js';
 import { getRoom } from './rooms.service.js';
+import { orchestratorRequest } from './lab.service.js';
 
-const ticketKey = (ticket: string) => `lab:terminal:ticket:${ticket}`;
+type LabStream = 'terminal' | 'attackbox';
+const ticketKey = (stream: LabStream, ticket: string) => `lab:${stream}:ticket:${ticket}`;
 
-async function runningLab(slug: string, userId: string) {
+export async function runningLab(slug: string, userId: string) {
   const room = await getRoom(slug, userId);
   const instance = await prisma.labInstance.findFirst({
     where: { roomId: room.id, userId, status: 'running' },
@@ -41,7 +43,8 @@ export async function currentLab(slug: string, userId: string) {
   };
 }
 
-export async function issueTerminalTicket(
+async function issueStreamTicket(
+  stream: LabStream,
   slug: string,
   userId: string,
   jti?: string,
@@ -51,7 +54,7 @@ export async function issueTerminalTicket(
   const instance = await runningLab(slug, userId);
   const ticket = randomBytes(32).toString('hex');
   await redis.set(
-    ticketKey(ticket),
+    ticketKey(stream, ticket),
     JSON.stringify({ slug, userId, instanceId: instance.id, jti, exp }),
     'EX',
     30,
@@ -59,7 +62,41 @@ export async function issueTerminalTicket(
   return { ticket, expiresInSeconds: 30 };
 }
 
-export function connectTerminal(
+export const issueTerminalTicket = (slug: string, userId: string, jti?: string, exp?: number) =>
+  issueStreamTicket('terminal', slug, userId, jti, exp);
+
+export async function attackBoxStatus(slug: string, userId: string) {
+  const lab = await runningLab(slug, userId);
+  const response = await orchestratorRequest(`/v1/instances/${lab.id}/attackbox`, 'GET');
+  return (await response.json()) as { running: boolean };
+}
+
+export async function startAttackBox(slug: string, userId: string) {
+  const lab = await runningLab(slug, userId);
+  const response = await orchestratorRequest(`/v1/instances/${lab.id}/attackbox`, 'POST');
+  return (await response.json()) as { running: boolean };
+}
+
+export async function stopAttackBox(slug: string, userId: string) {
+  const lab = await runningLab(slug, userId);
+  await orchestratorRequest(`/v1/instances/${lab.id}/attackbox`, 'DELETE');
+  return { running: false };
+}
+
+export async function issueAttackBoxTicket(
+  slug: string,
+  userId: string,
+  jti?: string,
+  exp?: number,
+) {
+  const status = await attackBoxStatus(slug, userId);
+  if (!status.running)
+    throw new AuthError(404, 'AttackBox chưa chạy trong phiên lab này.', 'ATTACKBOX_NOT_FOUND');
+  return issueStreamTicket('attackbox', slug, userId, jti, exp);
+}
+
+function connectStream(
+  stream: LabStream,
   socket: WebSocket,
   request: FastifyRequest,
   slug: string,
@@ -90,7 +127,7 @@ export function connectTerminal(
         socket.close(1008, 'Unauthorized');
         return;
       }
-      const raw = await redis.getdel(ticketKey(ticket));
+      const raw = await redis.getdel(ticketKey(stream, ticket));
       if (!raw) {
         socket.close(1008, 'Ticket expired');
         return;
@@ -117,7 +154,10 @@ export function connectTerminal(
       }
       const target = new URL(env.ORCHESTRATOR_URL);
       target.protocol = target.protocol === 'https:' ? 'wss:' : 'ws:';
-      target.pathname = `/v1/instances/${lab.id}/terminal`;
+      target.pathname =
+        stream === 'terminal'
+          ? `/v1/instances/${lab.id}/terminal`
+          : `/v1/instances/${lab.id}/attackbox/stream`;
       upstream = new WebSocket(target, {
         headers: { Authorization: `Bearer ${env.ORCHESTRATOR_TOKEN}` },
         handshakeTimeout: 10000,
@@ -163,3 +203,17 @@ export function connectTerminal(
     }
   })();
 }
+
+export const connectTerminal = (
+  socket: WebSocket,
+  request: FastifyRequest,
+  slug: string,
+  ticket: string,
+) => connectStream('terminal', socket, request, slug, ticket);
+
+export const connectAttackBox = (
+  socket: WebSocket,
+  request: FastifyRequest,
+  slug: string,
+  ticket: string,
+) => connectStream('attackbox', socket, request, slug, ticket);

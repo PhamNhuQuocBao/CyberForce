@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ApiError, roomsApi, type LabSession } from '@/lib/api';
 import { WebTerminal } from './WebTerminal';
+import { GuacamoleViewer } from './GuacamoleViewer';
 
 export function LabWorkspace({ slug, accessToken }: { slug: string; accessToken: string }) {
   const [lab, setLab] = useState<LabSession | null>(null);
@@ -11,6 +12,7 @@ export function LabWorkspace({ slug, accessToken }: { slug: string; accessToken:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [clock, setClock] = useState(Date.now());
+  const [activePanel, setActivePanel] = useState<'terminal' | 'attackbox'>('terminal');
   const labId = lab?.instanceId;
 
   useEffect(() => {
@@ -133,7 +135,35 @@ export function LabWorkspace({ slug, accessToken }: { slug: string; accessToken:
             </div>
           </div>
           {lab.status === 'running' && seconds > 0 && (
-            <WebTerminal slug={slug} accessToken={accessToken} instanceId={lab.instanceId} />
+            <>
+              <div className="flex gap-2" role="tablist" aria-label="Công cụ thực hành">
+                <Button
+                  role="tab"
+                  aria-selected={activePanel === 'terminal'}
+                  variant={activePanel === 'terminal' ? 'default' : 'outline'}
+                  onClick={() => setActivePanel('terminal')}
+                >
+                  Web Terminal
+                </Button>
+                <Button
+                  role="tab"
+                  aria-selected={activePanel === 'attackbox'}
+                  variant={activePanel === 'attackbox' ? 'default' : 'outline'}
+                  onClick={() => setActivePanel('attackbox')}
+                >
+                  Kali AttackBox
+                </Button>
+              </div>
+              {activePanel === 'terminal' ? (
+                <WebTerminal slug={slug} accessToken={accessToken} instanceId={lab.instanceId} />
+              ) : (
+                <GuacamoleViewer
+                  slug={slug}
+                  accessToken={accessToken}
+                  instanceId={lab.instanceId}
+                />
+              )}
+            </>
           )}
         </>
       ) : (

@@ -663,6 +663,30 @@ export const roomsApi = {
       },
     );
   },
+  attackBoxStatus(slug: string, accessToken: string) {
+    return request<{ success: true; data: { running: boolean } }>(
+      `/rooms/${encodeURIComponent(slug)}/attackbox`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  },
+  startAttackBox(slug: string, accessToken: string) {
+    return request<{ success: true; data: { running: boolean } }>(
+      `/rooms/${encodeURIComponent(slug)}/attackbox`,
+      { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  },
+  stopAttackBox(slug: string, accessToken: string) {
+    return request<{ success: true; data: { running: boolean } }>(
+      `/rooms/${encodeURIComponent(slug)}/attackbox`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  },
+  attackBoxTicket(slug: string, accessToken: string) {
+    return request<{ success: true; data: { ticket: string; expiresInSeconds: number } }>(
+      `/rooms/${encodeURIComponent(slug)}/attackbox/ticket`,
+      { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  },
 };
 
 export interface SubmissionResult {

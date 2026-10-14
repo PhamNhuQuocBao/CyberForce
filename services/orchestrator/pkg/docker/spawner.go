@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"os"
 	"regexp"
 	"strings"
 
@@ -30,14 +31,21 @@ type Instance struct {
 	TargetIP    string `json:"targetIp"`
 }
 
-type Spawner struct{ cli *client.Client }
+type Spawner struct {
+	cli       *client.Client
+	guacdName string
+}
 
 func NewSpawner() (*Spawner, error) {
 	cli, err := client.NewClientWithOpts(client.WithHost("unix:///var/run/docker.sock"), client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
 	}
-	return &Spawner{cli: cli}, nil
+	guacdName := os.Getenv("GUACD_CONTAINER_NAME")
+	if guacdName == "" {
+		guacdName = "cyberforce-guacd"
+	}
+	return &Spawner{cli: cli, guacdName: guacdName}, nil
 }
 
 func (s *Spawner) Close() error { return s.cli.Close() }
@@ -168,6 +176,9 @@ func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error)
 func (s *Spawner) Stop(ctx context.Context, id string) error {
 	if !instanceIDPattern.MatchString(id) {
 		return errors.New("invalid instance ID")
+	}
+	if err := s.StopAttackBox(ctx, id); err != nil {
+		return err
 	}
 	containerName, networkName := names(id)
 	terminal, terminalErr := s.cli.ContainerInspect(ctx, terminalName(id), client.ContainerInspectOptions{})

@@ -129,3 +129,7 @@ Người dùng duyệt phương án Go reaper theo TDD. Branch `codex/cf-302-lea
 ## Tiếp nối CF-303 — 2026-10-13
 
 Người dùng duyệt sidecar terminal riêng và scratch tmpfs 512 MB cho host overlay2/extfs. Nhánh `codex/cf-303-web-terminal` dựa trên main `8298f02`. Đã nối xterm desktop, UI máy lab, WebSocket ticket một lần qua API Core, Go TTY sidecar và cleanup. API/Go/frontend tests, Docker smoke và browser desktop qua; stack local `api`, `web`, `orchestrator` healthy. Chi tiết và giới hạn: [CF-303.md](CF-303.md). Kiểm tra Git thực tế trước khi tiếp tục hoặc tạo PR.
+
+## Tiếp nối CF-304 — 2026-10-14
+
+Người dùng duyệt Guacamole/Kali trước, inject cờ động riêng; duyệt `guacd` dùng chung nối/ngắt mạng từng lab. Branch `codex/cf-304-guacamole-attackbox` dựa trên main `9ebd276`. Đã nối image Kali XFCE/VNC, Go orchestrator và Guacamole bridge, API ticket/stream và tab AttackBox desktop. Browser xác nhận XFCE, terminal `nmap` quét target cổng 80 và clipboard hai chiều; API 110/110 tests, Go tests và web build/lint qua. Desktop VNC cố định 1280×800, Canvas co giãn; chưa đổi độ phân giải Xvfb thực hoặc đo SLA <80ms. Chi tiết: [CF-304.md](CF-304.md). Kiểm tra Git thực tế để xác định commit/push/merge.

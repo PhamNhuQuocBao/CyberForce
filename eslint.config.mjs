@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/build/**',
       '**/.next/**',
       '**/.agents/**',
+      'apps/web/public/vendor/**',
       'infra/**',
     ],
   },

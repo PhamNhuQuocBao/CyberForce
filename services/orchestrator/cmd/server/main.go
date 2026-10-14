@@ -125,6 +125,54 @@ func handler(spawner labSpawner, token string) http.Handler {
 		_ = json.NewEncoder(w).Encode(instance)
 	})
 	mux.HandleFunc("/v1/instances/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/attackbox/stream") {
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/attackbox/stream")
+			if manager, ok := spawner.(attackBoxManager); ok {
+				serveAttackBox(w, r, manager, id)
+				return
+			}
+			http.Error(w, "attackbox unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/attackbox") {
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/attackbox")
+			manager, ok := spawner.(attackBoxManager)
+			if !ok {
+				http.Error(w, "attackbox unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+			defer cancel()
+			switch r.Method {
+			case http.MethodGet:
+				status, err := manager.AttackBoxStatus(ctx, id)
+				if err == nil {
+					_ = json.NewEncoder(w).Encode(status)
+					return
+				}
+			case http.MethodPost:
+				status, err := manager.StartAttackBox(ctx, id)
+				if err == nil {
+					w.WriteHeader(http.StatusCreated)
+					_ = json.NewEncoder(w).Encode(status)
+					return
+				}
+			case http.MethodDelete:
+				if err := manager.StopAttackBox(ctx, id); err == nil {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			http.Error(w, "attackbox operation failed", http.StatusBadGateway)
+			return
+		}
 		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/terminal") {
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/terminal")
 			if opener, ok := spawner.(terminalOpener); ok {
