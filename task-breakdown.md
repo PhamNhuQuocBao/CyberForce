@@ -62,7 +62,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-104 | [x] UI hồ sơ, chỉnh sửa và quyền riêng tư; sửa race khi refresh | PR #10, #16; telemetry kỹ năng/lab/lộ trình ở backend còn mô phỏng, chưa nghiệm thu như dữ liệu thật |
 | CF-105 | [x] RBAC, yêu cầu Creator, admin duyệt/từ chối và phân trang | `4a30710` / PR #12; PR #16 xác minh 22 requests, approve/reject và chuyển trang |
 | CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
-| CF-202 | [~] Workspace, máy lab, Web Terminal và Kali AttackBox desktop | API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room; CF-303 nối máy lab/terminal, CF-304 nối Guacamole. Inject cờ động vào container còn chờ bước riêng |
+| CF-202 | [~] Workspace, máy lab, Web Terminal và Kali AttackBox desktop | API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room; CF-303 nối máy lab/terminal, CF-304 nối Guacamole. Cờ động được inject vào `/root/flag.txt` khi spawn phòng có câu hỏi `dynamic_hmac`; còn nghiệm thu hiệu năng/độ phân giải AttackBox. [Handoff](docs/handoffs/CF-202-DYNAMIC-FLAG.md) |
 | CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; CF-301 tạo phiên thật nhưng chưa inject cờ vào container. Chưa đo SLA <300ms dưới tải |
 | CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
 | CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Terminal/VPN/inject flag thuộc các bước sau. [Handoff](docs/handoffs/CF-301.md) |
@@ -619,5 +619,5 @@ gantt
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **Phần còn lại của CF-202:** Inject dynamic flag vào container lab thật; Guacamole/Kali đã nối trong CF-304. Đổi độ phân giải Xvfb thực và đo SLA <80ms cần nghiệm thu hiệu năng riêng.
+1. **Phần còn lại của CF-202:** Dynamic flag injection đã nối và Docker smoke qua. Đổi độ phân giải Xvfb thực và đo SLA <80ms cần nghiệm thu hiệu năng riêng.
 2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

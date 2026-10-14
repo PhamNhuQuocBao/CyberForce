@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
@@ -24,6 +26,7 @@ const (
 
 var instanceIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 var imagePattern = regexp.MustCompile(`^cyberforce/[a-z0-9][a-z0-9._/-]*:[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+var dynamicFlagPattern = regexp.MustCompile(`^flag\{[0-9a-f]{24}\}$`)
 
 type Instance struct {
 	ID          string `json:"instanceId"`
@@ -98,9 +101,9 @@ func (s *Spawner) inspect(ctx context.Context, id string) (Instance, error) {
 	return Instance{ID: id, ContainerID: info.ID, TargetIP: endpoint.IPAddress.String()}, nil
 }
 
-func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error) {
-	if !instanceIDPattern.MatchString(id) || !imagePattern.MatchString(image) {
-		return Instance{}, errors.New("invalid instance ID or image")
+func (s *Spawner) Spawn(ctx context.Context, id, image, dynamicFlag string) (Instance, error) {
+	if !instanceIDPattern.MatchString(id) || !imagePattern.MatchString(image) || (dynamicFlag != "" && !dynamicFlagPattern.MatchString(dynamicFlag)) {
+		return Instance{}, errors.New("invalid instance ID, image or dynamic flag")
 	}
 	containerName, networkName := names(id)
 	if existing, err := s.inspect(ctx, id); err == nil {
@@ -159,6 +162,17 @@ func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error)
 			_, _ = s.cli.ContainerRemove(context.Background(), created.ID, client.ContainerRemoveOptions{Force: true})
 		}
 	}()
+	if dynamicFlag != "" {
+		archive, err := flagArchive(dynamicFlag)
+		if err != nil {
+			return Instance{}, err
+		}
+		if _, err := s.cli.CopyToContainer(ctx, created.ID, client.CopyToContainerOptions{
+			DestinationPath: "/root", Content: archive,
+		}); err != nil {
+			return Instance{}, fmt.Errorf("inject dynamic flag: %w", err)
+		}
+	}
 	if _, err := s.cli.ContainerStart(ctx, created.ID, client.ContainerStartOptions{}); err != nil {
 		return Instance{}, fmt.Errorf("start lab container: %w", err)
 	}
@@ -171,6 +185,22 @@ func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error)
 	}
 	cleanupContainer, cleanupNetwork = false, false
 	return instance, nil
+}
+
+func flagArchive(flag string) (*bytes.Reader, error) {
+	var buffer bytes.Buffer
+	writer := tar.NewWriter(&buffer)
+	data := []byte(flag + "\n")
+	if err := writer.WriteHeader(&tar.Header{Name: "flag.txt", Mode: 0400, Size: int64(len(data)), Uid: 0, Gid: 0}); err != nil {
+		return nil, err
+	}
+	if _, err := writer.Write(data); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(buffer.Bytes()), nil
 }
 
 func (s *Spawner) Stop(ctx context.Context, id string) error {

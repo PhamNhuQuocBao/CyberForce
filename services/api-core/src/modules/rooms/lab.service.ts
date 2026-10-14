@@ -4,6 +4,10 @@ import { prisma } from '../../lib/prisma.js';
 import { redis } from '../../lib/redis.js';
 import { AuthError } from '../auth/auth.service.js';
 import { getRoom } from './rooms.service.js';
+import {
+  createDynamicFlag,
+  requirePlatformMasterKey,
+} from '../submissions/flag-validator.service.js';
 
 const activeStatuses = ['provisioning', 'running', 'terminating'] as const;
 const localToken = 'cyberforce_local_orchestrator_token_2026';
@@ -93,7 +97,25 @@ export async function spawnLab(slug: string, userId: string) {
     )
       throw new AuthError(409, 'Phòng này chưa có Docker image hợp lệ.', 'LAB_IMAGE_UNAVAILABLE');
 
+    const hasDynamicQuestion =
+      (await prisma.question.count({
+        where: { task: { roomId: room.id }, flagType: 'dynamic_hmac' },
+      })) > 0;
     const id = randomUUID();
+    const dynamicSalt = randomBytes(16).toString('hex');
+    let dynamicFlag: string | undefined;
+    if (hasDynamicQuestion) {
+      try {
+        dynamicFlag = createDynamicFlag({
+          userId,
+          roomId: room.id,
+          instanceSalt: dynamicSalt,
+          masterKey: requirePlatformMasterKey(env.PLATFORM_MASTER_KEY),
+        });
+      } catch {
+        throw new AuthError(503, 'Cấu hình cờ động chưa sẵn sàng.', 'DYNAMIC_FLAG_UNAVAILABLE');
+      }
+    }
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await prisma.labInstance.create({
       data: {
@@ -101,7 +123,7 @@ export async function spawnLab(slug: string, userId: string) {
         userId,
         roomId: room.id,
         ipAddress: '0.0.0.0',
-        dynamicSalt: randomBytes(16).toString('hex'),
+        dynamicSalt,
         expiresAt,
       },
     });
@@ -109,6 +131,7 @@ export async function spawnLab(slug: string, userId: string) {
       const response = await orchestratorRequest('/v1/instances', 'POST', {
         instanceId: id,
         image,
+        ...(dynamicFlag ? { dynamicFlag } : {}),
       });
       const data = (await response.json()) as {
         instanceId?: string;
