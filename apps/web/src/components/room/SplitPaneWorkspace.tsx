@@ -6,14 +6,17 @@ import { QuestionAnswerForm } from './QuestionAnswerForm';
 import type { RoomDetail, SubmissionResult } from '@/lib/api';
 import { LessonContent } from './LessonContent';
 import { readWorkspace } from './workspace-state';
+import { LabWorkspace } from './LabWorkspace';
 
 export function SplitPaneWorkspace({
   room,
   userId,
+  accessToken,
   onCompleted,
 }: {
   room: RoomDetail;
   userId: string;
+  accessToken: string;
   onCompleted: (result: SubmissionResult) => void;
 }) {
   const storageKey = `cf-room-v1:${userId}:${room.id}`;
@@ -209,13 +212,7 @@ export function SplitPaneWorkspace({
                     </Button>
                   )}
                 </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  Phòng này có bài thực hành trên máy lab. Dịch vụ khởi chạy máy và terminal chưa
-                  khả dụng.
-                </p>
-                <Button className="mt-4" disabled>
-                  Khởi chạy máy (chưa khả dụng)
-                </Button>
+                <LabWorkspace slug={room.slug} accessToken={accessToken} />
               </div>
             </Panel>
           </>

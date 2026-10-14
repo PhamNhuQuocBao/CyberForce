@@ -12,6 +12,7 @@ import (
 
 	labdocker "github.com/cyberforce/orchestrator/pkg/docker"
 	"github.com/cyberforce/orchestrator/pkg/reaper"
+	"github.com/gorilla/websocket"
 )
 
 type labSpawner interface {
@@ -22,6 +23,73 @@ type labSpawner interface {
 type spawnRequest struct {
 	InstanceID string `json:"instanceId"`
 	Image      string `json:"image"`
+}
+
+type terminalOpener interface {
+	OpenTerminal(context.Context, string) (*labdocker.TerminalSession, error)
+}
+
+func serveTerminal(w http.ResponseWriter, r *http.Request, opener terminalOpener, id string) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	session, err := opener.OpenTerminal(ctx, id)
+	cancel()
+	if err != nil {
+		http.Error(w, "terminal unavailable", http.StatusBadGateway)
+		return
+	}
+	defer session.Conn.Close()
+	ws, err := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return r.Header.Get("Origin") == "" }}).Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer ws.Close()
+	ws.SetReadLimit(64 * 1024)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		defer ws.Close()
+		buf := make([]byte, 16*1024)
+		for {
+			n, err := session.Reader.Read(buf)
+			if n > 0 {
+				if writeErr := ws.WriteMessage(websocket.BinaryMessage, buf[:n]); writeErr != nil {
+					return
+				}
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	// Input activity is the idle criterion; terminal output must not keep an abandoned session alive.
+	_ = ws.SetReadDeadline(time.Now().Add(15 * time.Minute))
+	for {
+		kind, data, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+		if kind == websocket.BinaryMessage {
+			if _, err := session.Conn.Write(data); err != nil {
+				break
+			}
+			_ = ws.SetReadDeadline(time.Now().Add(15 * time.Minute))
+		} else if kind == websocket.TextMessage {
+			var size struct {
+				Rows uint `json:"rows"`
+				Cols uint `json:"cols"`
+			}
+			if json.Unmarshal(data, &size) == nil {
+				resizeCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+				_ = session.Resize(resizeCtx, size.Rows, size.Cols)
+				cancel()
+			}
+		}
+	}
+	_ = session.Conn.Close()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+	}
 }
 
 func handler(spawner labSpawner, token string) http.Handler {
@@ -57,6 +125,15 @@ func handler(spawner labSpawner, token string) http.Handler {
 		_ = json.NewEncoder(w).Encode(instance)
 	})
 	mux.HandleFunc("/v1/instances/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/terminal") {
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/terminal")
+			if opener, ok := spawner.(terminalOpener); ok {
+				serveTerminal(w, r, opener, id)
+				return
+			}
+			http.Error(w, "terminal unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		if r.Method != http.MethodDelete {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return

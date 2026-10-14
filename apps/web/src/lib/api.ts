@@ -598,11 +598,70 @@ export interface RoomDetail {
   }>;
 }
 
+export interface LabSession {
+  instanceId: string;
+  status: string;
+  targetIp: string;
+  expiresAt: string;
+  remainingSeconds: number;
+  extensionCount: number;
+  maxExtensions: number;
+}
+
 export const roomsApi = {
   getRoom(slug: string, accessToken: string) {
     return request<{ success: true; data: RoomDetail }>(`/rooms/${encodeURIComponent(slug)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+  },
+  currentLab(slug: string, accessToken: string) {
+    return request<{ success: true; data: LabSession }>(`/rooms/${encodeURIComponent(slug)}/lab`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+  spawnLab(slug: string, accessToken: string) {
+    return request<{ success: true; data: LabSession }>(
+      `/rooms/${encodeURIComponent(slug)}/spawn`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+  },
+  stopLab(slug: string, accessToken: string) {
+    return request<{ success: true; data: { instanceId: string; status: string } }>(
+      `/rooms/${encodeURIComponent(slug)}/stop`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+  },
+  extendLab(slug: string, accessToken: string) {
+    return request<{
+      success: true;
+      data: Pick<
+        LabSession,
+        | 'instanceId'
+        | 'expiresAt'
+        | 'remainingSeconds'
+        | 'extensionCount'
+        | 'maxExtensions'
+        | 'status'
+      >;
+    }>(`/rooms/${encodeURIComponent(slug)}/extend`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  },
+  terminalTicket(slug: string, accessToken: string) {
+    return request<{ success: true; data: { ticket: string; expiresInSeconds: number } }>(
+      `/rooms/${encodeURIComponent(slug)}/terminal-ticket`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
   },
 };
 

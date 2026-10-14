@@ -51,7 +51,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 
 ---
 
-### 2.3. Trạng thái thực tế đến 2026-10-12
+### 2.3. Trạng thái thực tế đến 2026-10-13
 
 `[x]` = hoàn thành phạm vi ghi rõ; `[~]` = hoàn thành một phần, còn phụ thuộc; chưa đánh dấu = chưa triển khai. Trạng thái code không đồng nghĩa đã merge/deploy hoặc đã áp dụng SQL vào DB chính.
 
@@ -62,11 +62,12 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-104 | [x] UI hồ sơ, chỉnh sửa và quyền riêng tư; sửa race khi refresh | PR #10, #16; telemetry kỹ năng/lab/lộ trình ở backend còn mô phỏng, chưa nghiệm thu như dữ liệu thật |
 | CF-105 | [x] RBAC, yêu cầu Creator, admin duyệt/từ chối và phân trang | `4a30710` / PR #12; PR #16 xác minh 22 requests, approve/reject và chuyển trang |
 | CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
-| CF-202 | [~] Hoàn thành workspace trong phạm vi đã duyệt | `13fd2e4` đã push; API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room. Spawner backend CF-301 đã có; UI máy lab, timer, terminal/Guacamole chờ các bước sau |
+| CF-202 | [~] Workspace, máy lab và terminal web desktop | API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room; CF-303 nối UI spawn/stop/extend/timer/terminal thật. Guacamole và inject cờ động chờ CF-304/các bước sau |
 | CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Dynamic đã test bằng phiên lab fixture; CF-301 tạo phiên thật nhưng chưa inject cờ vào container. Chưa đo SLA <300ms dưới tải |
 | CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
 | CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Terminal/VPN/inject flag thuộc các bước sau. [Handoff](docs/handoffs/CF-301.md) |
-| CF-302 | [x] Backend lease lifecycle và reaper | Gia hạn 60 phút tối đa 3 lần; grace 3 phút; Go quét 30 giây và dọn Docker/DB; role DB giới hạn. UI đồng hồ/cảnh báo thuộc bước sau. [Handoff](docs/handoffs/CF-302.md) |
+| CF-302 | [x] Backend lease lifecycle và reaper | Gia hạn 60 phút tối đa 3 lần; grace 3 phút; Go quét 30 giây và dọn Docker/DB; role DB giới hạn. UI đồng hồ/trạng thái grace được nối trong CF-303. [Handoff](docs/handoffs/CF-302.md) |
+| CF-303 | [x] Web Terminal và điều khiển lab desktop | Sidecar Alpine không đặc quyền trên mạng lab, xterm TTY qua WS ticket một lần; UI spawn/stop/extend/timer. API/Go/frontend tests, Docker TTY smoke và browser desktop qua. [Handoff](docs/handoffs/CF-303.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -288,7 +289,7 @@ gantt
 #### Task CF-303: Tích hợp Web Terminal xterm.js Tương tác Trực tiếp
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `frontend-architecture`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-202, CF-301
-* **Mô tả:** Nhúng xterm.js vào cột phải của phòng học. Kết nối 2 chiều qua Secure WebSocket tới SSH/TTY container mục tiêu. Hỗ trợ ANSI colors, sự kiện resize màn hình terminal (`TIOCSWINSZ`), phím tắt Ctrl+C, copy/paste clipboard (Story `US-03.04`).
+* **Mô tả:** Nhúng xterm.js vào cột phải của phòng học. Kết nối 2 chiều qua Secure WebSocket tới TTY sidecar trong mạng lab (phương án được duyệt để không lộ filesystem target). Hỗ trợ ANSI colors, resize TTY, Ctrl+C và copy/paste clipboard (Story `US-03.04`).
 * **INPUT:** `docs/02-architecture/TDD_CYBERFORCE.md` Mục 7.2 & Wireframe 3.1.
 * **OUTPUT:** Component `apps/web/src/components/room/WebTerminal.tsx`, WebSocket handler trên Go API.
 * **VERIFY:** Mở phòng lab -> Terminal xterm.js kết nối thành công, gõ lệnh `ls -la`, `whoami` trả về kết quả mượt mà, resize cửa sổ terminal tự động điều chỉnh số cột/dòng.
@@ -617,5 +618,5 @@ gantt
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-303–304:** UI điều khiển máy/terminal/Guacamole và inject dynamic flag; hoàn tất phần runtime còn lại của CF-202. CF-301–302 backend đã qua Docker smoke.
+1. **CF-304 và phần còn lại của CF-202:** Guacamole và inject dynamic flag; CF-303 đã hoàn tất UI máy lab và Web Terminal desktop.
 2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

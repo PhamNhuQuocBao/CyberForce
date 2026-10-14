@@ -125,3 +125,7 @@ Người dùng duyệt kế hoạch backend CF-301. Branch `codex/cf-301-lab-spa
 ## Tiếp nối CF-302 — 2026-10-13
 
 Người dùng duyệt phương án Go reaper theo TDD. Branch `codex/cf-302-lease-reaper` dựa trên `main` tại `04196a5`. Đã thêm gia hạn, grace, role DB giới hạn và Go sweeper. 108 API tests, Go tests, typecheck/lint/build và Docker smoke trên project riêng qua; chi tiết ở [CF-302.md](CF-302.md). Chưa có UI timer/terminal; không suy ra commit/push từ handoff, kiểm tra Git thực tế trước khi tiếp tục.
+
+## Tiếp nối CF-303 — 2026-10-13
+
+Người dùng duyệt sidecar terminal riêng và scratch tmpfs 512 MB cho host overlay2/extfs. Nhánh `codex/cf-303-web-terminal` dựa trên main `8298f02`. Đã nối xterm desktop, UI máy lab, WebSocket ticket một lần qua API Core, Go TTY sidecar và cleanup. API/Go/frontend tests, Docker smoke và browser desktop qua; stack local `api`, `web`, `orchestrator` healthy. Chi tiết và giới hạn: [CF-303.md](CF-303.md). Kiểm tra Git thực tế trước khi tiếp tục hoặc tạo PR.

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../../app.js';
 import { prisma } from '../../lib/prisma.js';
 import { generateTokens } from '../../lib/security.js';
+import { redis } from '../../lib/redis.js';
 
 describe('CF-301 lab lifecycle API', () => {
   const app = buildApp();
@@ -143,6 +144,41 @@ describe('CF-301 lab lifecycle API', () => {
     );
   });
 
+  it('issues a one-use terminal ticket only for the running lab owner', async () => {
+    const ticketUrl = `${url}/terminal-ticket`;
+    const ownerHeaders = { authorization: `Bearer ${token}` };
+    expect((await app.inject({ method: 'POST', url: ticketUrl })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
+    ).toBe(404);
+    const spawn = await app.inject({ method: 'POST', url: `${url}/spawn`, headers: ownerHeaders });
+    expect(spawn.statusCode).toBe(201);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: ticketUrl,
+          headers: { authorization: `Bearer ${otherToken}` },
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (await app.inject({ method: 'GET', url: `${url}/lab`, headers: ownerHeaders })).json().data
+        .instanceId,
+    ).toBe(spawn.json().data.instanceId);
+    const response = await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders });
+    expect(response.statusCode).toBe(200);
+    const ticket = response.json().data.ticket as string;
+    expect(ticket).toMatch(/^[0-9a-f]{64}$/);
+    const key = `lab:terminal:ticket:${ticket}`;
+    expect(JSON.parse((await redis.getdel(key))!).instanceId).toBe(spawn.json().data.instanceId);
+    expect(await redis.getdel(key)).toBeNull();
+    await app.inject({ method: 'POST', url: `${url}/stop`, headers: ownerHeaders });
+    expect(
+      (await app.inject({ method: 'POST', url: ticketUrl, headers: ownerHeaders })).statusCode,
+    ).toBe(404);
+  });
+
   it('cleans up a failed spawn and does not strand an active DB session', async () => {
     fetchMock.mockImplementationOnce(async () => new Response('failed', { status: 502 }));
     const failed = await app.inject({
@@ -212,6 +248,22 @@ describe('CF-301 lab lifecycle API', () => {
       where: { id },
       data: { expiresAt: graceDeadline },
     });
+    const graceStatus = await app.inject({
+      method: 'GET',
+      url: `${url}/lab`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(graceStatus.statusCode).toBe(200);
+    expect(graceStatus.json().data.remainingSeconds).toBe(0);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `${url}/terminal-ticket`,
+          headers: { authorization: `Bearer ${token}` },
+        })
+      ).statusCode,
+    ).toBe(404);
     const first = await extend(token);
     expect(first.statusCode).toBe(200);
     expect(first.json().data.extensionCount).toBe(1);
