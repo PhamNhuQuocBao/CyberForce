@@ -36,7 +36,11 @@ function orchestratorConfig() {
   return env.ORCHESTRATOR_URL.replace(/\/$/, '');
 }
 
-async function orchestratorRequest(path: string, method: 'POST' | 'DELETE', body?: object) {
+export async function orchestratorRequest(
+  path: string,
+  method: 'GET' | 'POST' | 'DELETE',
+  body?: object,
+) {
   const url = `${orchestratorConfig()}${path}`;
   try {
     const response = await fetch(url, {

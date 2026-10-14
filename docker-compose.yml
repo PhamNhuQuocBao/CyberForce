@@ -30,6 +30,14 @@ x-api: &api
     - cyberforce-net
 
 services:
+  attackbox-image:
+    build:
+      context: ./infra/attackbox
+    image: cyberforce/kali-attackbox:1.0
+    entrypoint: ['true']
+    restart: 'no'
+    network_mode: none
+
   terminal-image:
     image: alpine:3.21
     command: ['true']
@@ -45,11 +53,17 @@ services:
       ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
       REAPER_DATABASE_URL: postgresql://cyberforce_reaper@postgres:5432/${POSTGRES_DB:-cyberforce}
       REAPER_DB_PASSWORD: ${REAPER_DB_PASSWORD:-cyberforce_local_reaper_password_2026}
+      GUACD_CONTAINER_NAME: ${COMPOSE_RESOURCE_PREFIX:-cyberforce}-guacd
+      GUACD_ADDRESS: guacd:4822
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
+      attackbox-image:
+        condition: service_completed_successfully
       terminal-image:
         condition: service_completed_successfully
+      guacd:
+        condition: service_healthy
     networks:
       - cyberforce-net
     healthcheck:
