@@ -3,6 +3,7 @@ import React from 'react';
 import localFont from 'next/font/local';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
+import '@xterm/xterm/css/xterm.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
 const inter = localFont({

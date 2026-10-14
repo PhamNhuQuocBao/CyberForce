@@ -46,6 +46,8 @@ func names(id string) (string, string) {
 	return "cf-lab-" + id, "cf-lab-net-" + id
 }
 
+func terminalName(id string) string { return "cf-terminal-" + id }
+
 func subnet(id string, attempt uint32) string {
 	sum := sha256.Sum256([]byte(id))
 	n := (binary.BigEndian.Uint32(sum[:4]) + attempt) % maxSubnets
@@ -94,6 +96,9 @@ func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error)
 	}
 	containerName, networkName := names(id)
 	if existing, err := s.inspect(ctx, id); err == nil {
+		if err := s.ensureTerminal(ctx, id); err != nil {
+			return Instance{}, err
+		}
 		return existing, nil
 	} else if !errdefs.IsNotFound(err) {
 		return Instance{}, err
@@ -153,6 +158,9 @@ func (s *Spawner) Spawn(ctx context.Context, id, image string) (Instance, error)
 	if err != nil {
 		return Instance{}, err
 	}
+	if err := s.ensureTerminal(ctx, id); err != nil {
+		return Instance{}, err
+	}
 	cleanupContainer, cleanupNetwork = false, false
 	return instance, nil
 }
@@ -162,6 +170,18 @@ func (s *Spawner) Stop(ctx context.Context, id string) error {
 		return errors.New("invalid instance ID")
 	}
 	containerName, networkName := names(id)
+	terminal, terminalErr := s.cli.ContainerInspect(ctx, terminalName(id), client.ContainerInspectOptions{})
+	if terminalErr != nil && !errdefs.IsNotFound(terminalErr) {
+		return terminalErr
+	}
+	if terminalErr == nil {
+		if terminal.Container.Config == nil || terminal.Container.Config.Labels[labelOwner] != id {
+			return errors.New("terminal owner mismatch")
+		}
+		if _, err := s.cli.ContainerRemove(ctx, terminal.Container.ID, client.ContainerRemoveOptions{Force: true}); err != nil && !errdefs.IsNotFound(err) {
+			return err
+		}
+	}
 	result, err := s.cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
 	if err != nil && !errdefs.IsNotFound(err) {
 		return err

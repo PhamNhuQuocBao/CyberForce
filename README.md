@@ -331,7 +331,7 @@ Tại thư mục gốc repository:
 docker compose up -d --build --wait
 ```
 
-Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma; backend chỉ chạy sau khi schema, Redis và orchestrator sẵn sàng, frontend chờ backend khỏe. `db-init` kết thúc với mã 0 là bình thường.
+Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `terminal-image` tải image Alpine vào Docker daemon để sidecar terminal sẵn sàng khi khởi chạy lab; `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma. Backend chỉ chạy sau khi schema, Redis và orchestrator sẵn sàng, frontend chờ backend khỏe. `terminal-image` và `db-init` kết thúc với mã 0 là bình thường.
 
 Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
 
@@ -354,7 +354,7 @@ docker compose down
 
 DB/Redis trong container được kết nối bằng hostname `postgres`/`redis`, không dùng `localhost`. Trình duyệt dùng `NEXT_PUBLIC_API_URL` (mặc định `http://localhost:4000/api/v1`). Nếu đổi cổng/host, cập nhật đồng bộ `API_PORT`, `WEB_PORT`, `API_BASE_URL`, `WEB_ORIGIN`, `NEXT_PUBLIC_API_URL` và rebuild. OAuth callback URLs cũng phải khớp URL mới. Traefik hiện chỉ là hạ tầng dự phòng, ứng dụng truy cập trực tiếp qua cổng 3000/4000.
 
-CF-301 dùng Docker socket chỉ trong container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image. Spawn/stop qua API Core đã có nhưng UI Start Machine, gia hạn/reaper và terminal thuộc các task tiếp theo.
+Docker socket chỉ được mount vào container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image target lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image target. Trang phòng học có nút Start/Stop/Gia hạn và Web Terminal xterm.js qua sidecar riêng trên mạng lab. Terminal sidecar dùng image Alpine đã được Compose chuẩn bị; Guacamole/AttackBox và dynamic flag injection là các task tiếp theo.
 
 Volume hạ tầng hiện có được giữ theo tên `cyberforce_*`; không chạy `down -v` nếu muốn giữ dữ liệu. `db-init` không dùng `--accept-data-loss` hoặc reset: nếu Prisma báo thay đổi có nguy cơ mất dữ liệu, xử lý migration trước. Không tự chạy seed khi startup vì seed hiện có xóa task/submission mẫu. Chỉ nạp mẫu vào DB phát triển có thể thay thế:
 

@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
+import websocket from '@fastify/websocket';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
@@ -44,6 +45,8 @@ export function buildApp() {
     max: 100,
     timeWindow: '1 minute',
   });
+
+  app.register(websocket, { options: { maxPayload: 64 * 1024 } });
 
   // ---------------------------------------------------------------------------
   // 2. HEALTHCHECK (Liveness & Readiness probe)

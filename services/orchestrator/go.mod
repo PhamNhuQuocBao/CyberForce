@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/containerd/errdefs v1.0.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0

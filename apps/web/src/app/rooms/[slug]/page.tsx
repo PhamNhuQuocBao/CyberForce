@@ -92,6 +92,7 @@ export default function RoomPage() {
                 key={`${user.id}:${room.id}`}
                 room={room}
                 userId={user.id}
+                accessToken={accessToken}
                 onCompleted={(result) =>
                   setRoom((previous) => {
                     if (!previous) return previous;

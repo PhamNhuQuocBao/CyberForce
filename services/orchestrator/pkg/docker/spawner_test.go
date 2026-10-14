@@ -24,3 +24,20 @@ func TestSandboxPolicy(t *testing.T) {
 		t.Fatal("lab is not attached to isolated network")
 	}
 }
+
+func TestTerminalPolicy(t *testing.T) {
+	id := "11111111-1111-4111-8111-111111111111"
+	config, host, networking := terminalConfig(id, "cf-lab-net-"+id)
+	if config.User != "65534:65534" || config.WorkingDir != "/tmp" || config.Image != terminalImage || config.Labels[labelOwner] != id {
+		t.Fatal("terminal identity policy changed")
+	}
+	if !host.ReadonlyRootfs || host.Resources.Memory != 512*1024*1024 || host.Resources.MemorySwap != host.Resources.Memory || host.Resources.NanoCPUs != 500_000_000 || *host.Resources.PidsLimit != 128 {
+		t.Fatal("terminal resource policy changed")
+	}
+	if len(host.CapDrop) != 1 || host.CapDrop[0] != "ALL" || host.Privileged || len(host.Binds) != 0 || len(host.PortBindings) != 0 || host.Tmpfs["/tmp"] == "" {
+		t.Fatal("terminal privilege policy changed")
+	}
+	if len(networking.EndpointsConfig) != 1 || networking.EndpointsConfig["cf-lab-net-"+id] == nil {
+		t.Fatal("terminal must use only the isolated lab network")
+	}
+}
