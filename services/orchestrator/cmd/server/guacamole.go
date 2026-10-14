@@ -130,6 +130,24 @@ var clientInstructions = map[string]bool{
 	"clipboard": true, "blob": true, "end": true, "ack": true,
 }
 
+func validClientInstruction(parts []string) bool {
+	if len(parts) == 0 || !clientInstructions[parts[0]] {
+		return false
+	}
+	if parts[0] != "size" {
+		return true
+	}
+	if len(parts) != 4 {
+		return false
+	}
+	width, widthErr := strconv.Atoi(parts[1])
+	height, heightErr := strconv.Atoi(parts[2])
+	dpi, dpiErr := strconv.Atoi(parts[3])
+	return widthErr == nil && heightErr == nil && dpiErr == nil &&
+		width >= 640 && width <= 1920 && height >= 480 && height <= 1080 &&
+		dpi >= 72 && dpi <= 192
+}
+
 func serveAttackBox(w http.ResponseWriter, r *http.Request, manager attackBoxManager, id string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	target, err := manager.OpenAttackBox(ctx, id)
@@ -193,7 +211,7 @@ func serveAttackBox(w http.ResponseWriter, r *http.Request, manager attackBoxMan
 		valid := true
 		for source.Len()+input.Buffered() > 0 {
 			parts, err := readInstruction(input)
-			if err != nil || len(parts) == 0 || !clientInstructions[parts[0]] {
+			if err != nil || !validClientInstruction(parts) {
 				valid = false
 				break
 			}

@@ -75,3 +75,25 @@ func TestGuacamoleInstructionsHandleUnicodeAndRejectMalformedInput(t *testing.T)
 		t.Fatal("unsafe client instruction allowlist")
 	}
 }
+
+func TestGuacamoleResizeIsBounded(t *testing.T) {
+	for _, parts := range [][]string{
+		{"size", "640", "480", "96"},
+		{"size", "1920", "1080", "96"},
+	} {
+		if !validClientInstruction(parts) {
+			t.Fatalf("valid size rejected: %v", parts)
+		}
+	}
+	for _, parts := range [][]string{
+		{"size", "32768", "32768", "96"},
+		{"size", "640", "480", "0"},
+		{"size", "invalid", "480", "96"},
+		{"size", "640", "480"},
+		{"select", "vnc"},
+	} {
+		if validClientInstruction(parts) {
+			t.Fatalf("unsafe size instruction accepted: %v", parts)
+		}
+	}
+}

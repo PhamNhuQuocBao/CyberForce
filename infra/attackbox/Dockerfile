@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-      kali-desktop-xfce xvfb x11vnc dbus-x11 xterm \
+      kali-desktop-xfce tigervnc-standalone-server tigervnc-tools dbus-x11 xterm \
       nmap sqlmap metasploit-framework wireshark john burpsuite \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \

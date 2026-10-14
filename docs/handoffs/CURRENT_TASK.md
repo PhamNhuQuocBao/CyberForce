@@ -137,3 +137,7 @@ Người dùng duyệt Guacamole/Kali trước, inject cờ động riêng; duy�
 ## Tiếp nối CF-202 dynamic flag — 2026-10-14
 
 Người dùng duyệt API sinh cờ theo công thức HMAC đã chốt, truyền riêng cờ qua kết nối nội bộ có xác thực và Orchestrator ghi `/root/flag.txt` trước khi chạy target. Nhánh `codex/cf-202-dynamic-flag-injection` từ main `58c96be`. Chỉ phòng có câu hỏi `dynamic_hmac` mới cần cờ; khóa mặc định/placeholder bị từ chối. API 111 tests, Go tests, typecheck/lint và Docker smoke đều qua; chi tiết tại [CF-202-DYNAMIC-FLAG.md](CF-202-DYNAMIC-FLAG.md).
+
+## Tiếp nối CF-304 resize — 2026-10-14
+
+Người dùng duyệt đổi Xvfb/x11vnc sang TigerVNC Xvnc để desktop Kali nhận resize thật. Nhánh `codex/cf-304-dynamic-attackbox-resolution` từ main `414424a`. Image Kali build thành công; frontend chỉ gửi lệnh size sau frame đầu, debounce và giới hạn 640×480–1920×1080; Go bridge kiểm tra cùng giới hạn. Kiểm tra desktop web local: `xrandr` lần lượt 687×480 ở split view, 1310×818 khi mở rộng, rồi 687×480 khi thu lại; phiên không rớt, clipboard hai chiều và reconnect qua Guacamole hoạt động. Web typecheck/lint/build và Go tests qua; test user và container lab đã dọn. Chi tiết [CF-304-RESIZE.md](CF-304-RESIZE.md). Chưa đo SLA `<80ms`.
