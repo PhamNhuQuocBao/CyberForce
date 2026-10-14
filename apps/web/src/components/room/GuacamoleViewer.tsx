@@ -24,6 +24,8 @@ interface GuacClient {
   disconnect(): void;
   getDisplay(): {
     getElement(): HTMLElement;
+    getWidth(): number;
+    getHeight(): number;
     scale(value: number): void;
     getScale(): number;
   };
@@ -75,11 +77,19 @@ function guacamole() {
   return (window as Window & { Guacamole?: GuacNamespace }).Guacamole;
 }
 
-function browserTunnel(lib: GuacNamespace, endpoint: string, ticket: string) {
+function browserTunnel(
+  lib: GuacNamespace,
+  endpoint: string,
+  ticket: string,
+  onInstruction?: (opcode: string) => void,
+) {
   const tunnel = new lib.Tunnel();
   const parser = new lib.Parser();
   let socket: WebSocket | undefined;
-  parser.oninstruction = (opcode, args) => tunnel.oninstruction?.(opcode, args);
+  parser.oninstruction = (opcode, args) => {
+    tunnel.oninstruction?.(opcode, args);
+    onInstruction?.(opcode);
+  };
   tunnel.connect = () => {
     tunnel.setState(lib.Tunnel.State.CONNECTING);
     socket = new WebSocket(endpoint, ['cf-attackbox', ticket]);
@@ -147,6 +157,7 @@ export function GuacamoleViewer({
     let mouse: GuacMouse | undefined;
     let observer: ResizeObserver | undefined;
     let client: GuacClient | undefined;
+    let resizeTimer: number | undefined;
     const connect = async () => {
       try {
         const { data } = await roomsApi.attackBoxTicket(slug, accessToken);
@@ -155,18 +166,46 @@ export function GuacamoleViewer({
           `${API_BASE_URL}/rooms/${encodeURIComponent(slug)}/attackbox/stream`,
         );
         endpoint.protocol = endpoint.protocol === 'https:' ? 'wss:' : 'ws:';
-        const tunnel = browserTunnel(lib, endpoint.toString(), data.ticket);
+        let displayReady = false;
+        let lastRequestedSize = '';
+        let scheduleResize = () => {};
+        let scaleDisplay = () => {};
+        const tunnel = browserTunnel(lib, endpoint.toString(), data.ticket, (opcode) => {
+          if (opcode === 'sync' && !displayReady && currentClient.getDisplay().getWidth() > 0) {
+            displayReady = true;
+            scheduleResize();
+          }
+          if (opcode === 'size') window.requestAnimationFrame(scaleDisplay);
+        });
         client = new lib.Client(tunnel);
         clientRef.current = client;
         const viewer = client.getDisplay().getElement();
         holder.current.replaceChildren(viewer);
         const currentClient = client;
-        const resize = () => {
+        scaleDisplay = () => {
           if (!holder.current) return;
-          const width = Math.max(640, Math.floor(holder.current.clientWidth));
-          currentClient.getDisplay().scale(width / 1280);
+          const display = currentClient.getDisplay();
+          const width = display.getWidth() || 1280;
+          const height = display.getHeight() || 800;
+          display.scale(
+            Math.min(holder.current.clientWidth / width, holder.current.clientHeight / height),
+          );
         };
-        observer = new ResizeObserver(resize);
+        scheduleResize = () => {
+          scaleDisplay();
+          if (!displayReady || !holder.current) return;
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(() => {
+            if (!holder.current) return;
+            const width = Math.max(640, Math.min(1920, Math.round(holder.current.clientWidth)));
+            const height = Math.max(480, Math.min(1080, Math.round(holder.current.clientHeight)));
+            const size = `${width}x${height}`;
+            if (size === lastRequestedSize) return;
+            lastRequestedSize = size;
+            tunnel.sendMessage('size', String(width), String(height), '96');
+          }, 250);
+        };
+        observer = new ResizeObserver(scheduleResize);
         observer.observe(holder.current);
         keyboard = new lib.Keyboard(holder.current);
         keyboard.onkeydown = (keysym) => currentClient.sendKeyEvent(1, keysym);
@@ -202,7 +241,7 @@ export function GuacamoleViewer({
           if (disposed) return;
           if (state === lib.Tunnel.State.OPEN) {
             setStatus('Đang tải desktop Kali…');
-            resize();
+            scaleDisplay();
           } else if (state === lib.Tunnel.State.CLOSED) {
             if (attempt < 3) {
               setStatus(`Mất kết nối. Đang thử lại (${attempt + 1}/3)…`);
@@ -219,6 +258,7 @@ export function GuacamoleViewer({
     return () => {
       disposed = true;
       window.clearTimeout(reconnectTimer);
+      window.clearTimeout(resizeTimer);
       observer?.disconnect();
       if (keyboard) keyboard.onkeydown = keyboard.onkeyup = null;
       if (mouse) mouse.onmousedown = mouse.onmouseup = mouse.onmousemove = null;
