@@ -331,7 +331,7 @@ Tại thư mục gốc repository:
 docker compose up -d --build --wait
 ```
 
-Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `terminal-image` tải image Alpine vào Docker daemon để sidecar terminal sẵn sàng khi khởi chạy lab; `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma. Backend chỉ chạy sau khi schema, Redis và orchestrator sẵn sàng, frontend chờ backend khỏe. `terminal-image` và `db-init` kết thúc với mã 0 là bình thường.
+Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, WireGuard VPN gateway, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `terminal-image` tải image Alpine vào Docker daemon để sidecar terminal sẵn sàng khi khởi chạy lab; `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma. Backend chỉ chạy sau khi schema, Redis, VPN gateway và orchestrator sẵn sàng, frontend chờ backend khỏe. `terminal-image` và `db-init` kết thúc với mã 0 là bình thường.
 
 Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
 
@@ -343,6 +343,7 @@ Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặ
 | PostgreSQL / Redis | 5432 / 6379 |
 | MinIO API / Console | http://localhost:9000 / http://localhost:9001 |
 | guacd | 4822 |
+| WireGuard VPN | UDP 51820; bộ điều khiển peer chỉ trong Compose network |
 | Traefik HTTP / dashboard | 8088 / http://localhost:8080 |
 
 ```bash
@@ -354,7 +355,11 @@ docker compose down
 
 DB/Redis trong container được kết nối bằng hostname `postgres`/`redis`, không dùng `localhost`. Trình duyệt dùng `NEXT_PUBLIC_API_URL` (mặc định `http://localhost:4000/api/v1`). Nếu đổi cổng/host, cập nhật đồng bộ `API_PORT`, `WEB_PORT`, `API_BASE_URL`, `WEB_ORIGIN`, `NEXT_PUBLIC_API_URL` và rebuild. OAuth callback URLs cũng phải khớp URL mới. Traefik hiện chỉ là hạ tầng dự phòng, ứng dụng truy cập trực tiếp qua cổng 3000/4000.
 
-Docker socket chỉ được mount vào container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image target lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image target. Trang phòng học có nút Start/Stop/Gia hạn và Web Terminal xterm.js qua sidecar riêng trên mạng lab. Terminal sidecar dùng image Alpine đã được Compose chuẩn bị; Guacamole/AttackBox và dynamic flag injection là các task tiếp theo.
+Docker socket chỉ được mount vào container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image target lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image target. Trang phòng học có nút Start/Stop/Gia hạn, Web Terminal xterm.js và Kali AttackBox qua Guacamole. Terminal sidecar dùng image Alpine đã được Compose chuẩn bị; phòng có câu hỏi `dynamic_hmac` được inject cờ theo phiên khi spawn target.
+
+Trang `/access/vpn` cấp một file cấu hình WireGuard riêng cho tài khoản đã đăng nhập. Private key chỉ được trả về khi tạo hoặc tạo lại; bảng `vpn_peers` và gateway chỉ giữ public key cùng IP. Đặt `VPN_ENDPOINT` thành host/cổng UDP mà máy học viên truy cập được và `VPN_GATEWAY_TOKEN` thành secret riêng ít nhất 32 ký tự trước khi dùng ngoài local. Gateway cần Linux host hỗ trợ WireGuard và quyền `NET_ADMIN` trong container. Dải `100.127.240.0/20` dành cho VPN, tách khỏi subnet lab. Hiện tunnel chỉ tới gateway `100.127.240.1`; route tới target đúng phiên phụ thuộc CF-402. Trên Linux, đổi tên file vừa tải thành `cf-vpn.conf` rồi chạy `sudo wg-quick up ./cf-vpn.conf`.
+
+Nếu vận hành API với DB đã tồn tại ngoài Compose, áp dụng riêng SQL tạo bảng `services/api-core/prisma/sql/20261024_vpn_peers.sql` vào đúng DB trước khi chạy code mới; không reset DB. `db-init` local sẽ đồng bộ bảng mới bằng Prisma. Khóa gateway và danh sách peer được giữ trong volume `vpn_gateway_data` của Compose project.
 
 Volume hạ tầng hiện có được giữ theo tên `cyberforce_*`; không chạy `down -v` nếu muốn giữ dữ liệu. `db-init` không dùng `--accept-data-loss` hoặc reset: nếu Prisma báo thay đổi có nguy cơ mất dữ liệu, xử lý migration trước. Không tự chạy seed khi startup vì seed hiện có xóa task/submission mẫu. Chỉ nạp mẫu vào DB phát triển có thể thay thế:
 
@@ -382,6 +387,8 @@ pnpm --filter @cyberforce/api-core dev
 # Terminal 2
 pnpm --filter @cyberforce/web dev
 ```
+
+Với cách chạy API ngoài Docker, trang VPN cần `VPN_GATEWAY_URL` trỏ tới bộ điều khiển gateway nội bộ. Cấu hình Compose mặc định không công bố cổng điều khiển ra host; hãy chạy API trong Compose nếu cần kiểm thử cấp cấu hình VPN.
 
 Truy cập giao diện:
 * **Trang chủ Web:** [http://localhost:3000](http://localhost:3000)

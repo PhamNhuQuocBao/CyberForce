@@ -141,3 +141,9 @@ Người dùng duyệt API sinh cờ theo công thức HMAC đã chốt, truyề
 ## Tiếp nối CF-304 resize — 2026-10-14
 
 Người dùng duyệt đổi Xvfb/x11vnc sang TigerVNC Xvnc để desktop Kali nhận resize thật. Nhánh `codex/cf-304-dynamic-attackbox-resolution` từ main `414424a`. Image Kali build thành công; frontend chỉ gửi lệnh size sau frame đầu, debounce và giới hạn 640×480–1920×1080; Go bridge kiểm tra cùng giới hạn. Kiểm tra desktop web local: `xrandr` lần lượt 687×480 ở split view, 1310×818 khi mở rộng, rồi 687×480 khi thu lại; phiên không rớt, clipboard hai chiều và reconnect qua Guacamole hoạt động. Web typecheck/lint/build và Go tests qua; test user và container lab đã dọn. Chi tiết [CF-304-RESIZE.md](CF-304-RESIZE.md). Chưa đo SLA `<80ms`.
+
+## Tiếp nối CF-401 — 2026-10-24
+
+Người dùng yêu cầu đánh dấu CF-202 done và chuyển sang task kế tiếp. Đã cập nhật `task-breakdown.md`; trạng thái done là đóng phạm vi triển khai, **không xác nhận** AttackBox đạt SLA `<80ms` vì chưa đo. Checkout nhánh `codex/cf-401-wireguard-vpn` từ commit `83f9c11` để chuẩn bị CF-401. Hạng mục này thay đổi hạ tầng, API và bảo mật; cần duyệt phương án trong `cf-401-wireguard-vpn.md` trước khi triển khai.
+
+Người dùng đã duyệt phương án. Đã triển khai gateway Compose, peer DB/API và trang `/access/vpn`; chi tiết cùng kết quả test tại [kế hoạch CF-401](../../cf-401-wireguard-vpn.md). Chỉ DB `cf401-smoke` được đồng bộ schema. Nhánh `codex/cf-401-wireguard-vpn` dựa trên `83f9c11` (CF-304 chưa merge tại thời điểm checkout). Bước sau là CF-402; không mở route tới lab trước khi có chính sách cách ly đúng phiên.

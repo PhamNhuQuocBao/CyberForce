@@ -21,7 +21,7 @@ import (
 
 const (
 	labelOwner = "cyberforce.lab.instance"
-	maxSubnets = 1 << 19 // /29 networks within 100.64.0.0/10
+	maxSubnets = (1 << 19) - 512 // Reserve 100.127.240.0/20 for VPN peers.
 )
 
 var instanceIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

@@ -88,8 +88,21 @@ model User {
   roleRequests     RoleRequest[]  @relation("UserRoleRequests")
   reviewedRequests RoleRequest[]  @relation("ReviewerRoleRequests")
   auditLogs        AuditLog[]     @relation("AuditLogActor")
+  vpnPeer          VpnPeer?
 
   @@map("users")
+}
+
+model VpnPeer {
+  userId    String   @id @map("user_id") @db.Uuid
+  publicKey String   @unique @map("public_key") @db.VarChar(44)
+  ipAddress String   @unique @map("ip_address") @db.VarChar(15)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  rotatedAt DateTime @default(now()) @map("rotated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("vpn_peers")
 }
 
 // -----------------------------------------------------------------------------

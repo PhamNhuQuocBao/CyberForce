@@ -72,6 +72,9 @@ export function Navbar() {
                       Hồ sơ & quyền riêng tư
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/access/vpn">Kết nối VPN</Link>
+                  </DropdownMenuItem>
                   {user.role === 'student' && (
                     <DropdownMenuItem onSelect={() => setIsCreatorDialogOpen(true)}>
                       Đăng ký trở thành Creator

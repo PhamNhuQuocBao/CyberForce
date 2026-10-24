@@ -13,6 +13,9 @@ x-api: &api
     REDIS_URL: redis://redis:6379
     ORCHESTRATOR_URL: http://orchestrator:8081
     ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
+    VPN_GATEWAY_URL: http://vpn-gateway:8082
+    VPN_GATEWAY_TOKEN: ${VPN_GATEWAY_TOKEN:-cyberforce_local_vpn_gateway_token_2026}
+    VPN_ENDPOINT: ${VPN_ENDPOINT:-localhost:51820}
     API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
     WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-cyberforce_local_access_secret_at_least_32_characters}
@@ -30,6 +33,31 @@ x-api: &api
     - cyberforce-net
 
 services:
+  vpn-gateway:
+    build:
+      context: ./services/vpn-gateway
+    restart: unless-stopped
+    read_only: true
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ip_forward: '0'
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      VPN_GATEWAY_TOKEN: ${VPN_GATEWAY_TOKEN:-cyberforce_local_vpn_gateway_token_2026}
+    ports:
+      - '${VPN_PORT:-51820}:51820/udp'
+    volumes:
+      - vpn_gateway_data:/var/lib/cyberforce-vpn
+    networks:
+      - cyberforce-net
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8082/health']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   attackbox-image:
     build:
       context: ./infra/attackbox
@@ -99,6 +127,8 @@ services:
         condition: service_healthy
       orchestrator:
         condition: service_healthy
+      vpn-gateway:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -139,3 +169,6 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 12
+
+volumes:
+  vpn_gateway_data:
