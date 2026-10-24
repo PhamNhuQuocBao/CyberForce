@@ -1,5 +1,18 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+export interface VpnStatus {
+  configured: boolean;
+  address?: string;
+  createdAt?: string;
+  rotatedAt?: string;
+}
+
+export interface VpnConfiguration {
+  address: string;
+  fileName: string;
+  configuration: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -607,6 +620,26 @@ export interface LabSession {
   extensionCount: number;
   maxExtensions: number;
 }
+
+export const vpnApi = {
+  status(token: string) {
+    return request<{ success: true; data: VpnStatus }>('/vpn/status', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  create(token: string) {
+    return request<{ success: true; data: VpnConfiguration }>('/vpn/config/download', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  regenerate(token: string) {
+    return request<{ success: true; data: VpnConfiguration }>('/vpn/config/regenerate', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+};
 
 export const roomsApi = {
   getRoom(slug: string, accessToken: string) {

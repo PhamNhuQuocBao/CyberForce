@@ -62,13 +62,14 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-104 | [x] UI hồ sơ, chỉnh sửa và quyền riêng tư; sửa race khi refresh | PR #10, #16; telemetry kỹ năng/lab/lộ trình ở backend còn mô phỏng, chưa nghiệm thu như dữ liệu thật |
 | CF-105 | [x] RBAC, yêu cầu Creator, admin duyệt/từ chối và phân trang | `4a30710` / PR #12; PR #16 xác minh 22 requests, approve/reject và chuyển trang |
 | CF-201 | [x] Catalog/detail, prerequisite, tiến độ và đăng ký lưu DB | PR #13/#14/#16; enrollment idempotent, sửa race khi đăng ký đồng thời trong `13fd2e4` |
-| CF-202 | [~] Workspace, máy lab, Web Terminal và Kali AttackBox desktop | API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room; CF-303 nối máy lab/terminal, CF-304 nối Guacamole. Cờ động được inject vào `/root/flag.txt` khi spawn phòng có câu hỏi `dynamic_hmac`; AttackBox đã đổi độ phân giải thật theo vùng web. Còn nghiệm thu hiệu năng `<80ms`. [Handoff](docs/handoffs/CF-202-DYNAMIC-FLAG.md), [resize](docs/handoffs/CF-304-RESIZE.md) |
+| CF-202 | [x] Workspace, máy lab, Web Terminal và Kali AttackBox desktop | API phòng có access checks, Markdown, accordion, split pane, nháp theo user/room; CF-303 nối máy lab/terminal, CF-304 nối Guacamole. Cờ động được inject vào `/root/flag.txt` khi spawn phòng có câu hỏi `dynamic_hmac`; AttackBox đã đổi độ phân giải thật theo vùng web. Người dùng đóng task ngày 2026-10-24; SLA `<80ms` chưa được đo, theo dõi riêng khi nghiệm thu hiệu năng. [Handoff](docs/handoffs/CF-202-DYNAMIC-FLAG.md), [resize](docs/handoffs/CF-304-RESIZE.md) |
 | CF-203 | [x] Bộ chấm, API/EXP, anti-brute-force và form desktop | Nhánh `codex/cf-203-flag-validation`; 93 backend tests và 14 frontend tests pass. Cờ động đã được inject vào target thật ở bước CF-202 tiếp nối. Chưa đo SLA <300ms dưới tải |
 | CF-204 | [x] Đã triển khai và kiểm thử | Người dùng duyệt thiết kế DB/API; Hint 1/2, lời giải, xác nhận chi phí, lưu trạng thái và tích hợp bộ chấm. SQL bổ sung đã áp dụng vào PostgreSQL local `cyberforce/public`. [Handoff](docs/handoffs/CF-204.md) |
 | CF-301 | [x] Backend Docker lab spawner | Go daemon, API spawn/stop, network riêng `100.64.0.0/10`, cgroups/capability; Docker smoke và 107 backend tests qua. Terminal và inject flag đã nối ở bước sau; VPN còn chờ. [Handoff](docs/handoffs/CF-301.md) |
 | CF-302 | [x] Backend lease lifecycle và reaper | Gia hạn 60 phút tối đa 3 lần; grace 3 phút; Go quét 30 giây và dọn Docker/DB; role DB giới hạn. UI đồng hồ/trạng thái grace được nối trong CF-303. [Handoff](docs/handoffs/CF-302.md) |
 | CF-303 | [x] Web Terminal và điều khiển lab desktop | Sidecar Alpine không đặc quyền trên mạng lab, xterm TTY qua WS ticket một lần; UI spawn/stop/extend/timer. API/Go/frontend tests, Docker TTY smoke và browser desktop qua. [Handoff](docs/handoffs/CF-303.md) |
 | CF-304 | [x] Kali AttackBox qua Apache Guacamole trên web desktop | Kali XFCE/TigerVNC, guacd dùng chung nối mạng lab theo phiên, ticket WS một lần, chuột/bàn phím và clipboard hai chiều. Web resize desktop thật bằng RandR: split 687×480, mở rộng 1310×818, thu về 687×480. Chưa đo SLA `<80ms`. [Handoff](docs/handoffs/CF-304.md), [resize](docs/handoffs/CF-304-RESIZE.md) |
+| CF-401 | [x] WireGuard gateway local và cấu hình cá nhân | Gateway Compose, dải VPN `100.127.240.0/20`, peer public key/IP lưu DB, private key cấp một lần, tạo lại khóa thu hồi peer cũ. Hai client smoke ping gateway nhưng không ping chéo; route tới lab và cluster nhiều node thuộc bước sau. [Handoff](cf-401-wireguard-vpn.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -243,7 +244,7 @@ gantt
 * **OUTPUT:** API `/api/v1/paths`, `/api/v1/paths/:slug`, giao diện `apps/web/src/app/paths/page.tsx`.
 * **VERIFY:** Truy cập `/paths`, chọn lộ trình "Web Application Security", thấy các module mở khóa theo thứ tự và các phòng chưa đủ điều kiện bị gắn cờ `Locked`.
 
-#### [~] Task CF-202: Phát triển Giao diện Phòng học Tương tác Tích hợp (All-in-One Split-Pane Room)
+#### [x] Task CF-202: Phát triển Giao diện Phòng học Tương tác Tích hợp (All-in-One Split-Pane Room)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `nextjs-react-expert`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-004
 * **Mô tả:** Xây dựng không gian làm bài All-in-One Split-Pane tại `/rooms/[slug]` gồm: Cột trái (MDX lý thuyết + thanh điều khiển thời gian lab), Cột giữa (Danh sách câu hỏi & form nộp cờ), Cột phải (Khung Terminal xterm.js / Màn hình Guacamole) theo Wireframe 2.2.
@@ -327,7 +328,7 @@ gantt
 
 ### 🌐 PHASE 2: ADVANCED CLOUD RANGE & GAMIFICATION (DECEMBER 2026)
 
-#### Task CF-401: Thiết lập WireGuard VPN Gateway Cluster & Cấp phát Cấu hình Cá nhân
+#### [x] Task CF-401: Thiết lập WireGuard VPN Gateway Cluster & Cấp phát Cấu hình Cá nhân (gateway local và cấu hình cá nhân)
 * **Agent:** `devops-engineer` & `backend-specialist` | **Skills:** `bash-linux`, `server-management`, `clean-code`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-301
 * **Mô tả:** Cài đặt dịch vụ WireGuard trên server Linux. Viết API sinh cặp khóa riêng/công (Private/Public Key) và tạo file cấu hình `.conf` cho học viên với IP được chỉ định trong dải `100.64.0.0/10` (RFC 6598) để triệt tiêu hoàn toàn xung đột mạng LAN gia đình (Story `US-04.01`).
@@ -527,14 +528,14 @@ gantt
 | **CF-104** | Epic 1 | [x] US-01.03: Public Profile & Privacy Settings | `frontend-specialist` | P1 |
 | **CF-105** | Epic 1 | [x] US-01.04: Granular RBAC & Creator Approval | `backend-specialist` | P1 |
 | **CF-201** | Epic 2 | [x] US-02.01: Learning Paths Catalog, Detail & Enrollment | `frontend-specialist` | P0 |
-| **CF-202** | Epic 2 | [~] US-02.02: Workspace complete; lab runtime pending | `frontend-specialist` | P0 |
+| **CF-202** | Epic 2 | [x] US-02.02: Workspace, lab runtime và AttackBox desktop | `frontend-specialist` | P0 |
 | **CF-203** | Epic 2 | [x] US-02.03: Flag Validation & Anti-Bruteforce | `backend-specialist` | P0 |
 | **CF-204** | Epic 2 | US-02.04: Tiered Hints & EXP Deduction | `backend-specialist` | P1 |
 | **CF-301** | Epic 3 | US-03.01: Docker Sandbox Spawner Daemon | `backend-specialist` | P0 |
 | **CF-302** | Epic 3 | [x] US-03.02: Lease Lifecycle & Reaper Sweeper backend | `backend-specialist` | P0 |
 | **CF-303** | Epic 3 | US-03.04: Embedded xterm.js Web Terminal | `frontend-specialist` | P0 |
 | **CF-304** | Epic 3 | US-03.03: Apache Guacamole Kali AttackBox | `devops-engineer` | P1 |
-| **CF-401** | Epic 4 | US-04.01: WireGuard Gateway & Config Gen | `devops-engineer` | P0 |
+| **CF-401** | Epic 4 | [x] US-04.01: WireGuard Gateway local & Config Gen | `devops-engineer` | P0 |
 | **CF-402** | Epic 4 | US-04.03: Zero Egress & Client Isolation | `security-auditor` | P0 |
 | **CF-403** | Epic 4 | US-04.02: Real-time Live VPN Health Indicator | `backend-specialist` | P2 |
 | **CF-501** | Epic 5 | US-05.01: KotH 60s Tick Runner & Scoreboard | `backend-specialist` | P0 |
@@ -619,5 +620,6 @@ gantt
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **Phần còn lại của CF-202:** Dynamic flag injection và resize desktop Kali thật đã nối. Đo SLA phản hồi `<80ms` dưới điều kiện mạng tiêu chuẩn cần nghiệm thu hiệu năng riêng.
-2. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.
+1. **CF-402:** Route client VPN chỉ tới target của phiên tương ứng và kiểm chứng cách ly dưới chính sách Zero Egress.
+2. **Theo dõi nghiệm thu hiệu năng:** SLA phản hồi AttackBox `<80ms` chưa được đo; trạng thái done của CF-202 không xác nhận đã đạt SLA này.
+3. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.
