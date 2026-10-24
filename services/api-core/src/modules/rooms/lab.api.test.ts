@@ -71,7 +71,11 @@ describe('CF-301 lab lifecycle API', () => {
       ],
     });
     fetchMock.mockImplementation(async (input, init) => {
-      if (String(input).endsWith('/attackbox')) {
+      const requestUrl = String(input);
+      if (requestUrl.endsWith('/vpn-network') || requestUrl.includes('/v1/access/')) {
+        return new Response(null, { status: 204 });
+      }
+      if (requestUrl.endsWith('/attackbox')) {
         if (init?.method === 'DELETE') {
           attackBoxRunning = false;
           return new Response(null, { status: 204 });
@@ -96,11 +100,83 @@ describe('CF-301 lab lifecycle API', () => {
 
   afterAll(async () => {
     fetchMock.mockRestore();
+    await prisma.vpnPeer.deleteMany({ where: { userId: { in: [userId, otherId] } } });
     await prisma.labInstance.deleteMany({ where: { userId: { in: [userId, otherId] } } });
     await prisma.room.deleteMany({ where: { pathId } });
     await prisma.learningPath.delete({ where: { id: pathId } });
     await prisma.user.deleteMany({ where: { id: { in: [userId, otherId] } } });
     await app.close();
+  });
+
+  it('grants only the owner peer access to its running target and revokes on stop', async () => {
+    await prisma.vpnPeer.create({
+      data: {
+        userId,
+        publicKey: Buffer.alloc(32, 8).toString('base64'),
+        ipAddress: '100.127.240.20',
+      },
+    });
+    fetchMock.mockClear();
+    const headers = { authorization: `Bearer ${token}` };
+    const spawn = await app.inject({ method: 'POST', url: `${url}/spawn`, headers });
+    expect(spawn.statusCode).toBe(201);
+    const id = spawn.json().data.instanceId as string;
+    const grant = fetchMock.mock.calls.find(
+      ([input, init]) => String(input).endsWith(`/v1/access/${id}`) && init?.method === 'PUT',
+    );
+    expect(grant).toBeDefined();
+    expect(JSON.parse(String(grant![1]?.body))).toMatchObject({
+      userId,
+      peerIp: '100.127.240.20',
+      targetIp: '100.64.0.2',
+    });
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input).endsWith(`/v1/instances/${id}/vpn-network`) && init?.method === 'POST',
+      ),
+    ).toBe(true);
+    const stopped = await app.inject({ method: 'POST', url: `${url}/stop`, headers });
+    expect(stopped.statusCode).toBe(200);
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input).endsWith(`/v1/instances/${id}`) && init?.method === 'DELETE',
+      ),
+    ).toBe(true);
+    await prisma.vpnPeer.delete({ where: { userId } });
+  });
+
+  it('stops a new lab when its VPN grant fails', async () => {
+    await prisma.vpnPeer.create({
+      data: {
+        userId,
+        publicKey: Buffer.alloc(32, 9).toString('base64'),
+        ipAddress: '100.127.240.21',
+      },
+    });
+    const original = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      if (String(input).includes('/v1/access/') && init?.method === 'PUT')
+        return new Response(null, { status: 503 });
+      return original(input, init);
+    });
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: `${url}/spawn`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(response.statusCode).toBe(503);
+      expect(
+        await prisma.labInstance.count({
+          where: { userId, status: { in: ['running', 'provisioning'] } },
+        }),
+      ).toBe(0);
+    } finally {
+      fetchMock.mockImplementation(original);
+      await prisma.vpnPeer.delete({ where: { userId } });
+    }
   });
 
   it('gates spawn by login and room access before contacting Docker', async () => {

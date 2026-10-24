@@ -30,6 +30,11 @@ type terminalOpener interface {
 	OpenTerminal(context.Context, string) (*labdocker.TerminalSession, error)
 }
 
+type vpnNetworkManager interface {
+	ConnectVpn(context.Context, string) error
+	DisconnectVpn(context.Context, string) error
+}
+
 func serveTerminal(w http.ResponseWriter, r *http.Request, opener terminalOpener, id string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	session, err := opener.OpenTerminal(ctx, id)
@@ -126,6 +131,33 @@ func handler(spawner labSpawner, token string) http.Handler {
 		_ = json.NewEncoder(w).Encode(instance)
 	})
 	mux.HandleFunc("/v1/instances/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/vpn-network") {
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/vpn-network")
+			manager, ok := spawner.(vpnNetworkManager)
+			if !ok {
+				http.Error(w, "VPN network unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+			defer cancel()
+			var err error
+			switch r.Method {
+			case http.MethodPost:
+				err = manager.ConnectVpn(ctx, id)
+			case http.MethodDelete:
+				err = manager.DisconnectVpn(ctx, id)
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			if err != nil {
+				log.Printf("VPN network operation failed: %v", err)
+				http.Error(w, "VPN network operation failed", http.StatusBadGateway)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if strings.HasSuffix(r.URL.Path, "/attackbox/stream") {
 			if r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

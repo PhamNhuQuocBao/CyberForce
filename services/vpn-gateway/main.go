@@ -40,6 +40,7 @@ type peer struct {
 type controller struct {
 	mu        sync.Mutex
 	peers     map[string]peer
+	access    map[string]accessGrant
 	publicKey string
 	token     string
 	run       func(...string) error
@@ -103,7 +104,7 @@ func newController(token string) (*controller, error) {
 		return nil, err
 	}
 	c := &controller{
-		peers: map[string]peer{}, publicKey: base64.StdEncoding.EncodeToString(key.PublicKey().Bytes()),
+		peers: map[string]peer{}, access: map[string]accessGrant{}, publicKey: base64.StdEncoding.EncodeToString(key.PublicKey().Bytes()),
 		token: token, run: command, statePath: filepath.Join(dataDir, "peers.json"),
 	}
 	if data, err := os.ReadFile(c.statePath); err == nil {
@@ -119,8 +120,11 @@ func newController(token string) (*controller, error) {
 		return nil, err
 	}
 	forwarding, err := os.ReadFile("/proc/sys/net/ipv4/ip_forward")
-	if err != nil || strings.TrimSpace(string(forwarding)) != "0" {
-		return nil, errors.New("VPN gateway requires IPv4 forwarding disabled")
+	if err != nil || strings.TrimSpace(string(forwarding)) != "1" {
+		return nil, errors.New("VPN gateway requires IPv4 forwarding enabled with firewall")
+	}
+	if err := c.run("sh", "/usr/local/bin/setup-iptables.sh"); err != nil {
+		return nil, err
 	}
 	if err := c.run("ip", "link", "add", interfaceName, "type", "wireguard"); err != nil {
 		return nil, err
@@ -137,6 +141,9 @@ func newController(token string) (*controller, error) {
 		}
 	}
 	if err := c.run("ip", "link", "set", "up", "dev", interfaceName); err != nil {
+		return nil, err
+	}
+	if err := c.applyAccess(); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -208,6 +215,14 @@ func (c *controller) delete(id string) error {
 		return err
 	}
 	delete(c.peers, id)
+	for instanceID, grant := range c.access {
+		if grant.UserID == id {
+			delete(c.access, instanceID)
+		}
+	}
+	if err := c.applyAccess(); err != nil {
+		return err
+	}
 	if err := c.persist(); err != nil {
 		c.peers[id] = old
 		_ = c.run("wg", "set", interfaceName, "peer", old.PublicKey, "allowed-ips", old.Address+"/32")
@@ -218,7 +233,14 @@ func (c *controller) delete(id string) error {
 
 func (c *controller) handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		device, err := net.InterfaceByName(interfaceName)
+		if err != nil || device.Flags&net.FlagUp == 0 {
+			http.Error(w, "VPN interface unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("GET /v1/public-key", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"publicKey": c.publicKey})
@@ -245,6 +267,28 @@ func (c *controller) handler() http.Handler {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("PUT /v1/access/{id}", func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 1024)
+		var grant accessGrant
+		if json.NewDecoder(r.Body).Decode(&grant) != nil {
+			http.Error(w, "invalid grant", http.StatusBadRequest)
+			return
+		}
+		if err := c.putAccess(r.PathValue("id"), grant); err != nil {
+			log.Printf("VPN grant failed: %v", err)
+			http.Error(w, "VPN grant failed", http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("DELETE /v1/access/{id}", func(w http.ResponseWriter, r *http.Request) {
+		if err := c.deleteAccess(r.PathValue("id")); err != nil {
+			log.Printf("VPN revoke failed: %v", err)
+			http.Error(w, "VPN revoke failed", http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			mux.ServeHTTP(w, r)
@@ -265,6 +309,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	go c.expireAccess()
 	listener, err := net.Listen("tcp", "0.0.0.0:8082")
 	if err != nil {
 		log.Fatal(err)

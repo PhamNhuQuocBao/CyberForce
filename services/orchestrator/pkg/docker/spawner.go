@@ -35,8 +35,11 @@ type Instance struct {
 }
 
 type Spawner struct {
-	cli       *client.Client
-	guacdName string
+	cli             *client.Client
+	guacdName       string
+	vpnGatewayName  string
+	vpnGatewayURL   string
+	vpnGatewayToken string
 }
 
 func NewSpawner() (*Spawner, error) {
@@ -48,7 +51,12 @@ func NewSpawner() (*Spawner, error) {
 	if guacdName == "" {
 		guacdName = "cyberforce-guacd"
 	}
-	return &Spawner{cli: cli, guacdName: guacdName}, nil
+	vpnGatewayName := os.Getenv("VPN_GATEWAY_CONTAINER_NAME")
+	if vpnGatewayName == "" {
+		vpnGatewayName = "cyberforce-vpn-gateway"
+	}
+	return &Spawner{cli: cli, guacdName: guacdName, vpnGatewayName: vpnGatewayName,
+		vpnGatewayURL: os.Getenv("VPN_GATEWAY_URL"), vpnGatewayToken: os.Getenv("VPN_GATEWAY_TOKEN")}, nil
 }
 
 func (s *Spawner) Close() error { return s.cli.Close() }
@@ -206,6 +214,9 @@ func flagArchive(flag string) (*bytes.Reader, error) {
 func (s *Spawner) Stop(ctx context.Context, id string) error {
 	if !instanceIDPattern.MatchString(id) {
 		return errors.New("invalid instance ID")
+	}
+	if err := s.DisconnectVpn(ctx, id); err != nil {
+		return err
 	}
 	if err := s.StopAttackBox(ctx, id); err != nil {
 		return err

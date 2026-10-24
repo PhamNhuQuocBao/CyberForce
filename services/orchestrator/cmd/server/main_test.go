@@ -11,8 +11,9 @@ import (
 )
 
 type fakeSpawner struct {
-	spawned, stopped bool
-	flag             string
+	spawned, stopped              bool
+	vpnConnected, vpnDisconnected bool
+	flag                          string
 }
 
 func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.Instance, error) {
@@ -21,6 +22,14 @@ func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.In
 	return labdocker.Instance{ID: id, ContainerID: "container", TargetIP: "100.64.0.2"}, nil
 }
 func (f *fakeSpawner) Stop(_ context.Context, _ string) error { f.stopped = true; return nil }
+func (f *fakeSpawner) ConnectVpn(_ context.Context, _ string) error {
+	f.vpnConnected = true
+	return nil
+}
+func (f *fakeSpawner) DisconnectVpn(_ context.Context, _ string) error {
+	f.vpnDisconnected = true
+	return nil
+}
 
 func TestPrivateAPI(t *testing.T) {
 	fake := &fakeSpawner{}
@@ -39,6 +48,20 @@ func TestPrivateAPI(t *testing.T) {
 	h.ServeHTTP(created, req)
 	if created.Code != http.StatusCreated || !fake.spawned || fake.flag != flag || strings.Contains(created.Body.String(), flag) {
 		t.Fatalf("spawn failed: %d", created.Code)
+	}
+	connect := httptest.NewRequest(http.MethodPost, "/v1/instances/"+id+"/vpn-network", nil)
+	connect.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))
+	connected := httptest.NewRecorder()
+	h.ServeHTTP(connected, connect)
+	if connected.Code != http.StatusNoContent || !fake.vpnConnected {
+		t.Fatal("VPN network connect failed")
+	}
+	disconnect := httptest.NewRequest(http.MethodDelete, "/v1/instances/"+id+"/vpn-network", nil)
+	disconnect.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))
+	disconnected := httptest.NewRecorder()
+	h.ServeHTTP(disconnected, disconnect)
+	if disconnected.Code != http.StatusNoContent || !fake.vpnDisconnected {
+		t.Fatal("VPN network disconnect failed")
 	}
 
 	stop := httptest.NewRequest(http.MethodDelete, "/v1/instances/"+id, nil)

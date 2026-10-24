@@ -90,6 +90,48 @@ func TestDynamicFlagDockerSmoke(t *testing.T) {
 	}
 }
 
+func TestVpnGatewayDockerNetworkSmoke(t *testing.T) {
+	image := os.Getenv("CF_DOCKER_SMOKE_VPN_IMAGE")
+	if image == "" {
+		t.Skip("set CF_DOCKER_SMOKE_VPN_IMAGE for Docker VPN network smoke")
+	}
+	spawner, err := NewSpawner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spawner.Close()
+	var randomID [16]byte
+	if _, err := rand.Read(randomID[:]); err != nil {
+		t.Fatal(err)
+	}
+	id := fmt.Sprintf("%x-%x-%x-%x-%x", randomID[:4], randomID[4:6], randomID[6:8], randomID[8:10], randomID[10:])
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if _, err := spawner.Spawn(ctx, id, image, ""); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := spawner.Stop(context.Background(), id); err != nil {
+			t.Errorf("stop lab: %v", err)
+		}
+	}()
+	if err := spawner.ConnectVpn(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	_, networkName := names(id)
+	network, err := spawner.cli.NetworkInspect(ctx, networkName, client.NetworkInspectOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gatewayID, err := spawner.vpnGateway(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, connected := network.Network.Containers[gatewayID]; !connected {
+		t.Fatal("gateway was not attached to the owned lab network")
+	}
+}
+
 func TestSandboxPolicy(t *testing.T) {
 	id := "11111111-1111-4111-8111-111111111111"
 	for i := uint32(0); i < 32; i++ {

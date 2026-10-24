@@ -223,7 +223,7 @@ graph TB
 Là một nền tảng huấn luyện tấn công mạng thực hành, an toàn thông tin là ưu tiên số một của CyberForce:
 
 1. **Chính sách Zero Outbound Egress (Chặn toàn bộ chiều đi ra ngoài):**
-   - Docker lab CF-301 chạy trong Docker network `internal`; thử nghiệm local xác nhận không truy cập được Internet. Chính sách iptables/nftables đa host còn thuộc CF-402.
+   - Docker lab CF-301 chạy trong Docker network `internal`; thử nghiệm local xác nhận không truy cập được Internet. CF-402 thêm iptables trong gateway Compose để chỉ VPN peer của chủ phiên vào đúng target. Chính sách đa host vẫn cần thiết kế riêng.
    - Cách ly mạng và giới hạn tài nguyên giảm khả năng lợi dụng máy lab cho các hoạt động ngoài bài học.
 2. **Cô lập Phân đoạn Mạng (Network Micro-Segmentation):**
    - Mỗi phiên Docker lab được cấp mạng bridge `internal` riêng (`/29` trong dải `100.64.0.0/10`).
@@ -357,7 +357,7 @@ DB/Redis trong container được kết nối bằng hostname `postgres`/`redis`
 
 Docker socket chỉ được mount vào container orchestrator. Entrypoint lấy GID socket rồi chạy daemon bằng user `app`; API gọi daemon bằng token nội bộ `ORCHESTRATOR_TOKEN`. Trước khi dùng ngoài local, đặt token riêng ít nhất 32 ký tự. Image target lab phải tồn tại sẵn trên Docker host và có tên `cyberforce/<name>:<tag>`; daemon không tự pull image target. Trang phòng học có nút Start/Stop/Gia hạn, Web Terminal xterm.js và Kali AttackBox qua Guacamole. Terminal sidecar dùng image Alpine đã được Compose chuẩn bị; phòng có câu hỏi `dynamic_hmac` được inject cờ theo phiên khi spawn target.
 
-Trang `/access/vpn` cấp một file cấu hình WireGuard riêng cho tài khoản đã đăng nhập. Private key chỉ được trả về khi tạo hoặc tạo lại; bảng `vpn_peers` và gateway chỉ giữ public key cùng IP. Đặt `VPN_ENDPOINT` thành host/cổng UDP mà máy học viên truy cập được và `VPN_GATEWAY_TOKEN` thành secret riêng ít nhất 32 ký tự trước khi dùng ngoài local. Gateway cần Linux host hỗ trợ WireGuard và quyền `NET_ADMIN` trong container. Dải `100.127.240.0/20` dành cho VPN, tách khỏi subnet lab. Hiện tunnel chỉ tới gateway `100.127.240.1`; route tới target đúng phiên phụ thuộc CF-402. Trên Linux, đổi tên file vừa tải thành `cf-vpn.conf` rồi chạy `sudo wg-quick up ./cf-vpn.conf`.
+Trang `/access/vpn` cấp một file cấu hình WireGuard riêng cho tài khoản đã đăng nhập. Private key chỉ được trả về khi tạo hoặc tạo lại; bảng `vpn_peers` và gateway chỉ giữ public key cùng IP. Đặt `VPN_ENDPOINT` thành host/cổng UDP mà máy học viên truy cập được và `VPN_GATEWAY_TOKEN` thành secret riêng ít nhất 32 ký tự trước khi dùng ngoài local. Gateway cần Linux host hỗ trợ WireGuard và quyền `NET_ADMIN` trong container. Dải `100.127.240.0/20` dành cho VPN, tách khỏi subnet lab. CF-402 chỉ mở route từ client tới target của phiên lab đang chạy thuộc chính tài khoản đó; gateway chặn mặc định, stop/reaper thu hồi quyền. Gateway restart xóa grant và API sẽ đồng bộ lại khi người dùng xem trạng thái VPN hoặc thao tác với lab. Trên Linux, đổi tên file vừa tải thành `cf-vpn.conf` rồi chạy `sudo wg-quick up ./cf-vpn.conf`. [Chi tiết chính sách và kiểm thử](cf-402-network-isolation.md).
 
 Nếu vận hành API với DB đã tồn tại ngoài Compose, áp dụng riêng SQL tạo bảng `services/api-core/prisma/sql/20261024_vpn_peers.sql` vào đúng DB trước khi chạy code mới; không reset DB. `db-init` local sẽ đồng bộ bảng mới bằng Prisma. Khóa gateway và danh sách peer được giữ trong volume `vpn_gateway_data` của Compose project.
 

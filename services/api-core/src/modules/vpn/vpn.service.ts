@@ -2,6 +2,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { AuthError } from '../auth/auth.service.js';
+import { syncVpnAccess } from './vpn.access.js';
 
 const localToken = 'cyberforce_local_vpn_gateway_token_2026';
 const vpnStart = 2;
@@ -90,6 +91,11 @@ async function removeGatewayPeer(userId: string) {
 }
 
 export async function vpnStatus(userId: string) {
+  try {
+    await syncVpnAccess(userId);
+  } catch (error) {
+    console.error('VPN status sync failed:', error);
+  }
   const peer = await prisma.vpnPeer.findUnique({
     where: { userId },
     select: { ipAddress: true, createdAt: true, rotatedAt: true },
@@ -166,6 +172,11 @@ export async function issueVpnConfig(userId: string, regenerate: boolean) {
     select: { username: true },
   });
   const safeName = user.username.replace(/[^a-zA-Z0-9_-]/g, '_');
+  try {
+    await syncVpnAccess(userId);
+  } catch (error) {
+    console.error('VPN config access sync failed:', error);
+  }
   return {
     address: state.address,
     fileName: `cyberforce-${safeName}.conf`,

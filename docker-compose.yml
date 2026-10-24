@@ -35,13 +35,15 @@ x-api: &api
 services:
   vpn-gateway:
     build:
-      context: ./services/vpn-gateway
+      context: .
+      dockerfile: services/vpn-gateway/Dockerfile
+    container_name: ${COMPOSE_RESOURCE_PREFIX:-cyberforce}-vpn-gateway
     restart: unless-stopped
     read_only: true
     cap_add:
       - NET_ADMIN
     sysctls:
-      net.ipv4.ip_forward: '0'
+      net.ipv4.ip_forward: '1'
     security_opt:
       - no-new-privileges:true
     environment:
@@ -83,6 +85,9 @@ services:
       REAPER_DB_PASSWORD: ${REAPER_DB_PASSWORD:-cyberforce_local_reaper_password_2026}
       GUACD_CONTAINER_NAME: ${COMPOSE_RESOURCE_PREFIX:-cyberforce}-guacd
       GUACD_ADDRESS: guacd:4822
+      VPN_GATEWAY_CONTAINER_NAME: ${COMPOSE_RESOURCE_PREFIX:-cyberforce}-vpn-gateway
+      VPN_GATEWAY_URL: http://vpn-gateway:8082
+      VPN_GATEWAY_TOKEN: ${VPN_GATEWAY_TOKEN:-cyberforce_local_vpn_gateway_token_2026}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:

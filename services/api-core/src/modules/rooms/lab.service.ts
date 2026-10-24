@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma.js';
 import { redis } from '../../lib/redis.js';
 import { AuthError } from '../auth/auth.service.js';
 import { getRoom } from './rooms.service.js';
+import { syncVpnAccess } from '../vpn/vpn.access.js';
 import {
   createDynamicFlag,
   requirePlatformMasterKey,
@@ -148,6 +149,7 @@ export async function spawnLab(slug: string, userId: string) {
         where: { id },
         data: { status: 'running', ipAddress: data.targetIp!, containerId: data.containerId },
       });
+      await syncVpnAccess(userId);
       return {
         instanceId: id,
         roomId: room.id,
@@ -165,6 +167,11 @@ export async function spawnLab(slug: string, userId: string) {
         await prisma.labInstance.update({ where: { id }, data: { status: 'terminated' } });
       } catch (cleanupError) {
         console.error('Lab cleanup failed:', cleanupError);
+        try {
+          await prisma.labInstance.update({ where: { id }, data: { status: 'terminating' } });
+        } catch (markError) {
+          console.error('Lab cleanup retry marker failed:', markError);
+        }
       }
       if (error instanceof AuthError) throw error;
       console.error('Lab spawn failed:', error);
@@ -221,6 +228,11 @@ export async function extendLab(slug: string, userId: string) {
     `;
     const instance = updated[0];
     if (instance) {
+      try {
+        await syncVpnAccess(userId);
+      } catch (error) {
+        console.error('VPN extension sync failed:', error);
+      }
       return {
         instanceId: instance.id,
         status: 'running',
