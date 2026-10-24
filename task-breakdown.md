@@ -70,6 +70,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-303 | [x] Web Terminal và điều khiển lab desktop | Sidecar Alpine không đặc quyền trên mạng lab, xterm TTY qua WS ticket một lần; UI spawn/stop/extend/timer. API/Go/frontend tests, Docker TTY smoke và browser desktop qua. [Handoff](docs/handoffs/CF-303.md) |
 | CF-304 | [x] Kali AttackBox qua Apache Guacamole trên web desktop | Kali XFCE/TigerVNC, guacd dùng chung nối mạng lab theo phiên, ticket WS một lần, chuột/bàn phím và clipboard hai chiều. Web resize desktop thật bằng RandR: split 687×480, mở rộng 1310×818, thu về 687×480. Chưa đo SLA `<80ms`. [Handoff](docs/handoffs/CF-304.md), [resize](docs/handoffs/CF-304-RESIZE.md) |
 | CF-401 | [x] WireGuard gateway local và cấu hình cá nhân | Gateway Compose, dải VPN `100.127.240.0/20`, peer public key/IP lưu DB, private key cấp một lần, tạo lại khóa thu hồi peer cũ. Hai client smoke ping gateway nhưng không ping chéo; route tới lab và cluster nhiều node thuộc bước sau. [Handoff](cf-401-wireguard-vpn.md) |
+| CF-402 | [x] Cách ly VPN và lab local | Gateway iptables deny-by-default, grant đúng cặp peer–target và NAT giới hạn; Orchestrator nối/tháo network theo phiên, stop/reaper thu hồi. Hai client/hai lab smoke xác nhận chéo và egress bị chặn; Cilium chỉ là template cho Kubernetes. [Handoff](cf-402-network-isolation.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -336,7 +337,7 @@ gantt
 * **OUTPUT:** WireGuard Server Controller, API `/api/v1/vpn/config/download`, trang quản lý VPN `/access`.
 * **VERIFY:** Tải file `cyberforce-user.conf`, khởi chạy `wg-quick up cyberforce-user` trên máy client -> Nhận IP ảo `100.64.10.x`, ping thông tới gateway `100.64.0.1`.
 
-#### Task CF-402: Triển khai Chính sách Cách ly Mạng (Zero-Egress & Client-to-Client Isolation)
+#### [x] Task CF-402: Triển khai Chính sách Cách ly Mạng (Zero-Egress & Client-to-Client Isolation, Compose local)
 * **Agent:** `security-auditor` & `devops-engineer` | **Skills:** `vulnerability-scanner`, `bash-linux`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-401
 * **Mô tả:** Cấu hình iptables và eBPF policies:
@@ -536,7 +537,7 @@ gantt
 | **CF-303** | Epic 3 | US-03.04: Embedded xterm.js Web Terminal | `frontend-specialist` | P0 |
 | **CF-304** | Epic 3 | US-03.03: Apache Guacamole Kali AttackBox | `devops-engineer` | P1 |
 | **CF-401** | Epic 4 | [x] US-04.01: WireGuard Gateway local & Config Gen | `devops-engineer` | P0 |
-| **CF-402** | Epic 4 | US-04.03: Zero Egress & Client Isolation | `security-auditor` | P0 |
+| **CF-402** | Epic 4 | [x] US-04.03: Zero Egress & Client Isolation (Compose local) | `security-auditor` | P0 |
 | **CF-403** | Epic 4 | US-04.02: Real-time Live VPN Health Indicator | `backend-specialist` | P2 |
 | **CF-501** | Epic 5 | US-05.01: KotH 60s Tick Runner & Scoreboard | `backend-specialist` | P0 |
 | **CF-502** | Epic 5 | US-05.02: SLA Monitor & Service Auto-Heal | `backend-specialist` | P0 |
@@ -620,6 +621,6 @@ gantt
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-402:** Route client VPN chỉ tới target của phiên tương ứng và kiểm chứng cách ly dưới chính sách Zero Egress.
+1. **CF-403:** Giám sát trạng thái VPN thời gian thực và chẩn đoán kết nối theo phiên.
 2. **Theo dõi nghiệm thu hiệu năng:** SLA phản hồi AttackBox `<80ms` chưa được đo; trạng thái done của CF-202 không xác nhận đã đạt SLA này.
 3. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.

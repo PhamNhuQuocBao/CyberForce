@@ -1,0 +1,18 @@
+# Template for a future Cilium-managed Kubernetes deployment. Do not apply as-is.
+# Render one policy per lab with its verified instance ID and owner VPN /32.
+# Compose uses setup-iptables.sh and the gateway's runtime rules instead.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cf-lab-REPLACE_INSTANCE_ID
+  namespace: cyberforce-labs
+spec:
+  endpointSelector:
+    matchLabels:
+      cyberforce.io/instance-id: REPLACE_INSTANCE_ID
+  ingress:
+    - fromCIDRSet:
+        - cidr: REPLACE_OWNER_VPN_IP/32
+  egress:
+    - toCIDRSet:
+        - cidr: REPLACE_OWNER_VPN_IP/32

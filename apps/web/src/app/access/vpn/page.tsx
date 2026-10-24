@@ -174,8 +174,8 @@ export default function VpnAccessPage() {
                 </li>
               </ol>
               <p className="text-sm text-muted-foreground">
-                Hiện cấu hình kết nối tới cổng VPN. Truy cập máy lab từ máy cá nhân sẽ được mở ở
-                giai đoạn tiếp theo.
+                Sau khi kết nối, bạn có thể truy cập IP mục tiêu của phiên lab đang chạy thuộc tài
+                khoản mình. VPN chặn truy cập máy của học viên khác và Internet qua đường hầm.
               </p>
             </Card>
           </div>
