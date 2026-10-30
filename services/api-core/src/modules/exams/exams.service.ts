@@ -4,7 +4,7 @@ import { env } from '../../config/env.js';
 import { AuthError } from '../auth/auth.service.js';
 import { orchestratorRequest } from '../rooms/lab.service.js';
 import { FlagValidatorService } from '../submissions/flag-validator.service.js';
-import { examEligibility } from './exams.policy.js';
+import { examDeadline, examEligibility } from './exams.policy.js';
 
 const activeStatuses = ['provisioning', 'running'] as const;
 const imagePattern = /^cyberforce\/[a-z0-9][a-z0-9._/-]*:[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
@@ -164,7 +164,7 @@ export async function startExam(slug: string, userId: string, consent: boolean) 
   for (const session of stale) await expireSession(session.id);
   const id = randomUUID();
   const startedAt = new Date();
-  const expiresAt = new Date(startedAt.getTime() + exam.durationHours * 3600000);
+  const expiresAt = examDeadline(startedAt, exam.durationHours as 6 | 12 | 24);
   try {
     await prisma.examSession.create({
       data: { id, examId: exam.id, userId, consentedAt: startedAt, startedAt, expiresAt },

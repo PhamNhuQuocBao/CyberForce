@@ -19,3 +19,7 @@ export function examEligibility(rooms: RequiredRoom[], solvedIds: Set<string>, e
     eligible: enrolled && required.length > 0 && missing.length === 0,
   };
 }
+
+export function examDeadline(startedAt: Date, durationHours: 6 | 12 | 24) {
+  return new Date(startedAt.getTime() + durationHours * 3600000);
+}

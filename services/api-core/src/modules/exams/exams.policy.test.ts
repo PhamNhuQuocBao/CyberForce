@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { examEligibility } from './exams.policy.js';
+import { examDeadline, examEligibility } from './exams.policy.js';
 
 const rooms = Array.from({ length: 5 }, (_, index) => ({
   slug: `room-${index + 1}`,
@@ -31,4 +31,14 @@ describe('Capstone eligibility', () => {
   it('does not unlock an empty path', () => {
     expect(examEligibility([], new Set(), true).eligible).toBe(false);
   });
+});
+
+describe('Exam deadline', () => {
+  it.each([6, 12, 24] as const)(
+    'persists a %i-hour deadline from the server start time',
+    (hours) => {
+      const start = new Date('2026-10-30T00:00:00.000Z');
+      expect(examDeadline(start, hours).getTime() - start.getTime()).toBe(hours * 3600000);
+    },
+  );
 });
