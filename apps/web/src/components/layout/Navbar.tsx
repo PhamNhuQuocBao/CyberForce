@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store';
 import { BecomeCreatorDialog } from '@/components/creator/BecomeCreatorDialog';
 import { ThemeToggle } from './ThemeToggle';
+import { VpnStatusBadge } from './VpnStatusBadge';
 const links = [
   ['/paths', 'Lộ trình'],
   ['/#labs', 'Thực hành'],
@@ -21,7 +22,7 @@ const links = [
   ['/#certs', 'Chứng chỉ'],
 ];
 export function Navbar() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, accessToken, isAuthenticated, logout } = useAuthStore();
   const [isCreatorDialogOpen, setIsCreatorDialogOpen] = useState(false);
   return (
     <>
@@ -48,6 +49,9 @@ export function Navbar() {
             ))}
           </nav>
           <div className="flex items-center gap-1 sm:gap-2">
+            {isAuthenticated && user && accessToken && (
+              <VpnStatusBadge userId={user.id} accessToken={accessToken} />
+            )}
             <ThemeToggle />
             {isAuthenticated && user ? (
               <DropdownMenu>

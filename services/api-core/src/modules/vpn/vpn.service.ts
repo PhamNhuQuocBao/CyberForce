@@ -110,6 +110,27 @@ export async function vpnStatus(userId: string) {
     : { configured: false };
 }
 
+export async function vpnLiveStatus(userId: string) {
+  const peer = await prisma.vpnPeer.findUnique({
+    where: { userId },
+    select: { ipAddress: true, publicKey: true },
+  });
+  if (!peer) return { connected: false, address: null };
+  const response = await gatewayRequest(`/v1/peers/${userId}/status`, 'GET');
+  const status = (await response.json()) as {
+    address?: string;
+    publicKey?: string;
+    connected?: boolean;
+  };
+  if (
+    status.address !== peer.ipAddress ||
+    status.publicKey !== peer.publicKey ||
+    typeof status.connected !== 'boolean'
+  )
+    throw new AuthError(503, 'Trạng thái VPN chưa sẵn sàng.', 'VPN_UNAVAILABLE');
+  return { connected: status.connected, address: peer.ipAddress };
+}
+
 export async function issueVpnConfig(userId: string, regenerate: boolean) {
   const gatewayKey = await gatewayPublicKey();
   const keys = pair();

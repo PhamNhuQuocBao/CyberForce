@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/ecdh"
 	"crypto/rand"
 	"crypto/subtle"
@@ -38,13 +39,17 @@ type peer struct {
 }
 
 type controller struct {
-	mu        sync.Mutex
-	peers     map[string]peer
-	access    map[string]accessGrant
-	publicKey string
-	token     string
-	run       func(...string) error
-	statePath string
+	mu             sync.Mutex
+	peers          map[string]peer
+	access         map[string]accessGrant
+	publicKey      string
+	token          string
+	run            func(...string) error
+	readHandshakes func() ([]byte, error)
+	handshakes     map[string]int64
+	sampledAt      time.Time
+	sampleError    bool
+	statePath      string
 }
 
 func command(args ...string) error {
@@ -106,6 +111,11 @@ func newController(token string) (*controller, error) {
 	c := &controller{
 		peers: map[string]peer{}, access: map[string]accessGrant{}, publicKey: base64.StdEncoding.EncodeToString(key.PublicKey().Bytes()),
 		token: token, run: command, statePath: filepath.Join(dataDir, "peers.json"),
+		readHandshakes: func() ([]byte, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			return exec.CommandContext(ctx, "wg", "show", interfaceName, "latest-handshakes").Output()
+		},
 	}
 	if data, err := os.ReadFile(c.statePath); err == nil {
 		if err := json.Unmarshal(data, &c.peers); err != nil {
@@ -245,6 +255,26 @@ func (c *controller) handler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"publicKey": c.publicKey})
 	})
+	mux.HandleFunc("GET /v1/peers/{id}/status", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		c.mu.Lock()
+		item, exists := c.peers[id]
+		last := c.handshakes[item.PublicKey]
+		available := !c.sampleError && !c.sampledAt.IsZero() && time.Since(c.sampledAt) < 3*time.Second
+		c.mu.Unlock()
+		if !userIDRule.MatchString(id) || !exists {
+			http.NotFound(w, r)
+			return
+		}
+		if !available {
+			http.Error(w, "handshake sample unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		age := time.Since(time.Unix(last, 0))
+		_ = json.NewEncoder(w).Encode(map[string]any{"address": item.Address, "publicKey": item.PublicKey, "connected": last > 0 && age >= 0 && age < 180*time.Second})
+	})
 	mux.HandleFunc("PUT /v1/peers/{id}", func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 1024)
 		var input peer
@@ -310,6 +340,7 @@ func main() {
 		log.Fatal(err)
 	}
 	go c.expireAccess()
+	go c.pollHandshakes()
 	listener, err := net.Listen("tcp", "0.0.0.0:8082")
 	if err != nil {
 		log.Fatal(err)
