@@ -622,6 +622,12 @@ export interface LabSession {
 }
 
 export const vpnApi = {
+  statusTicket(token: string) {
+    return request<{ success: true; data: { ticket: string; expiresInSeconds: number } }>(
+      '/vpn/status-ticket',
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+    );
+  },
   status(token: string) {
     return request<{ success: true; data: VpnStatus }>('/vpn/status', {
       headers: { Authorization: `Bearer ${token}` },

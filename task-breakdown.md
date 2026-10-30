@@ -71,6 +71,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-304 | [x] Kali AttackBox qua Apache Guacamole trên web desktop | Kali XFCE/TigerVNC, guacd dùng chung nối mạng lab theo phiên, ticket WS một lần, chuột/bàn phím và clipboard hai chiều. Web resize desktop thật bằng RandR: split 687×480, mở rộng 1310×818, thu về 687×480. Chưa đo SLA `<80ms`. [Handoff](docs/handoffs/CF-304.md), [resize](docs/handoffs/CF-304-RESIZE.md) |
 | CF-401 | [x] WireGuard gateway local và cấu hình cá nhân | Gateway Compose, dải VPN `100.127.240.0/20`, peer public key/IP lưu DB, private key cấp một lần, tạo lại khóa thu hồi peer cũ. Hai client smoke ping gateway nhưng không ping chéo; route tới lab và cluster nhiều node thuộc bước sau. [Handoff](cf-401-wireguard-vpn.md) |
 | CF-402 | [x] Cách ly VPN và lab local | Gateway iptables deny-by-default, grant đúng cặp peer–target và NAT giới hạn; Orchestrator nối/tháo network theo phiên, stop/reaper thu hồi. Hai client/hai lab smoke xác nhận chéo và egress bị chặn; Cilium chỉ là template cho Kubernetes. [Handoff](cf-402-network-isolation.md) |
+| CF-403 | [x] Badge trạng thái VPN desktop | Gateway lấy mẫu handshake mỗi giây, API stream có ticket một lần, badge hiện IP và tự cập nhật. Browser smoke qua; từ bật client đến sự kiện WebSocket đo 1005 ms. [Handoff](cf-403-vpn-live-status.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -347,13 +348,14 @@ gantt
 * **OUTPUT:** Script `infra/wireguard/setup-iptables.sh`, Cilium eBPF network policy yaml.
 * **VERIFY:** Từ máy Client A ping sang IP của Client B -> Nhận `Destination Host Unreachable` hoặc `100% packet loss`; từ máy Lab ping ra `8.8.8.8` hoặc `google.com` -> Bị chặn 100%.
 
-#### Task CF-403: Giám sát Trạng thái VPN Thời gian Thực (Live VPN Indicator)
+#### [x] Task CF-403: Giám sát Trạng thái VPN Thời gian Thực (Live VPN Indicator)
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `api-patterns`, `nextjs-react-expert`
 * **Priority:** `P2 (Medium)` | **Dependencies:** CF-401
 * **Mô tả:** Tạo worker định kỳ đọc `wg show` lấy handshake timestamp của từng client peer. Gửi trạng thái qua WebSocket về giao diện web. Header hiển thị chấm xanh "Connected (100.64.10.42)" hoặc chấm đỏ "Disconnected" (Story `US-04.02`).
 * **INPUT:** `docs/05-epics/EPIC_04_SECURE_VPN_ACCESS_GATEWAY.md` (US-04.02) & Wireframe 4.1.
 * **OUTPUT:** WebSocket event `VPN_STATUS_CHANGE`, component `VpnStatusBadge.tsx` trên thanh TopNav.
 * **VERIFY:** Bật WireGuard trên máy thật -> Trong vòng 3 giây, badge trên web chuyển sang màu xanh lá kèm địa chỉ IP thực hành.
+* **Trạng thái triển khai:** Gateway lấy mẫu handshake mỗi giây; API WebSocket gửi sự kiện có xác thực; badge desktop hiển thị IP. Smoke hai peer và trình duyệt qua; từ kích hoạt client đến sự kiện WebSocket đo được 1005 ms, badge chuyển đúng trạng thái. Chưa đo thời gian paint chính xác. Ngắt VPN có thể cần tối đa 180 giây để hiển thị do WireGuard không phát tín hiệu ngắt tức thời. [Handoff](cf-403-vpn-live-status.md).
 
 #### Task CF-304: Tích hợp Apache Guacamole Stream Kali AttackBox trên Trình Duyệt
 * **Agent:** `devops-engineer` & `frontend-specialist` | **Skills:** `server-management`, `frontend-architecture`
@@ -538,7 +540,7 @@ gantt
 | **CF-304** | Epic 3 | US-03.03: Apache Guacamole Kali AttackBox | `devops-engineer` | P1 |
 | **CF-401** | Epic 4 | [x] US-04.01: WireGuard Gateway local & Config Gen | `devops-engineer` | P0 |
 | **CF-402** | Epic 4 | [x] US-04.03: Zero Egress & Client Isolation (Compose local) | `security-auditor` | P0 |
-| **CF-403** | Epic 4 | US-04.02: Real-time Live VPN Health Indicator | `backend-specialist` | P2 |
+| **CF-403** | Epic 4 | [x] US-04.02: Real-time Live VPN Health Indicator | `backend-specialist` | P2 |
 | **CF-501** | Epic 5 | US-05.01: KotH 60s Tick Runner & Scoreboard | `backend-specialist` | P0 |
 | **CF-502** | Epic 5 | US-05.02: SLA Monitor & Service Auto-Heal | `backend-specialist` | P0 |
 | **CF-503** | Epic 5 | US-05.03: Anti-Sabotage & 3-Day Block Penalty | `security-auditor` | P1 |
@@ -621,6 +623,6 @@ gantt
 
 ## 8. Kế Hoạch Triển Khai Tiếp Theo (Next Sprint Plan)
 
-1. **CF-403:** Giám sát trạng thái VPN thời gian thực và chẩn đoán kết nối theo phiên.
+1. **Theo dõi CF-403:** Nếu cần nghiệm thu SLA chính xác, đo thời gian đến paint của badge trên nhiều máy/mạng; công cụ chẩn đoán ping cần kế hoạch riêng.
 2. **Theo dõi nghiệm thu hiệu năng:** SLA phản hồi AttackBox `<80ms` chưa được đo; trạng thái done của CF-202 không xác nhận đã đạt SLA này.
 3. **Theo dõi tồn đọng:** dữ liệu profile mô phỏng, kiểm chứng OAuth/OTP thật, áp dụng SQL đúng môi trường khi triển khai; không coi các hạng mục này đã hoàn thành.
