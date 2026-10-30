@@ -448,3 +448,7 @@ Dự án được phân phối dưới giấy phép **MIT License**. Bạn đư�
 *Xây dựng bởi Đội ngũ Kỹ thuật & Nghiên cứu An toàn Thông tin CyberForce.*
 
 </div>
+
+### CF-501 KotH scoring backend
+
+The KotH runner is started by Docker Compose after the API is healthy. An organizer can create a 45-minute match with `POST /api/v1/koth/matches` using a running KotH lab instance they own and 4–10 user IDs. The runner checks `/root/king.txt` and listening ports 22/80 every 60 seconds, credits a valid king with 10 points, and broadcasts `KOTH_TICK_UPDATE` through `/ws/arena/koth/:id`. Participants request a one-use WebSocket ticket from `POST /api/v1/koth/matches/:id/scoreboard-ticket` and pass it as a WebSocket subprotocol. [Backend scope, API, and verification](cf-501-koth-tick-runner.md).

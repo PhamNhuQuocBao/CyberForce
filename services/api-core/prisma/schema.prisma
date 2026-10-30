@@ -89,6 +89,8 @@ model User {
   reviewedRequests RoleRequest[]  @relation("ReviewerRoleRequests")
   auditLogs        AuditLog[]     @relation("AuditLogActor")
   vpnPeer          VpnPeer?
+  kothParticipants KothParticipant[]
+  kothTicks        KothTick[]
 
   @@map("users")
 }
@@ -237,6 +239,7 @@ model Room {
   dependentRooms   Room[]        @relation("RoomPrerequisites")
   tasks            Task[]
   labInstances     LabInstance[]
+  kothMatches      KothMatch[]
 
   @@index([pathId])
   @@index([prerequisiteRoomId])
@@ -306,6 +309,50 @@ model LabInstance {
   @@index([roomId])
   @@index([containerId])
   @@map("lab_instances")
+}
+
+model KothMatch {
+  id         String   @id @default(uuid()) @db.Uuid
+  roomId     String   @map("room_id") @db.Uuid
+  instanceId String   @unique @map("instance_id") @db.Uuid
+  startsAt   DateTime @map("starts_at") @db.Timestamptz
+  endsAt     DateTime @map("ends_at") @db.Timestamptz
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room         Room              @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  participants KothParticipant[]
+  ticks        KothTick[]
+
+  @@index([startsAt, endsAt])
+  @@map("koth_matches")
+}
+
+model KothParticipant {
+  matchId  String @map("match_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  username String @db.VarChar(50)
+
+  match KothMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([matchId, userId])
+  @@unique([matchId, username])
+  @@map("koth_participants")
+}
+
+model KothTick {
+  matchId    String   @map("match_id") @db.Uuid
+  tickNumber Int      @map("tick_number")
+  userId     String?  @map("user_id") @db.Uuid
+  status     String   @db.VarChar(24)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  match KothMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([matchId, tickNumber])
+  @@index([matchId, userId])
+  @@map("koth_ticks")
 }
 
 // -----------------------------------------------------------------------------
