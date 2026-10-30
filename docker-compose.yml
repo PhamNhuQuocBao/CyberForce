@@ -105,6 +105,24 @@ services:
       timeout: 5s
       retries: 12
 
+  koth-engine:
+    build:
+      context: ./services/koth-engine
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      KOTH_API_URL: http://api:4000
+      ORCHESTRATOR_URL: http://orchestrator:8081
+      ORCHESTRATOR_TOKEN: ${ORCHESTRATOR_TOKEN:-cyberforce_local_orchestrator_token_2026}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - cyberforce-net
+
   db-init:
     <<: *api
     restart: 'no'

@@ -30,6 +30,10 @@ type terminalOpener interface {
 	OpenTerminal(context.Context, string) (*labdocker.TerminalSession, error)
 }
 
+type kothInspector interface {
+	KothSnapshot(context.Context, string) (labdocker.KothSnapshot, error)
+}
+
 type vpnNetworkManager interface {
 	ConnectVpn(context.Context, string) error
 	DisconnectVpn(context.Context, string) error
@@ -131,6 +135,28 @@ func handler(spawner labSpawner, token string) http.Handler {
 		_ = json.NewEncoder(w).Encode(instance)
 	})
 	mux.HandleFunc("/v1/instances/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/koth-snapshot") {
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/koth-snapshot")
+			inspector, ok := spawner.(kothInspector)
+			if !ok {
+				http.Error(w, "KotH inspection unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+			defer cancel()
+			snapshot, err := inspector.KothSnapshot(ctx, id)
+			if err != nil {
+				http.Error(w, "KotH inspection failed", http.StatusBadGateway)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(snapshot)
+			return
+		}
 		if strings.HasSuffix(r.URL.Path, "/vpn-network") {
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/instances/"), "/vpn-network")
 			manager, ok := spawner.(vpnNetworkManager)

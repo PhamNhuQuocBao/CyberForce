@@ -22,6 +22,9 @@ func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.In
 	return labdocker.Instance{ID: id, ContainerID: "container", TargetIP: "100.64.0.2"}, nil
 }
 func (f *fakeSpawner) Stop(_ context.Context, _ string) error { f.stopped = true; return nil }
+func (f *fakeSpawner) KothSnapshot(_ context.Context, _ string) (labdocker.KothSnapshot, error) {
+	return labdocker.KothSnapshot{King: "Player1", Healthy: true}, nil
+}
 func (f *fakeSpawner) ConnectVpn(_ context.Context, _ string) error {
 	f.vpnConnected = true
 	return nil
@@ -62,6 +65,19 @@ func TestPrivateAPI(t *testing.T) {
 	h.ServeHTTP(disconnected, disconnect)
 	if disconnected.Code != http.StatusNoContent || !fake.vpnDisconnected {
 		t.Fatal("VPN network disconnect failed")
+	}
+
+	unauthorizedSnapshot := httptest.NewRecorder()
+	h.ServeHTTP(unauthorizedSnapshot, httptest.NewRequest(http.MethodGet, "/v1/instances/"+id+"/koth-snapshot", nil))
+	if unauthorizedSnapshot.Code != http.StatusUnauthorized {
+		t.Fatal("KotH snapshot accepted without token")
+	}
+	snapshotReq := httptest.NewRequest(http.MethodGet, "/v1/instances/"+id+"/koth-snapshot", nil)
+	snapshotReq.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))
+	snapshotResponse := httptest.NewRecorder()
+	h.ServeHTTP(snapshotResponse, snapshotReq)
+	if snapshotResponse.Code != http.StatusOK || !strings.Contains(snapshotResponse.Body.String(), `"king":"Player1"`) {
+		t.Fatalf("KotH snapshot failed: %d", snapshotResponse.Code)
 	}
 
 	stop := httptest.NewRequest(http.MethodDelete, "/v1/instances/"+id, nil)
