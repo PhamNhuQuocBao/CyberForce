@@ -39,6 +39,17 @@ type vpnNetworkManager interface {
 	DisconnectVpn(context.Context, string) error
 }
 
+type examRangeManager interface {
+	SpawnExam(context.Context, string, []labdocker.ExamTarget) (labdocker.ExamRange, error)
+	InspectExam(context.Context, string) (labdocker.ExamRange, error)
+	StopExam(context.Context, string) error
+}
+
+type examVpnManager interface {
+	ConnectExamVpn(context.Context, string) error
+	DisconnectExamVpn(context.Context, string) error
+}
+
 func serveTerminal(w http.ResponseWriter, r *http.Request, opener terminalOpener, id string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	session, err := opener.OpenTerminal(ctx, id)
@@ -104,6 +115,93 @@ func serveTerminal(w http.ResponseWriter, r *http.Request, opener terminalOpener
 
 func handler(spawner labSpawner, token string) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/exams", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		manager, ok := spawner.(examRangeManager)
+		if !ok {
+			http.Error(w, "exam range unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		var input struct {
+			SessionID string                 `json:"sessionId"`
+			Targets   []labdocker.ExamTarget `json:"targets"`
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 8192)
+		if json.NewDecoder(r.Body).Decode(&input) != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		defer cancel()
+		result, err := manager.SpawnExam(ctx, input.SessionID, input.Targets)
+		if err != nil {
+			log.Printf("exam spawn failed: %v", err)
+			http.Error(w, "exam range failed", http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(result)
+	})
+	mux.HandleFunc("/v1/exams/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/vpn-network") {
+			manager, ok := spawner.(examVpnManager)
+			if !ok {
+				http.Error(w, "exam VPN unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/exams/"), "/vpn-network")
+			ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+			defer cancel()
+			var err error
+			switch r.Method {
+			case http.MethodPost:
+				err = manager.ConnectExamVpn(ctx, id)
+			case http.MethodDelete:
+				err = manager.DisconnectExamVpn(ctx, id)
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			if err != nil {
+				log.Printf("exam VPN failed: %v", err)
+				http.Error(w, "exam VPN unavailable", http.StatusBadGateway)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		manager, ok := spawner.(examRangeManager)
+		if !ok {
+			http.Error(w, "exam range unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		id := strings.TrimPrefix(r.URL.Path, "/v1/exams/")
+		ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+		defer cancel()
+		switch r.Method {
+		case http.MethodGet:
+			result, err := manager.InspectExam(ctx, id)
+			if err != nil {
+				http.Error(w, "exam range unavailable", http.StatusBadGateway)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(result)
+		case http.MethodDelete:
+			if err := manager.StopExam(ctx, id); err != nil {
+				log.Printf("exam stop failed: %v", err)
+				http.Error(w, "exam stop failed", http.StatusBadGateway)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

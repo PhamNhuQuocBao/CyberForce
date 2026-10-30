@@ -780,3 +780,94 @@ export const hintsApi = {
     );
   },
 };
+
+export interface ExamEligibility {
+  enrolled: boolean;
+  completed: number;
+  total: number;
+  eligible: boolean;
+  missing: { slug: string; title: string }[];
+}
+
+export interface ExamOverview {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  path: { title: string; slug: string };
+  durationHours: number;
+  passingScore: number;
+  totalPoints: number;
+  targetCount: number;
+  eligibility: ExamEligibility;
+  activeSession: { id: string; status: string; expiresAt: string } | null;
+  retryAt: string | null;
+}
+
+export interface ExamSessionView {
+  id: string;
+  exam: { slug: string; title: string; passingScore: number };
+  status: 'provisioning' | 'running' | 'finished' | 'expired' | 'failed';
+  startedAt: string;
+  expiresAt: string;
+  finishedAt: string | null;
+  serverTime: string;
+  score: number;
+  totalPoints: number;
+  targets: { id: string; name: string; targetIp: string }[] | null;
+  objectives: {
+    id: string;
+    targetId: string;
+    title: string;
+    description: string;
+    points: number;
+  }[];
+  submissions: { objectiveId: string; createdAt: string }[];
+  passed: boolean | null;
+}
+
+export const examsApi = {
+  list(token: string) {
+    return request<{
+      success: true;
+      data: Omit<ExamOverview, 'activeSession' | 'retryAt' | 'totalPoints' | 'targetCount'>[];
+    }>('/exams', { headers: { Authorization: `Bearer ${token}` } });
+  },
+  get(slug: string, token: string) {
+    return request<{ success: true; data: ExamOverview }>(`/exams/${encodeURIComponent(slug)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  start(slug: string, token: string) {
+    return request<{ success: true; data: ExamSessionView }>(
+      `/exams/${encodeURIComponent(slug)}/start`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ consent: true }),
+      },
+    );
+  },
+  session(id: string, token: string) {
+    return request<{ success: true; data: ExamSessionView }>(
+      `/exams/sessions/${encodeURIComponent(id)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+  },
+  submit(id: string, objectiveId: string, answer: string, token: string) {
+    return request<{
+      success: true;
+      data: { accepted: boolean; alreadySubmitted: boolean; score: number };
+    }>(`/exams/sessions/${encodeURIComponent(id)}/flags`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ objectiveId, answer }),
+    });
+  },
+  finish(id: string, token: string) {
+    return request<{ success: true; data: ExamSessionView }>(
+      `/exams/sessions/${encodeURIComponent(id)}/finish`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: '{}' },
+    );
+  },
+};

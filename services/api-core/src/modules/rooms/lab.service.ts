@@ -55,7 +55,7 @@ export async function orchestratorRequest(
         ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(path === '/v1/exams' ? 65000 : 12000),
     });
     if (!response.ok) throw new Error(`orchestrator returned ${response.status}`);
     return response;

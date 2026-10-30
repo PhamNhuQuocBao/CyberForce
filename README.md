@@ -452,3 +452,29 @@ Dự án được phân phối dưới giấy phép **MIT License**. Bạn đư�
 ### CF-501 KotH scoring backend
 
 The KotH runner is started by Docker Compose after the API is healthy. An organizer can create a 45-minute match with `POST /api/v1/koth/matches` using a running KotH lab instance they own and 4–10 user IDs. The runner checks `/root/king.txt` and listening ports 22/80 every 60 seconds, credits a valid king with 10 points, and broadcasts `KOTH_TICK_UPDATE` through `/ws/arena/koth/:id`. Participants request a one-use WebSocket ticket from `POST /api/v1/koth/matches/:id/scoreboard-ticket` and pass it as a WebSocket subprotocol. [Backend scope, API, and verification](cf-501-koth-tick-runner.md).
+
+### Capstone exam (CF-601)
+
+An admin can create and publish a practical exam with `POST /api/v1/admin/exams` (admin bearer token). Example payload:
+
+```json
+{
+  "pathId": "00000000-0000-0000-0000-000000000000",
+  "slug": "sample-capstone",
+  "title": "Sample Capstone",
+  "durationHours": 6,
+  "passingScore": 80,
+  "targets": [
+    { "name": "web", "image": "cyberforce/exam-web:1" },
+    { "name": "db", "image": "cyberforce/exam-db:1" }
+  ],
+  "objectives": [
+    { "targetName": "web", "title": "Web access", "description": "Find the web flag", "points": 50, "flag": "flag{example-web}" },
+    { "targetName": "db", "title": "Database access", "description": "Find the database flag", "points": 50, "flag": "flag{example-db}" }
+  ]
+}
+```
+
+The API stores SHA-256 hashes of admin-supplied flags. Replace the example path UUID, images and flags with deployed exam content. Learners must enroll in the published path, solve every question in each published room marked `requiredForCapstone`, and configure VPN before starting. Each exam allocates 2–4 targets on one isolated network, grants only that learner's VPN peer access to those target IPs, and ends after 6, 12 or 24 hours. Results remain separate from learning EXP. A learner can retry the same exam after 14 days. `/exams` and `/exams/[slug]` show eligibility and the dedicated workspace.
+
+For an existing database outside Compose, review and apply [`20261030_capstone_exams.sql`](services/api-core/prisma/sql/20261030_capstone_exams.sql) before starting the new API. Compose's `db-init` runs Prisma schema sync and the partial unique active-session index. Do not run the full SQL migration after `db push`. The API sweep retries range cleanup every 30 seconds. No production exam images are included in this repository.

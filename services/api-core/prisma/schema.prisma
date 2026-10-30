@@ -50,6 +50,16 @@ enum InstanceStatus {
   @@map("instance_status")
 }
 
+enum ExamSessionStatus {
+  provisioning
+  running
+  finished
+  expired
+  failed
+
+  @@map("exam_session_status")
+}
+
 enum RoleRequestStatus {
   pending
   approved
@@ -91,6 +101,7 @@ model User {
   vpnPeer          VpnPeer?
   kothParticipants KothParticipant[]
   kothTicks        KothTick[]
+  examSessions     ExamSession[]
 
   @@map("users")
 }
@@ -207,6 +218,7 @@ model LearningPath {
   enrollments  PathEnrollment[]
   rooms        Room[]
   certificates Certificate[]
+  exams        Exam[]
 
   @@map("learning_paths")
 }
@@ -231,6 +243,7 @@ model Room {
   estimatedMinutes   Int       @default(45) @map("estimated_minutes")
   prerequisiteRoomId String?   @map("prerequisite_room_id") @db.Uuid
   publishedAt        DateTime? @map("published_at") @db.Timestamptz
+  requiredForCapstone Boolean @default(true) @map("required_for_capstone")
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
@@ -309,6 +322,93 @@ model LabInstance {
   @@index([roomId])
   @@index([containerId])
   @@map("lab_instances")
+}
+
+model Exam {
+  id           String   @id @default(uuid()) @db.Uuid
+  pathId       String   @map("path_id") @db.Uuid
+  slug         String   @unique @db.VarChar(255)
+  title        String   @db.VarChar(255)
+  description  String?  @db.Text
+  durationHours Int    @map("duration_hours")
+  passingScore Int     @map("passing_score")
+  isPublished  Boolean @default(false) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  path       LearningPath @relation(fields: [pathId], references: [id], onDelete: Restrict)
+  targets    ExamTarget[]
+  objectives ExamObjective[]
+  sessions   ExamSession[]
+
+  @@index([pathId])
+  @@map("exams")
+}
+
+model ExamTarget {
+  id        String @id @default(uuid()) @db.Uuid
+  examId    String @map("exam_id") @db.Uuid
+  name      String @db.VarChar(80)
+  image     String @db.VarChar(255)
+  orderIndex Int   @default(0) @map("order_index")
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  objectives ExamObjective[]
+
+  @@unique([examId, name])
+  @@map("exam_targets")
+}
+
+model ExamObjective {
+  id         String @id @default(uuid()) @db.Uuid
+  examId     String @map("exam_id") @db.Uuid
+  targetId   String @map("target_id") @db.Uuid
+  title      String @db.VarChar(255)
+  description String @db.Text
+  points     Int
+  answerHash String @map("answer_hash") @db.VarChar(71)
+  orderIndex Int @default(0) @map("order_index")
+
+  exam        Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  target      ExamTarget @relation(fields: [targetId], references: [id], onDelete: Restrict)
+  submissions ExamSubmission[]
+
+  @@index([examId])
+  @@map("exam_objectives")
+}
+
+model ExamSession {
+  id          String @id @default(uuid()) @db.Uuid
+  examId      String @map("exam_id") @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+  status      ExamSessionStatus @default(provisioning)
+  consentedAt DateTime @map("consented_at") @db.Timestamptz
+  startedAt   DateTime @default(now()) @map("started_at") @db.Timestamptz
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  finishedAt  DateTime? @map("finished_at") @db.Timestamptz
+  rangeStoppedAt DateTime? @map("range_stopped_at") @db.Timestamptz
+  score       Int @default(0)
+  targetInfo  Json? @map("target_info")
+
+  exam        Exam @relation(fields: [examId], references: [id], onDelete: Restrict)
+  user        User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  submissions ExamSubmission[]
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+  @@map("exam_sessions")
+}
+
+model ExamSubmission {
+  id          String @id @default(uuid()) @db.Uuid
+  sessionId   String @map("session_id") @db.Uuid
+  objectiveId String @map("objective_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  session ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  objective ExamObjective @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, objectiveId])
+  @@map("exam_submissions")
 }
 
 model KothMatch {

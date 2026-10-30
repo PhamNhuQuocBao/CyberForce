@@ -19,6 +19,7 @@ const links = [
   ['/paths', 'Lộ trình'],
   ['/#labs', 'Thực hành'],
   ['/#arena', 'Thi đấu'],
+  ['/exams', 'Kỳ thi'],
   ['/#certs', 'Chứng chỉ'],
 ];
 export function Navbar() {

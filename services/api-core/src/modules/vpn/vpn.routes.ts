@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { authenticate } from '../../middleware/authenticate.js';
 import { issueVpnConfig, vpnStatus } from './vpn.service.js';
 import { connectVpnStatus, issueVpnStatusTicket } from './vpn.stream.js';
+import { assertNoActiveExam } from '../exams/exams.service.js';
 
 export const vpnRoutes: FastifyPluginAsync = async (app) => {
   app.post('/status-ticket', { preHandler: [authenticate] }, async (request, reply) =>
@@ -30,10 +31,13 @@ export const vpnRoutes: FastifyPluginAsync = async (app) => {
       data: await issueVpnConfig(request.user!.sub, false),
     }),
   );
-  app.post('/config/regenerate', { preHandler: [authenticate] }, async (request, reply) =>
-    reply.header('Cache-Control', 'private, no-store').send({
-      success: true,
-      data: await issueVpnConfig(request.user!.sub, true),
-    }),
+  app.post(
+    '/config/regenerate',
+    { preHandler: [authenticate, async (request) => assertNoActiveExam(request.user!.sub)] },
+    async (request, reply) =>
+      reply.header('Cache-Control', 'private, no-store').send({
+        success: true,
+        data: await issueVpnConfig(request.user!.sub, true),
+      }),
   );
 };
