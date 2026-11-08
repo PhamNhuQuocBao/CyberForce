@@ -400,7 +400,7 @@ describe('Auth API Contract & Integration Tests', () => {
       expect(json.data.user.role).toBe('student');
       expect(json.data.user.rankTier).toBe('Novice');
       expect(json.data.user.expPoints).toBe(0);
-      expect(json.data.user.streakDays).toBe(1);
+      expect(json.data.user.streakDays).toBe(0);
       expect(json.data.accessToken).toBeDefined();
 
       // Verify HTTP-only cookie set

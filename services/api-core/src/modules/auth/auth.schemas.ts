@@ -71,6 +71,10 @@ export interface UserProfile {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  timezone?: string | null;
+  lastStreakDate?: string | null;
+  streakBonusPercent?: number;
+  streakBonusUntil?: Date | null;
   bio?: string | null;
   specialty?: string | null;
   isPublic?: boolean;

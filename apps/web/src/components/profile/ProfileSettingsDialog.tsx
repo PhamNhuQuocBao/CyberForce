@@ -41,6 +41,7 @@ export function ProfileSettingsDialog({
   const [bio, setBio] = useState(dossier.bio ?? '');
   const [specialty, setSpecialty] = useState(dossier.specialty ?? 'General Cybersecurity Operator');
   const [isPublic, setIsPublic] = useState(dossier.isPublic ?? true);
+  const [timezone, setTimezone] = useState(user?.timezone ?? 'Asia/Ho_Chi_Minh');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -52,6 +53,9 @@ export function ProfileSettingsDialog({
       setBio(dossier.bio ?? '');
       setSpecialty(dossier.specialty ?? 'General Cybersecurity Operator');
       setIsPublic(dossier.isPublic ?? true);
+      setTimezone(
+        user?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Asia/Ho_Chi_Minh',
+      );
       setErrorMsg(null);
     }
     wasOpen.current = open;
@@ -73,6 +77,7 @@ export function ProfileSettingsDialog({
           bio: bio.trim() || null,
           specialty: specialty.trim() || undefined,
           isPublic,
+          timezone: timezone.trim(),
         },
         accessToken,
       );
@@ -84,6 +89,8 @@ export function ProfileSettingsDialog({
           bio: res.data.bio,
           specialty: res.data.specialty,
           isPublic: res.data.isPublic,
+          timezone: res.data.timezone,
+          streakDays: res.data.streakDays,
         };
         const currentToken = useAuthStore.getState().accessToken;
         if (currentToken) setAuth(updatedAuthUser, currentToken);
@@ -94,6 +101,7 @@ export function ProfileSettingsDialog({
         bio: res.data.bio,
         specialty: res.data.specialty ?? undefined,
         isPublic: res.data.isPublic ?? true,
+        timezone: res.data.timezone,
       });
 
       toast.success('Dossier telemetry & privacy preferences updated!');
@@ -150,6 +158,28 @@ export function ProfileSettingsDialog({
               ))}
             </div>
           </fieldset>
+          <div className="space-y-2">
+            <label htmlFor="timezone" className="field-label">
+              Múi giờ cho chuỗi học tập
+            </label>
+            <Input
+              id="timezone"
+              value={timezone}
+              onChange={(event) => setTimezone(event.target.value)}
+              list="timezone-suggestions"
+              maxLength={64}
+              required
+            />
+            <datalist id="timezone-suggestions">
+              <option value="Asia/Ho_Chi_Minh" />
+              <option value="Asia/Bangkok" />
+              <option value="Asia/Singapore" />
+              <option value="UTC" />
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              Dùng tên múi giờ IANA; ngày học được tính theo lựa chọn này.
+            </p>
+          </div>
           <div className="space-y-2">
             <label htmlFor="specialty" className="field-label">
               Chuyên môn (nhập hoặc chọn gợi ý)

@@ -1,7 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Menu } from 'lucide-react';
+import { ChevronDown, Flame, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,6 +25,27 @@ const links = [
 export function Navbar() {
   const { user, accessToken, isAuthenticated, logout } = useAuthStore();
   const [isCreatorDialogOpen, setIsCreatorDialogOpen] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const timezone = user?.timezone ?? 'Asia/Ho_Chi_Minh';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const part = (type: string) => parts.find((item) => item.type === type)!.value;
+  const today = `${part('year')}-${part('month')}-${part('day')}`;
+  const yesterdayDate = new Date(`${today}T00:00:00.000Z`);
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+  const visibleStreak =
+    user?.lastStreakDate &&
+    [today, yesterdayDate.toISOString().slice(0, 10)].includes(user.lastStreakDate)
+      ? user.streakDays
+      : 0;
   return (
     <>
       <a
@@ -68,7 +89,14 @@ export function Navbar() {
                     <p className="break-all text-foreground">{user.username}</p>
                     <p className="mt-1 font-normal">
                       {user.rankTier || 'Novice'} · {user.expPoints?.toLocaleString() ?? 0} EXP ·{' '}
-                      {user.streakDays} ngày liên tiếp
+                      <Flame aria-hidden="true" className="inline h-4 w-4 align-[-2px]" />{' '}
+                      {visibleStreak} ngày liên tiếp
+                      {user.streakBonusPercent &&
+                      user.streakBonusPercent > 100 &&
+                      user.streakBonusUntil &&
+                      new Date(user.streakBonusUntil).getTime() > now
+                        ? ` · ${(user.streakBonusPercent / 100).toLocaleString('vi-VN')}× EXP`
+                        : ''}
                     </p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

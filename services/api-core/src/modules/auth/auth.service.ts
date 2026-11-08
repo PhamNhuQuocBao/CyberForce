@@ -20,6 +20,7 @@ import {
 
 import type { RegisterInput, LoginInput, UserProfile } from './auth.schemas.js';
 import type { NormalizedOAuthProfile } from './oauth.provider.js';
+import { streakSummary } from '../streak/streak.service.js';
 
 export class AuthError extends Error {
   constructor(
@@ -46,6 +47,10 @@ export function toUserProfile(user: {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  timezone?: string | null;
+  lastStreakDate?: string | null;
+  streakBonusPercent?: number;
+  streakBonusUntil?: Date | null;
   bio?: string | null;
   specialty?: string | null;
   isPublic?: boolean;
@@ -61,7 +66,15 @@ export function toUserProfile(user: {
     role: user.role,
     expPoints: user.expPoints,
     rankTier: user.rankTier,
-    streakDays: user.streakDays,
+    streakDays: streakSummary(user),
+    timezone: user.timezone ?? null,
+    lastStreakDate: user.lastStreakDate ?? null,
+    streakBonusPercent:
+      user.streakBonusUntil && user.streakBonusUntil > new Date()
+        ? (user.streakBonusPercent ?? 100)
+        : 100,
+    streakBonusUntil:
+      user.streakBonusUntil && user.streakBonusUntil > new Date() ? user.streakBonusUntil : null,
     bio: user.bio ?? null,
     specialty: user.specialty ?? 'General Cybersecurity',
     isPublic: user.isPublic ?? true,
@@ -106,7 +119,7 @@ export class AuthService {
         role: UserRole.student,
         expPoints: 0,
         rankTier: 'Novice',
-        streakDays: 1,
+        streakDays: 0,
       },
       select: {
         id: true,
@@ -118,6 +131,10 @@ export class AuthService {
         expPoints: true,
         rankTier: true,
         streakDays: true,
+        timezone: true,
+        lastStreakDate: true,
+        streakBonusPercent: true,
+        streakBonusUntil: true,
         lastActiveAt: true,
         createdAt: true,
       },
@@ -291,6 +308,10 @@ export class AuthService {
         expPoints: true,
         rankTier: true,
         streakDays: true,
+        timezone: true,
+        lastStreakDate: true,
+        streakBonusPercent: true,
+        streakBonusUntil: true,
         lastActiveAt: true,
         createdAt: true,
       },
@@ -419,7 +440,7 @@ export class AuthService {
           role: UserRole.student,
           expPoints: 0,
           rankTier: 'Novice',
-          streakDays: 1, // Story US-01.01: Streak: 1 ngày
+          streakDays: 0,
         },
       });
 
