@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ function clock(seconds: number) {
 
 function ExamSessionContent() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const id = useSearchParams().get('id');
   const { accessToken, isLoading } = useAuthStore();
   const [session, setSession] = useState<ExamSessionView | null>(null);
@@ -35,6 +36,10 @@ function ExamSessionContent() {
       try {
         const { data } = await examsApi.session(id!, accessToken!);
         if (live) {
+          if (data.status === 'finished' || data.status === 'expired') {
+            router.replace(`/exams/${slug}/results?id=${encodeURIComponent(data.id)}`);
+            return;
+          }
           setSession(data);
           setOffset(new Date(data.serverTime).getTime() - Date.now());
           setError(null);
@@ -57,7 +62,7 @@ function ExamSessionContent() {
       clearInterval(poll);
       clearInterval(timer);
     };
-  }, [id, accessToken]);
+  }, [id, accessToken, router, slug]);
   const objective = session?.objectives.find((item) => item.id === selected);
   const remaining = session ? (new Date(session.expiresAt).getTime() - now - offset) / 1000 : 0;
   const running = session?.status === 'running' && remaining > 0;
@@ -94,7 +99,7 @@ function ExamSessionContent() {
     setError(null);
     try {
       const { data } = await examsApi.finish(session.id, accessToken);
-      setSession(data);
+      router.replace(`/exams/${slug}/results?id=${encodeURIComponent(data.id)}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Chưa xác nhận được kết quả.');
     } finally {

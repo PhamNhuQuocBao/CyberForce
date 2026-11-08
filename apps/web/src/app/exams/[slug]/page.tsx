@@ -6,17 +6,22 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/lib/auth-store';
 import { examsApi, type ExamOverview } from '@/lib/api';
 
 export default function ExamDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const { accessToken, isLoading } = useAuthStore();
+  const { accessToken, isLoading, user } = useAuthStore();
   const [exam, setExam] = useState<ExamOverview | null>(null);
   const [consent, setConsent] = useState(false);
+  const [certificateName, setCertificateName] = useState('');
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (user?.certificateName) setCertificateName(user.certificateName);
+  }, [user?.certificateName]);
   useEffect(() => {
     if (!accessToken) return;
     let live = true;
@@ -33,11 +38,11 @@ export default function ExamDetailPage() {
     };
   }, [slug, accessToken]);
   async function start() {
-    if (!accessToken || !consent || starting) return;
+    if (!accessToken || !consent || certificateName.trim().length < 2 || starting) return;
     setStarting(true);
     setError(null);
     try {
-      const { data } = await examsApi.start(slug, accessToken);
+      const { data } = await examsApi.start(slug, certificateName.trim(), accessToken);
       router.push(`/exams/${slug}/session?id=${encodeURIComponent(data.id)}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Không bắt đầu được kỳ thi.');
@@ -110,6 +115,20 @@ export default function ExamDetailPage() {
                     </Button>
                   ) : (
                     <>
+                      <label className="block space-y-2 text-sm">
+                        <span>Họ tên in trên chứng chỉ nếu đạt</span>
+                        <Input
+                          value={certificateName}
+                          maxLength={120}
+                          autoComplete="name"
+                          placeholder="Nhập họ tên đầy đủ"
+                          onChange={(event) => setCertificateName(event.target.value)}
+                        />
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        Vui lòng kiểm tra kỹ. Tên này được lưu cùng phiên thi và không thể đổi sau
+                        khi bắt đầu.
+                      </p>
                       <label className="flex items-start gap-2 text-sm">
                         <input
                           type="checkbox"
@@ -124,6 +143,7 @@ export default function ExamDetailPage() {
                           !exam.eligibility.eligible ||
                           Boolean(exam.retryAt) ||
                           !consent ||
+                          certificateName.trim().length < 2 ||
                           starting
                         }
                         onClick={start}

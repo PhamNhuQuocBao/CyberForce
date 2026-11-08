@@ -112,6 +112,8 @@ describe('CF-601 exam API', () => {
   afterAll(async () => {
     fetchMock.mockRestore();
     if (examId) {
+      await prisma.certificateIssuance.deleteMany({ where: { session: { examId } } });
+      await prisma.certificate.deleteMany({ where: { examSession: { examId } } });
       await prisma.examSubmission.deleteMany({ where: { session: { examId } } });
       await prisma.examSession.deleteMany({ where: { examId } });
       await prisma.examObjective.deleteMany({ where: { examId } });
@@ -164,7 +166,7 @@ describe('CF-601 exam API', () => {
       method: 'POST',
       url: startUrl,
       headers,
-      payload: { consent: true },
+      payload: { consent: true, certificateName: 'Exam Learner' },
     });
     expect(blocked.statusCode).toBe(403);
     const detail = await app.inject({ method: 'GET', url: `/api/v1/exams/${suffix}`, headers });
@@ -185,7 +187,7 @@ describe('CF-601 exam API', () => {
       method: 'POST',
       url: startUrl,
       headers,
-      payload: { consent: true },
+      payload: { consent: true, certificateName: 'Exam Learner' },
     });
     expect(started.statusCode).toBe(201);
     const session = started.json().data as {
@@ -210,7 +212,7 @@ describe('CF-601 exam API', () => {
       method: 'POST',
       url: startUrl,
       headers,
-      payload: { consent: true },
+      payload: { consent: true, certificateName: 'Exam Learner' },
     });
     expect(duplicate.json().data.id).toBe(session.id);
     expect(

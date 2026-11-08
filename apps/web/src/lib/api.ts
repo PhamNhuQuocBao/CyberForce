@@ -17,6 +17,7 @@ export interface UserProfile {
   id: string;
   email: string;
   username: string;
+  certificateName?: string | null;
   avatarUrl: string | null;
   role: string;
   expPoints: number;
@@ -826,6 +827,10 @@ export interface ExamSessionView {
   passed: boolean | null;
 }
 
+export type CertificateStatus =
+  | { status: 'ineligible' | 'pending' | 'retrying' | 'needs_name'; nextAttemptAt?: string }
+  | { status: 'issued'; code: string; issuedAt: string; signingKeyId: string };
+
 export const examsApi = {
   list(token: string) {
     return request<{
@@ -838,13 +843,13 @@ export const examsApi = {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
-  start(slug: string, token: string) {
+  start(slug: string, certificateName: string, token: string) {
     return request<{ success: true; data: ExamSessionView }>(
       `/exams/${encodeURIComponent(slug)}/start`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ consent: true }),
+        body: JSON.stringify({ consent: true, certificateName }),
       },
     );
   },
@@ -869,5 +874,37 @@ export const examsApi = {
       `/exams/sessions/${encodeURIComponent(id)}/finish`,
       { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: '{}' },
     );
+  },
+  certificate(id: string, token: string) {
+    return request<{ success: true; data: CertificateStatus }>(
+      `/exams/sessions/${encodeURIComponent(id)}/certificate`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+  },
+  confirmCertificateName(id: string, certificateName: string, token: string) {
+    return request<{ success: true; data: CertificateStatus }>(
+      `/exams/sessions/${encodeURIComponent(id)}/certificate-name`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ certificateName }),
+      },
+    );
+  },
+  async downloadCertificate(id: string, token: string) {
+    let currentToken = tokenExpiresSoon(token) ? await refreshSession() : token;
+    let response = await fetch(
+      `${API_BASE_URL}/exams/sessions/${encodeURIComponent(id)}/certificate/pdf`,
+      { headers: { Authorization: `Bearer ${currentToken}` }, credentials: 'include' },
+    );
+    if (response.status === 401) {
+      currentToken = await refreshSession();
+      response = await fetch(
+        `${API_BASE_URL}/exams/sessions/${encodeURIComponent(id)}/certificate/pdf`,
+        { headers: { Authorization: `Bearer ${currentToken}` }, credentials: 'include' },
+      );
+    }
+    if (!response.ok) throw new Error('Không tải được chứng chỉ. Vui lòng thử lại.');
+    return response.blob();
   },
 };

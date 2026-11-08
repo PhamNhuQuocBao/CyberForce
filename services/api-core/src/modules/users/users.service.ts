@@ -22,7 +22,7 @@ export class UsersService {
       where: { username },
       include: {
         certificates: {
-          include: { learningPath: true },
+          include: { learningPath: true, examSession: { include: { exam: true } } },
           orderBy: { issuedAt: 'desc' },
         },
       },
@@ -50,7 +50,7 @@ export class UsersService {
     // Full Public or Self view (Wireframe 2.1)
     const telemetry = this.computeSkillTelemetry(user.expPoints);
     const badges = this.computeBadges(user.expPoints, user.streakDays);
-    const certificates = this.formatCertificates(user.certificates, user.expPoints);
+    const certificates = this.formatCertificates(user.certificates);
     const completedPaths = this.formatLearningPaths(user.expPoints);
 
     return {
@@ -188,34 +188,16 @@ export class UsersService {
       verificationHash: string;
       issuedAt: Date;
       learningPath?: { title: string } | null;
+      examSession?: { exam: { title: string } } | null;
     }>,
-    exp: number,
   ): CertificateItem[] {
-    if (dbCerts.length > 0) {
-      return dbCerts.map((c) => ({
-        code: c.certificateCode,
-        title: c.learningPath?.title || 'Offensive Cyber Defense Certified (CF-OCD)',
-        scorePercentage: Number(c.scorePercentage) || 90,
-        issuedAt: c.issuedAt.toISOString(),
-        verificationHash: c.verificationHash,
-      }));
-    }
-
-    // Default milestone certificates for active operators
-    if (exp >= 200) {
-      return [
-        {
-          code: 'CF-OWA-2026-9481',
-          title: 'Offensive Web Associate (CF-OWA)',
-          scorePercentage: 94.5,
-          issuedAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-          verificationHash:
-            'sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-        },
-      ];
-    }
-
-    return [];
+    return dbCerts.map((c) => ({
+      code: c.certificateCode,
+      title: c.examSession?.exam.title || c.learningPath?.title || 'CyberForce Certificate',
+      scorePercentage: Number(c.scorePercentage),
+      issuedAt: c.issuedAt.toISOString(),
+      verificationHash: c.verificationHash,
+    }));
   }
 
   /**

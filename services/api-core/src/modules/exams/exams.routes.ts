@@ -2,6 +2,11 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { authenticate } from '../../middleware/authenticate.js';
 import {
+  certificateStatus,
+  confirmLegacyCertificateName,
+  downloadCertificate,
+} from './certificates.service.js';
+import {
   finishExam,
   getExam,
   getSession,
@@ -15,6 +20,12 @@ const idParam = z.object({ id: z.uuid() });
 const submission = z
   .object({ objectiveId: z.uuid(), answer: z.string().min(1).max(4096) })
   .strict();
+const certificateName = z
+  .string()
+  .trim()
+  .min(2)
+  .max(120)
+  .regex(/^[^\p{Cc}<>]+$/u);
 
 export const examsRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
@@ -27,11 +38,16 @@ export const examsRoutes: FastifyPluginAsync = async (app) => {
     data: await getExam(slugParam.parse(request.params).slug, request.user!.sub),
   }));
   app.post('/:slug/start', async (request, reply) => {
-    const { consent } = z
-      .object({ consent: z.literal(true) })
+    const { consent, certificateName: name } = z
+      .object({ consent: z.literal(true), certificateName })
       .strict()
       .parse(request.body);
-    const data = await startExam(slugParam.parse(request.params).slug, request.user!.sub, consent);
+    const data = await startExam(
+      slugParam.parse(request.params).slug,
+      request.user!.sub,
+      consent,
+      name,
+    );
     return reply.code(201).send({ success: true, data });
   });
   app.get('/sessions/:id', async (request) => ({
@@ -54,4 +70,19 @@ export const examsRoutes: FastifyPluginAsync = async (app) => {
     success: true,
     data: await finishExam(idParam.parse(request.params).id, request.user!.sub),
   }));
+  app.get('/sessions/:id/certificate', async (request) => ({
+    success: true,
+    data: await certificateStatus(idParam.parse(request.params).id, request.user!.sub),
+  }));
+  app.post('/sessions/:id/certificate-name', async (request) => ({
+    success: true,
+    data: await confirmLegacyCertificateName(
+      idParam.parse(request.params).id,
+      request.user!.sub,
+      z.object({ certificateName }).strict().parse(request.body).certificateName,
+    ),
+  }));
+  app.get('/sessions/:id/certificate/pdf', async (request, reply) =>
+    downloadCertificate(idParam.parse(request.params).id, request.user!.sub, reply),
+  );
 };

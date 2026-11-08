@@ -25,6 +25,7 @@ describe('Auth Service Helpers & Errors', () => {
       id: dbUser.id,
       email: dbUser.email,
       username: dbUser.username,
+      certificateName: null,
       avatarUrl: dbUser.avatarUrl,
       role: dbUser.role,
       expPoints: dbUser.expPoints,

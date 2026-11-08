@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { redis } from './lib/redis.js';
 import { sweepExams } from './modules/exams/exams.service.js';
+import { sweepCertificateIssuances } from './modules/exams/certificates.service.js';
 
 async function bootstrap() {
   const app = buildApp();
@@ -21,10 +22,19 @@ async function bootstrap() {
     void sweepExams().catch((error) => console.error('Exam sweep failed', error));
   }, 30000);
   void sweepExams().catch((error) => console.error('Exam sweep failed', error));
+  const certificateSweep = setInterval(() => {
+    void sweepCertificateIssuances().catch((error) =>
+      console.error('Certificate sweep failed', error),
+    );
+  }, 5000);
+  void sweepCertificateIssuances().catch((error) =>
+    console.error('Certificate sweep failed', error),
+  );
 
   // Graceful shutdown handling
   const shutdown = async (signal: string) => {
     clearInterval(examSweep);
+    clearInterval(certificateSweep);
     console.info(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
     try {
       await app.close();

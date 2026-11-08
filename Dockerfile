@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY services/api-core/package.json services/api-core/package.json
+COPY services/cert-signer/package.json services/cert-signer/package.json
 RUN HUSKY=0 pnpm install --frozen-lockfile
 
 FROM dependencies AS api
@@ -15,6 +16,16 @@ RUN pnpm --filter @cyberforce/api-core exec prisma generate && pnpm --filter @cy
 WORKDIR /app/services/api-core
 USER node
 EXPOSE 4000
+CMD ["node", "dist/index.js"]
+
+FROM dependencies AS cert-signer
+COPY tsconfig.base.json ./
+COPY services/cert-signer services/cert-signer
+COPY apps/web/src/fonts/Inter-400.ttf /app/cert-font.ttf
+RUN pnpm --filter @cyberforce/cert-signer build
+WORKDIR /app/services/cert-signer
+USER node
+EXPOSE 8083
 CMD ["node", "dist/index.js"]
 
 FROM dependencies AS web-build

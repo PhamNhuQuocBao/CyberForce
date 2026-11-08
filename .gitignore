@@ -23,6 +23,8 @@ pnpm-debug.log*
 .env*.local
 *.pem
 *.key
+*.p12
+.local-certificates/
 *.crt
 *.ovpn
 *.conf

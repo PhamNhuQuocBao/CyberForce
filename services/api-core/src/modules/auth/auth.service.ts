@@ -40,6 +40,7 @@ export function toUserProfile(user: {
   id: string;
   email: string;
   username: string;
+  certificateName?: string | null;
   avatarUrl: string | null;
   role: UserRole | string;
   expPoints: number;
@@ -55,6 +56,7 @@ export function toUserProfile(user: {
     id: user.id,
     email: user.email,
     username: user.username,
+    certificateName: user.certificateName ?? null,
     avatarUrl: user.avatarUrl,
     role: user.role,
     expPoints: user.expPoints,
@@ -110,6 +112,7 @@ export class AuthService {
         id: true,
         email: true,
         username: true,
+        certificateName: true,
         avatarUrl: true,
         role: true,
         expPoints: true,
@@ -282,6 +285,7 @@ export class AuthService {
         id: true,
         email: true,
         username: true,
+        certificateName: true,
         avatarUrl: true,
         role: true,
         expPoints: true,
