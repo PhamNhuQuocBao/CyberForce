@@ -328,12 +328,13 @@ Dự án hiện đang trong giai đoạn triển khai **Phase 1: Core MVP** theo
 Tại thư mục gốc repository:
 
 ```bash
+./scripts/create-dev-cert-ca.sh
 docker compose up -d --build --wait
 ```
 
 Compose chạy PostgreSQL, Redis, MinIO, guacd, Traefik, WireGuard VPN gateway, Go lab orchestrator, backend Fastify và frontend Next.js. Dịch vụ `terminal-image` tải image Alpine vào Docker daemon để sidecar terminal sẵn sàng khi khởi chạy lab; `db-init` chờ PostgreSQL khỏe rồi đồng bộ schema Prisma. Backend chỉ chạy sau khi schema, Redis, VPN gateway và orchestrator sẵn sàng, frontend chờ backend khỏe. `terminal-image` và `db-init` kết thúc với mã 0 là bình thường.
 
-Không cần Node.js/pnpm trên máy host cho cách chạy này. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
+Không cần Node.js/pnpm trên máy host cho cách chạy này; cần OpenSSL để tạo chứng thư phát triển một lần. Script tạo khóa riêng cho `cert-signer` và bản chứng thư công khai trong `.local-certificates/public/` cho API xác minh tại `/verify`. Khi thay khóa ký, cấu hình cặp PKCS#12 và chứng thư công khai tương ứng, đồng thời giữ chứng thư công khai của khóa cũ để các chứng chỉ đã cấp tiếp tục được xác minh. Giá trị mặc định đủ để chạy local. Có thể tạo `.env` từ `.env.example` để tùy chỉnh cấu hình. Đây là cấu hình local HTTP; chưa phải cấu hình triển khai production.
 
 | Dịch vụ | URL/cổng mặc định |
 | :--- | :--- |

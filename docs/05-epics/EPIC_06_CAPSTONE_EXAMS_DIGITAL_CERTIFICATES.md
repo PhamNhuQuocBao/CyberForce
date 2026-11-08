@@ -51,22 +51,20 @@
 
 ---
 
-#### Story US-06.03: Là một Nhà tuyển dụng hoặc Trưởng phòng An ninh mạng, tôi muốn quét mã QR trên chứng chỉ của ứng viên hoặc nhập mã chứng chỉ vào Cổng tra cứu công khai `https://cyberforce.io/verify/[CERT_ID]`, để kiểm chứng trực tiếp tính xác thực của chứng chỉ, điểm số và các kỹ năng đã được thẩm định mà không sợ ứng viên làm giả bằng cấp.
+#### Story US-06.03: Là một Nhà tuyển dụng hoặc Trưởng phòng An ninh mạng, tôi muốn quét mã QR trên chứng chỉ hoặc nhập mã vào `/verify/[code]`, để kiểm tra chữ ký số, tính toàn vẹn PDF, trạng thái thu hồi và thông tin bài thi đã được cấp.
 * **Business Rules (Ràng buộc nghiệp vụ):**
   - Cổng tra cứu công khai hoạt động tại `https://cyberforce.io/verify/[CERT_ID]` và cho phép truy cập tự do mà không yêu cầu đăng nhập tài khoản.
-  - Khi chứng chỉ hợp lệ:
-    + Hiển thị huy hiệu màu xanh lá cây "Verified Authentic Certificate".
-    + Hiển thị đầy đủ thông tin: Họ và tên người nhận, Tên chứng chỉ, Ngày cấp, Ngày hết hạn (nếu có), Điểm số đạt được, Danh sách các năng lực chuyên môn đã được kiểm chứng (Verified Skills).
-    + Hiển thị trạng thái Chữ ký số mã hóa hợp lệ (Cryptographically Signed by CyberForce CA).
-  - Khi chứng chỉ không hợp lệ hoặc đã bị Ban quản trị thu hồi (Revoked) do phát hiện gian lận: Phải hiển thị cảnh báo màu đỏ rõ ràng để cảnh báo nhà tuyển dụng.
+  - Người có mã chứng chỉ xem họ tên người nhận, tên bài thi, lộ trình, điểm, ngày cấp và đơn vị cấp. Không hiển thị email, PDF riêng tư hoặc kỹ năng chưa có taxonomy xác thực.
+  - Kết luận bằng văn bản xuất hiện trước chi tiết; chỉ báo hợp lệ khi chữ ký RSA-SHA256 và mã băm PDF đều đúng, đồng thời chưa bị thu hồi.
+  - Phân biệt rõ đã thu hồi, không tìm thấy, không hợp lệ và tạm thời chưa xác minh được. Thu hồi chỉ do superadmin thực hiện với lý do công khai và nhật ký nội bộ.
 * **Acceptance Criteria:**
   - **Scenario 1 (Thành công - Nhà tuyển dụng tra cứu chứng chỉ hợp lệ):**
-    - **Given** Chứng chỉ có mã `CF-CERT-2026-8891A` của học viên "Nguyen Van A" đã được lưu trữ trong cơ sở dữ liệu với trạng thái `ACTIVE`.
-    - **When** Nhà tuyển dụng dùng điện thoại quét mã QR hoặc truy cập đường dẫn `https://cyberforce.io/verify/CF-CERT-2026-8891A`.
-    - **Then** Trang web hiển thị huy hiệu xanh lá "Verified Authentic Certificate".
+    - **Given** Chứng chỉ có mã `CF-CERT-2026-8891A01234567890` của học viên "Nguyen Van A" đã được cấp và chưa bị thu hồi.
+    - **When** Nhà tuyển dụng dùng điện thoại quét mã QR hoặc truy cập đường dẫn `https://cyberforce.io/verify/CF-CERT-2026-8891A01234567890`.
+    - **Then** Trang web hiển thị kết luận văn bản "Chứng chỉ hợp lệ".
     - **And** Hiển thị chính xác tên "Nguyen Van A", chứng chỉ "Certified Offensive Pentester", điểm "85/100" và ngày cấp "08/09/2026".
   - **Scenario 2 (Thất bại / Ngoại lệ - Tra cứu mã chứng chỉ không tồn tại hoặc đã bị thu hồi):**
     - **Given** Nhà tuyển dụng nhập một mã chứng chỉ không tồn tại hoặc chứng chỉ `CF-CERT-2026-FAKE01` đã bị Admin đánh dấu `REVOKED` do gian lận.
     - **When** Truy cập vào đường dẫn kiểm tra `/verify/CF-CERT-2026-FAKE01`.
-    - **Then** Trang web hiển thị cảnh báo nền đỏ nổi bật: "⚠️ Warning: Certificate Not Found or Revoked!".
-    - **And** Nêu rõ lý do (nếu đã bị thu hồi) và khuyến cáo liên hệ bộ phận hỗ trợ của CyberForce để đối soát.
+    - **Then** Trang web hiển thị đúng trạng thái không tìm thấy hoặc đã thu hồi, không gộp hai kết quả.
+    - **And** Với chứng chỉ đã thu hồi, nêu lý do phân loại và hướng dẫn liên hệ CyberForce để đối soát.

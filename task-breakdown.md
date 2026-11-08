@@ -436,10 +436,10 @@ gantt
 #### Task CF-603: Xây dựng Cổng Tra Cứu & Xác Thực Chứng chỉ Công Khai (Public Portal)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `seo-fundamentals`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-602
-* **Mô tả:** Xây dựng trang tra cứu mở không cần đăng nhập tại `/verify/[code]` (hoặc `https://verify.cyberforce.io/[code]`). Hiển thị huy hiệu xác thực "Verified Authentic", họ tên học viên, tên bài thi, điểm số, ngày cấp, chữ ký số và nút "Add to LinkedIn" chuẩn OpenBadges (Story `US-06.03`, Wireframe 6.3).
-* **INPUT:** `docs/07-wireframes/EPIC_06_WIREFRAMES_CAPSTONE_EXAMS_CERTIFICATES.md` Wireframe 6.3.
-* **OUTPUT:** Trang công khai `apps/web/src/app/verify/[code]/page.tsx`, OpenGraph meta tags cho LinkedIn.
-* **VERIFY:** Truy cập URL mã chứng chỉ hợp lệ -> Hiển thị dấu tích xanh và thông tin chính xác; thử nhập mã giả mạo -> Hiển thị thông báo "Certificate Not Found or Invalid".
+* **Mô tả:** Xây dựng `/verify` và `/verify/[code]` không cần đăng nhập. Người có mã chứng chỉ xem họ tên, bài thi, lộ trình, điểm và ngày cấp; API kiểm tra chữ ký RSA-SHA256, mã băm PDF lưu trữ và trạng thái thu hồi. Chỉ superadmin được thu hồi với lý do và nhật ký. Không công khai PDF, email, danh sách kỹ năng chưa được chuẩn hóa hoặc tuyên bố OpenBadges. Liên kết LinkedIn là liên kết nhập thông tin thủ công. Mã mới có 16 ký tự hex; mã cũ 6 ký tự vẫn tra cứu được.
+* **INPUT:** `docs/07-wireframes/modern-minimal/06-exams.md` EXAM-04 và `docs/05-epics/EPIC_06_CAPSTONE_EXAMS_DIGITAL_CERTIFICATES.md` US-06.03.
+* **OUTPUT:** API tra cứu giới hạn tần suất, endpoint thu hồi có phân quyền và audit; trang công khai cùng OpenGraph metadata theo kết quả.
+* **VERIFY:** Mã hợp lệ xác thực chữ ký lẫn PDF; kết quả thu hồi, không tìm thấy, sai chữ ký và dịch vụ tạm lỗi phân biệt rõ. Không lộ dữ liệu nội bộ hoặc PDF. QR và liên kết từ trang kết quả dẫn đúng URL.
 
 ---
 

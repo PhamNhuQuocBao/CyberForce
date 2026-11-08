@@ -8,7 +8,7 @@ import { AuthError } from '../auth/auth.service.js';
 
 const finalStatuses = ['finished', 'expired'] as const;
 const certificateCode = () =>
-  `CF-CERT-${new Date().getUTCFullYear()}-${randomBytes(3).toString('hex').toUpperCase()}`;
+  `CF-CERT-${new Date().getUTCFullYear()}-${randomBytes(8).toString('hex').toUpperCase()}`;
 const signerUrl = env.CERT_SIGNER_URL.replace(/\/$/, '');
 
 export async function enqueueCertificate(sessionId: string) {
@@ -137,21 +137,22 @@ async function processIssuance(id: string) {
       throw new Error('Session is not eligible');
     const totalPoints = session.exam.objectives.reduce((sum, item) => sum + item.points, 0);
     const issuedAt = new Date();
+    const signedPayload = {
+      code: job.certificateCode,
+      sessionId: session.id,
+      name: session.certificateName,
+      examTitle: session.exam.title,
+      score: session.score,
+      totalPoints,
+      issuedAt: issuedAt.toISOString(),
+    };
     const response = await fetch(`${signerUrl}/v1/certificates`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.CERT_SIGNER_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        code: job.certificateCode,
-        sessionId: session.id,
-        name: session.certificateName,
-        examTitle: session.exam.title,
-        score: session.score,
-        totalPoints,
-        issuedAt: issuedAt.toISOString(),
-      }),
+      body: JSON.stringify(signedPayload),
       signal: AbortSignal.timeout(30000),
     });
     if (!response.ok) throw new Error(`Signer returned ${response.status}`);
@@ -182,6 +183,7 @@ async function processIssuance(id: string) {
           signingKeyId: signed.signingKeyId,
           payloadSignature: signed.payloadSignature,
           recipientName: session.certificateName,
+          signedPayload,
           issuedAt,
         },
         update: {},

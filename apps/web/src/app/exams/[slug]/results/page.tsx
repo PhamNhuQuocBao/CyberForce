@@ -176,14 +176,19 @@ function ResultsContent() {
                         Tải PDF chính thức
                       </Button>
                       <Button asChild variant="outline">
+                        <Link href={`/verify/${encodeURIComponent(certificate.code)}`}>
+                          Xác thực công khai
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline">
                         <a href={linkedInUrl} target="_blank" rel="noopener noreferrer">
                           Thêm vào LinkedIn
                         </a>
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Khi thêm vào LinkedIn, hãy nhập mã chứng chỉ ở trên. Mã QR trong PDF dẫn tới
-                      trang tra cứu công khai khi tính năng xác thực ra mắt.
+                      Khi thêm vào LinkedIn, hãy nhập mã chứng chỉ ở trên và dùng liên kết xác thực
+                      công khai. Mã QR trong PDF dẫn trực tiếp tới kết quả tra cứu.
                     </p>
                   </>
                 ) : session.passed ? (
