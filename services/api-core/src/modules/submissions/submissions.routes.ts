@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticate } from '../../middleware/authenticate.js';
 import { submitAnswer } from './submissions.service.js';
 import { AuthError } from '../auth/auth.service.js';
+import { assertNoActiveExam } from '../exams/exams.service.js';
 
 const paramsSchema = z.object({ id: z.uuid() });
 const bodySchema = z
@@ -20,7 +21,10 @@ const bodySchema = z
 export const submissionsRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     '/:id/submit',
-    { preHandler: [authenticate], bodyLimit: 32768 },
+    {
+      preHandler: [authenticate, async (request) => assertNoActiveExam(request.user!.sub)],
+      bodyLimit: 32768,
+    },
     async (request, reply) => {
       const { id } = paramsSchema.parse(request.params);
       reply.header('Cache-Control', 'private, no-store');

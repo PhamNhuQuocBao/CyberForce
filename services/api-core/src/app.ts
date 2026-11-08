@@ -19,6 +19,8 @@ import { submissionsRoutes } from './modules/submissions/submissions.routes.js';
 import { hintsRoutes } from './modules/hints/hints.routes.js';
 import { vpnRoutes } from './modules/vpn/vpn.routes.js';
 import { kothRoutes, kothWebsocketRoutes } from './modules/koth/koth.routes.js';
+import { examsRoutes } from './modules/exams/exams.routes.js';
+import { examAdminRoutes } from './modules/exams/exams.admin.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -99,6 +101,8 @@ export function buildApp() {
   app.register(vpnRoutes, { prefix: '/api/v1/vpn' });
   app.register(kothRoutes, { prefix: '/api/v1/koth' });
   app.register(kothWebsocketRoutes, { prefix: '/ws/arena/koth' });
+  app.register(examsRoutes, { prefix: '/api/v1/exams' });
+  app.register(examAdminRoutes, { prefix: '/api/v1/admin/exams' });
 
   // ---------------------------------------------------------------------------
   // 4. CENTRALIZED ERROR HANDLER

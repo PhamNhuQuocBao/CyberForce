@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/netip"
+	"reflect"
 	"sort"
 	"time"
 )
@@ -13,17 +14,42 @@ type accessGrant struct {
 	UserID    string    `json:"userId"`
 	PeerIP    string    `json:"peerIp"`
 	TargetIP  string    `json:"targetIp"`
+	TargetIPs []string  `json:"targetIps,omitempty"`
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
 func validGrant(id string, grant accessGrant, peers map[string]peer) bool {
 	peerIP, peerErr := netip.ParseAddr(grant.PeerIP)
-	targetIP, targetErr := netip.ParseAddr(grant.TargetIP)
-	return userIDRule.MatchString(id) && userIDRule.MatchString(grant.UserID) &&
-		peerErr == nil && targetErr == nil && peerIP.Is4() && targetIP.Is4() &&
-		vpnRange.Contains(peerIP) && netip.MustParsePrefix("100.64.0.0/10").Contains(targetIP) &&
-		!vpnRange.Contains(targetIP) && peers[grant.UserID].Address == grant.PeerIP &&
-		grant.ExpiresAt.After(time.Now()) && grant.ExpiresAt.Before(time.Now().Add(5*time.Hour))
+	maxDuration := 5 * time.Hour
+	if len(grant.TargetIPs) > 0 {
+		maxDuration = 25 * time.Hour
+	}
+	if !userIDRule.MatchString(id) || !userIDRule.MatchString(grant.UserID) || peerErr != nil || !peerIP.Is4() || !vpnRange.Contains(peerIP) || peers[grant.UserID].Address != grant.PeerIP || !grant.ExpiresAt.After(time.Now()) || !grant.ExpiresAt.Before(time.Now().Add(maxDuration)) {
+		return false
+	}
+	targets := grant.TargetIPs
+	if len(targets) == 0 {
+		targets = []string{grant.TargetIP}
+	}
+	if len(targets) == 0 || len(targets) > 4 {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, raw := range targets {
+		targetIP, err := netip.ParseAddr(raw)
+		if err != nil || !targetIP.Is4() || !netip.MustParsePrefix("100.64.0.0/10").Contains(targetIP) || vpnRange.Contains(targetIP) || seen[raw] {
+			return false
+		}
+		seen[raw] = true
+	}
+	return true
+}
+
+func grantTargets(grant accessGrant) []string {
+	if len(grant.TargetIPs) > 0 {
+		return grant.TargetIPs
+	}
+	return []string{grant.TargetIP}
 }
 
 func (c *controller) applyAccess() (result error) {
@@ -48,17 +74,19 @@ func (c *controller) applyAccess() (result error) {
 		if !validGrant(id, grant, c.peers) {
 			continue
 		}
-		if err := c.run("iptables", "-A", "CF_VPN_FORWARD", "-i", "wg0", "-s", grant.PeerIP,
-			"-d", grant.TargetIP, "-j", "ACCEPT"); err != nil {
-			return err
-		}
-		if err := c.run("iptables", "-A", "CF_VPN_FORWARD", "-o", "wg0", "-s", grant.TargetIP,
-			"-d", grant.PeerIP, "-m", "conntrack", "--ctstate", "ESTABLISHED,RELATED", "-j", "ACCEPT"); err != nil {
-			return err
-		}
-		if err := c.run("iptables", "-t", "nat", "-A", "CF_VPN_SNAT", "-s", grant.PeerIP,
-			"-d", grant.TargetIP, "-j", "MASQUERADE"); err != nil {
-			return err
+		for _, targetIP := range grantTargets(grant) {
+			if err := c.run("iptables", "-A", "CF_VPN_FORWARD", "-i", "wg0", "-s", grant.PeerIP,
+				"-d", targetIP, "-j", "ACCEPT"); err != nil {
+				return err
+			}
+			if err := c.run("iptables", "-A", "CF_VPN_FORWARD", "-o", "wg0", "-s", targetIP,
+				"-d", grant.PeerIP, "-m", "conntrack", "--ctstate", "ESTABLISHED,RELATED", "-j", "ACCEPT"); err != nil {
+				return err
+			}
+			if err := c.run("iptables", "-t", "nat", "-A", "CF_VPN_SNAT", "-s", grant.PeerIP,
+				"-d", targetIP, "-j", "MASQUERADE"); err != nil {
+				return err
+			}
 		}
 	}
 	if err := c.run("iptables", "-A", "CF_VPN_FORWARD", "-m", "limit", "--limit", "6/min", "--limit-burst", "10", "-j", "LOG", "--log-prefix", "CF_VPN_BLOCKED "); err != nil {
@@ -74,12 +102,12 @@ func (c *controller) putAccess(id string, grant accessGrant) error {
 		return errors.New("invalid VPN access grant")
 	}
 	for otherID, other := range c.access {
-		if otherID != id && (other.PeerIP == grant.PeerIP || other.TargetIP == grant.TargetIP) {
+		if otherID != id && (other.PeerIP == grant.PeerIP || targetsOverlap(grantTargets(other), grantTargets(grant))) {
 			return errors.New("peer or target already assigned")
 		}
 	}
 	previous, existed := c.access[id]
-	if existed && previous == grant {
+	if existed && reflect.DeepEqual(previous, grant) {
 		return nil
 	}
 	c.access[id] = grant
@@ -93,6 +121,17 @@ func (c *controller) putAccess(id string, grant accessGrant) error {
 		return fmt.Errorf("apply access: %w", err)
 	}
 	return nil
+}
+
+func targetsOverlap(a, b []string) bool {
+	for _, x := range a {
+		for _, y := range b {
+			if x == y {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (c *controller) deleteAccess(id string) error {

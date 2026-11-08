@@ -132,7 +132,7 @@ services:
     command:
       - sh
       - -c
-      - pnpm exec prisma db push --skip-generate && node dist/scripts/setup-reaper-role.js
+      - pnpm exec prisma db push --skip-generate && pnpm exec prisma db execute --file prisma/sql/20261030_exam_active_index.sql --schema prisma/schema.prisma && node dist/scripts/setup-reaper-role.js
     depends_on:
       postgres:
         condition: service_healthy

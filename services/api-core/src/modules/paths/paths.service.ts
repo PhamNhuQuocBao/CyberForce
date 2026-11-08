@@ -132,7 +132,16 @@ export class PathsService {
 
     return paths.map((path) => {
       const distinctModules = new Set(path.rooms.map((r) => r.moduleName));
-      const totalRooms = path.rooms.length;
+      const requiredRooms = path.rooms.filter(
+        (room) =>
+          room.requiredForCapstone &&
+          room.roomType !== 'exam' &&
+          room.publishedAt &&
+          room.publishedAt <= new Date() &&
+          room.tasks.some((task) => task.questions.length),
+      );
+      const requiredIds = new Set(requiredRooms.map((room) => room.id));
+      const totalRooms = requiredRooms.length;
       let completedRoomsCount = 0;
       let totalPoints = 0;
       let earnedPoints = 0;
@@ -154,7 +163,7 @@ export class PathsService {
 
         const isCompleted = totalQuestions > 0 && solvedCount === totalQuestions;
         roomCompletionMap.set(room.id, isCompleted);
-        if (isCompleted) {
+        if (isCompleted && requiredIds.has(room.id)) {
           completedRoomsCount++;
         }
       }
@@ -332,10 +341,19 @@ export class PathsService {
 
     // Step 2: Build detailed room items with prerequisite gating
     let completedRoomsTotal = 0;
+    const requiredRooms = path.rooms.filter(
+      (room) =>
+        room.requiredForCapstone &&
+        room.roomType !== 'exam' &&
+        room.publishedAt &&
+        room.publishedAt <= new Date() &&
+        room.tasks.some((task) => task.questions.length),
+    );
+    const requiredIds = new Set(requiredRooms.map((room) => room.id));
 
     const roomItems: PathRoomItem[] = path.rooms.map((room) => {
       const metrics = roomMetrics.get(room.id)!;
-      if (metrics.isCompleted) {
+      if (metrics.isCompleted && requiredIds.has(room.id)) {
         completedRoomsTotal++;
       }
 
@@ -447,7 +465,7 @@ export class PathsService {
 
     const modules = Array.from(moduleMap.values()).sort((a, b) => a.moduleOrder - b.moduleOrder);
 
-    const totalRoomsCount = path.rooms.length;
+    const totalRoomsCount = requiredRooms.length;
     const progressPercentage =
       totalRoomsCount > 0 ? Math.round((completedRoomsTotal / totalRoomsCount) * 100) : 0;
 
@@ -480,7 +498,9 @@ export class PathsService {
       userTrackExp: userId ? userTrackExp : 0,
       progressPercentage: userId ? progressPercentage : 0,
       status: userId ? overallStatus : 'not_started',
-      isCapstoneUnlocked: progressPercentage === 100,
+      isCapstoneUnlocked: Boolean(
+        userId && path.enrollments.length && totalRoomsCount > 0 && progressPercentage === 100,
+      ),
       nextUpRoom: nextUpRoom
         ? {
             id: nextUpRoom.id,
