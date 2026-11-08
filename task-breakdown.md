@@ -72,6 +72,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-401 | [x] WireGuard gateway local và cấu hình cá nhân | Gateway Compose, dải VPN `100.127.240.0/20`, peer public key/IP lưu DB, private key cấp một lần, tạo lại khóa thu hồi peer cũ. Hai client smoke ping gateway nhưng không ping chéo; route tới lab và cluster nhiều node thuộc bước sau. [Handoff](cf-401-wireguard-vpn.md) |
 | CF-402 | [x] Cách ly VPN và lab local | Gateway iptables deny-by-default, grant đúng cặp peer–target và NAT giới hạn; Orchestrator nối/tháo network theo phiên, stop/reaper thu hồi. Hai client/hai lab smoke xác nhận chéo và egress bị chặn; Cilium chỉ là template cho Kubernetes. [Handoff](cf-402-network-isolation.md) |
 | CF-403 | [x] Badge trạng thái VPN desktop | Gateway lấy mẫu handshake mỗi giây, API stream có ticket một lần, badge hiện IP và tự cập nhật. Browser smoke qua; từ bật client đến sự kiện WebSocket đo 1005 ms. [Handoff](cf-403-vpn-live-status.md) |
+| CF-701 | [x] Streak ngày học theo múi giờ | Task nhiều câu chỉ tính khi hoàn thành, sổ ngày/huy hiệu bền vững, thưởng 7/30 ngày và reset theo ngày địa phương; 146 API tests và 14 web tests đạt trên DB/Redis test biệt lập. SQL cho DB hiện có chưa áp dụng. [Kế hoạch](cf-701-daily-streak.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -302,13 +303,13 @@ gantt
 
 ### 🔥 PHASE 1 - EPIC 7 & EPIC 8: GAMIFICATION, STREAKS & ADMIN CMS
 
-#### Task CF-701: Triển khai Hệ thống Ghi nhận Chuỗi Ngày Học (Daily Streak) theo Múi Giờ
+#### [x] Task CF-701: Triển khai Hệ thống Ghi nhận Chuỗi Ngày Học (Daily Streak) theo Múi Giờ
 * **Agent:** `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-203
-* **Mô tả:** Xây dựng logic tính Streak khi học viên giải thành công **ít nhất 01 Task mới lần đầu tiên** trong ngày tính theo `Local Timezone` của học viên (US-07.01). Giải lại task cũ không tính streak. Kích hoạt huy hiệu "7-Day Warrior" và nhân `1.2x EXP` khi đạt mốc 7 ngày.
+* **Mô tả:** Tính Streak khi học viên giải đúng toàn bộ câu hỏi của một Task mới lần đầu trong ngày địa phương theo múi giờ IANA của hồ sơ (mặc định `Asia/Ho_Chi_Minh`, đồng bộ từ trình duyệt một lần). Lưu một ngày đủ điều kiện và một lần cấp huy hiệu duy nhất. Giải lại không tăng streak hoặc EXP. Mốc 7 ngày cấp "7-Day Warrior" và thưởng `1.2x EXP` trong 24 giờ tiếp theo; mốc 30 ngày cấp "Cyber Habit Master" và thưởng `1.5x EXP` trong 48 giờ, không cộng dồn. Người dùng cũ chưa có ngày đủ điều kiện hiển thị 0 thay cho streak khởi tạo trước đây không có bằng chứng.
 * **INPUT:** `docs/05-epics/EPIC_07_GAMIFICATION_STREAKS_SKILL_RADAR.md` (US-07.01).
-* **OUTPUT:** Service `StreakService`, cron job kiểm tra đứt streak lúc nửa đêm theo timezone, icon lửa streak trên header.
-* **VERIFY:** Nộp cờ task mới lần đầu lúc 23:00 GMT+7 -> Streak tăng từ 6 lên 7 ngày, nhận badge 7-Day Warrior; nộp lại task cũ -> Streak không tăng.
+* **OUTPUT:** `StreakDay`/`UserBadge` và tóm tắt streak trên User, worker quét mỗi phút, tích hợp giao dịch chấm bài, múi giờ hồ sơ và trạng thái header/thông báo mốc.
+* **VERIFY:** Hoàn thành Task nhiều câu lúc 23:00 GMT+7 -> Streak tăng từ 6 lên 7 ngày đúng một lần, thưởng chỉ áp dụng bài tiếp theo; nộp lại không nhận EXP; bỏ lỡ ngày hiển thị 0; biên ngày và DST được kiểm thử.
 
 #### Task CF-702: Hệ thống Thăng tiến Cấp bậc (Rank Tiers) & Bộ sưu tập Huy hiệu
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `clean-code`, `frontend-design`
@@ -549,7 +550,7 @@ gantt
 | **CF-601** | Epic 6 | US-06.01: Hands-on Capstone Exam Session | `backend-specialist` | P0 |
 | **CF-602** | Epic 6 | US-06.02: RSA-4096 Signed PDF Certificate | `backend-specialist` | P0 |
 | **CF-603** | Epic 6 | US-06.03: Public Certificate Verify Portal | `frontend-specialist` | P1 |
-| **CF-701** | Epic 7 | US-07.01: Timezone-Aware Daily Streak Engine | `backend-specialist` | P1 |
+| **CF-701** | Epic 7 | [x] US-07.01: Timezone-Aware Daily Streak Engine | `backend-specialist` | P1 |
 | **CF-702** | Epic 7 | US-07.03: Rank Tiers & Badge Progression | `frontend-specialist` | P2 |
 | **CF-703** | Epic 7 | US-07.02: 8-Axis Multi-Tag Cyber Radar | `frontend-specialist` | P1 |
 | **CF-801** | Epic 8 | US-08.01: Centralized Admin CMS Portal | `frontend-specialist` | P1 |

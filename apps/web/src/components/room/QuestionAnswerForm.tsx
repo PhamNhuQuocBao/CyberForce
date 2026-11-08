@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError, submissionsApi, type SubmissionResult } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { toast } from 'sonner';
 import { QuestionHints } from './QuestionHints';
 
 interface Props {
@@ -70,8 +71,29 @@ export function QuestionAnswerForm({
           tone: 'success',
         });
         useAuthStore.setState({
-          user: { ...current.user, expPoints: Math.max(current.user.expPoints, data.totalExp) },
+          user: {
+            ...current.user,
+            expPoints: Math.max(current.user.expPoints, data.totalExp),
+            streakDays: data.streakDays,
+            lastStreakDate: data.lastStreakDate,
+            streakBonusPercent: data.bonusPercent,
+            streakBonusUntil: data.bonusUntil,
+          },
         });
+        if (data.badgeUnlocked)
+          toast.success(
+            data.badgeUnlocked === 'streak_30'
+              ? 'Cyber Habit Master: chuỗi 30 ngày!'
+              : '7-Day Warrior: chuỗi 7 ngày!',
+            {
+              description:
+                data.badgeUnlocked === 'streak_30'
+                  ? 'Thưởng 1,5× EXP trong 48 giờ tiếp theo.'
+                  : 'Thưởng 1,2× EXP trong 24 giờ tiếp theo.',
+            },
+          );
+        else if (data.streakDays > current.user.streakDays)
+          toast.success(`Chuỗi học tập: ${data.streakDays} ngày liên tiếp`);
         onCompleted(data);
       } else
         setFeedback({

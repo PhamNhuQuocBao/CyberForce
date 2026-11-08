@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { AuthError } from '../auth/auth.service.js';
+import { streakSummary } from '../streak/streak.service.js';
 import type {
   UpdateProfileInput,
   UserDossierResponse,
@@ -21,6 +22,7 @@ export class UsersService {
     const user = await prisma.user.findUnique({
       where: { username },
       include: {
+        badgeAwards: true,
         certificates: {
           include: { learningPath: true, examSession: { include: { exam: true } } },
           orderBy: { issuedAt: 'desc' },
@@ -49,7 +51,7 @@ export class UsersService {
 
     // Full Public or Self view (Wireframe 2.1)
     const telemetry = this.computeSkillTelemetry(user.expPoints);
-    const badges = this.computeBadges(user.expPoints, user.streakDays);
+    const badges = this.computeBadges(user.expPoints, user.badgeAwards);
     const certificates = this.formatCertificates(user.certificates);
     const completedPaths = this.formatLearningPaths(user.expPoints);
 
@@ -60,7 +62,8 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       rankTier: user.rankTier,
       expPoints: user.expPoints,
-      streakDays: user.streakDays,
+      streakDays: streakSummary(user),
+      ...(isSelf && { timezone: user.timezone }),
       bio:
         user.bio ||
         'CyberForce Operator in training. Specializing in offensive security and cloud defence.',
@@ -91,6 +94,7 @@ export class UsersService {
         ...(input.specialty !== undefined && { specialty: input.specialty }),
         ...(input.isPublic !== undefined && { isPublic: input.isPublic }),
         ...(input.avatarUrl !== undefined && { avatarUrl: input.avatarUrl }),
+        ...(input.timezone !== undefined && { timezone: input.timezone }),
       },
     });
 
@@ -102,7 +106,17 @@ export class UsersService {
       role: updated.role,
       expPoints: updated.expPoints,
       rankTier: updated.rankTier,
-      streakDays: updated.streakDays,
+      streakDays: streakSummary(updated),
+      timezone: updated.timezone,
+      lastStreakDate: updated.lastStreakDate,
+      streakBonusPercent:
+        updated.streakBonusUntil && updated.streakBonusUntil > new Date()
+          ? updated.streakBonusPercent
+          : 100,
+      streakBonusUntil:
+        updated.streakBonusUntil && updated.streakBonusUntil > new Date()
+          ? updated.streakBonusUntil
+          : null,
       bio: updated.bio,
       specialty: updated.specialty,
       isPublic: updated.isPublic,
@@ -131,7 +145,11 @@ export class UsersService {
   /**
    * Helper: Calculate unlocked badges based on user progression
    */
-  private computeBadges(exp: number, streak: number): BadgeItem[] {
+  private computeBadges(
+    exp: number,
+    awards: Array<{ badgeId: string; earnedAt: Date }>,
+  ): BadgeItem[] {
+    const awardFor = (id: string) => awards.find((award) => award.badgeId === id);
     return [
       {
         id: 'first_blood',
@@ -142,10 +160,19 @@ export class UsersService {
       },
       {
         id: 'streak_7',
-        name: '7-Day Streak',
+        name: '7-Day Warrior',
         description: 'Maintained active hacking streak for 7 consecutive days',
         icon: '🔥',
-        isUnlocked: streak >= 7,
+        isUnlocked: Boolean(awardFor('streak_7')),
+        unlockedAt: awardFor('streak_7')?.earnedAt.toISOString(),
+      },
+      {
+        id: 'streak_30',
+        name: 'Cyber Habit Master',
+        description: 'Maintained a 30-day learning streak',
+        icon: '🔥',
+        isUnlocked: Boolean(awardFor('streak_30')),
+        unlockedAt: awardFor('streak_30')?.earnedAt.toISOString(),
       },
       {
         id: 'koth_king',

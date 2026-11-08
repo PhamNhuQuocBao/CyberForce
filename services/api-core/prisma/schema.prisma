@@ -95,6 +95,10 @@ model User {
   expPoints    Int       @default(0) @map("exp_points")
   rankTier     String    @default("Novice") @map("rank_tier") @db.VarChar(30)
   streakDays   Int       @default(0) @map("streak_days")
+  timezone     String?   @db.VarChar(64)
+  lastStreakDate String? @map("last_streak_date") @db.VarChar(10)
+  streakBonusUntil DateTime? @map("streak_bonus_until") @db.Timestamptz
+  streakBonusPercent Int @default(100) @map("streak_bonus_percent")
   bio          String?   @db.Text
   specialty    String?   @default("General Cybersecurity") @db.VarChar(100)
   isPublic     Boolean   @default(true) @map("is_public")
@@ -117,8 +121,37 @@ model User {
   kothTicks        KothTick[]
   examSessions     ExamSession[]
   certificateIssuances CertificateIssuance[]
+  streakDaysHistory StreakDay[]
+  badgeAwards UserBadge[]
 
   @@map("users")
+}
+
+model StreakDay {
+  userId String @map("user_id") @db.Uuid
+  localDate String @map("local_date") @db.VarChar(10)
+  timezone String @db.VarChar(64)
+  taskId String? @map("task_id") @db.Uuid
+  earnedAt DateTime @default(now()) @map("earned_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@id([userId, localDate])
+  @@unique([userId, taskId])
+  @@index([taskId])
+  @@map("streak_days")
+}
+
+model UserBadge {
+  userId String @map("user_id") @db.Uuid
+  badgeId String @map("badge_id") @db.VarChar(60)
+  earnedAt DateTime @default(now()) @map("earned_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
 }
 
 model VpnPeer {
@@ -288,6 +321,7 @@ model Task {
   // Relations
   room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   questions Question[]
+  streakDays StreakDay[]
 
   @@index([roomId])
   @@map("tasks")

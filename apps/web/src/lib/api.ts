@@ -23,6 +23,10 @@ export interface UserProfile {
   expPoints: number;
   rankTier: string;
   streakDays: number;
+  timezone?: string | null;
+  lastStreakDate?: string | null;
+  streakBonusPercent?: number;
+  streakBonusUntil?: string | null;
   bio?: string | null;
   specialty?: string | null;
   isPublic?: boolean;
@@ -73,6 +77,7 @@ export interface UserDossierResponse {
   rankTier?: string;
   expPoints?: number;
   streakDays?: number;
+  timezone?: string | null;
   bio?: string | null;
   specialty?: string | null;
   memberSince?: string;
@@ -89,6 +94,7 @@ export interface UpdateProfileInput {
   specialty?: string;
   isPublic?: boolean;
   avatarUrl?: string | null;
+  timezone?: string;
 }
 
 export interface AuthSuccessResponse {
@@ -735,6 +741,11 @@ export interface SubmissionResult {
   alreadyCompleted: boolean;
   pointsEarned: number;
   totalExp: number;
+  streakDays: number;
+  lastStreakDate: string | null;
+  badgeUnlocked: 'streak_7' | 'streak_30' | null;
+  bonusPercent: number;
+  bonusUntil: string | null;
 }
 
 export const submissionsApi = {

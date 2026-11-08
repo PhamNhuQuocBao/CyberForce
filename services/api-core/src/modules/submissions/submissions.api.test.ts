@@ -7,6 +7,7 @@ import { env } from '../../config/env.js';
 import { createDynamicFlag } from './flag-validator.service.js';
 import { redis } from '../../lib/redis.js';
 import { submissionLimit, submissionLimitKeys } from './submission-limit.js';
+import { localDate, priorDate } from '../streak/streak.policy.js';
 
 const answer = 'CF{integration_answer}';
 describe('CF-203 submission API', () => {
@@ -235,5 +236,85 @@ describe('CF-203 submission API', () => {
       env.PLATFORM_MASTER_KEY = previousKey;
       await prisma.user.delete({ where: { id: other.id } });
     }
+  });
+  it('counts a fully solved new Task once and applies the 7-day bonus only afterwards', async () => {
+    const today = localDate(new Date(), 'Asia/Ho_Chi_Minh');
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        timezone: 'Asia/Ho_Chi_Minh',
+        streakDays: 6,
+        lastStreakDate: priorDate(today),
+        streakBonusPercent: 100,
+        streakBonusUntil: null,
+      },
+    });
+    const multi = await prisma.task.create({
+      data: {
+        roomId,
+        title: 'Two questions',
+        taskOrder: 2,
+        contentMdx: 'Complete both',
+        questions: {
+          create: [
+            {
+              questionText: 'First',
+              answerHash: createHash('sha256').update(answer).digest('hex'),
+              pointsReward: 50,
+            },
+            {
+              questionText: 'Second',
+              answerHash: createHash('sha256').update(answer).digest('hex'),
+              pointsReward: 50,
+            },
+          ],
+        },
+      },
+      include: { questions: true },
+    });
+    const post = (id: string, task = multi.id) =>
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/tasks/${task}/submit`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { questionId: id, answer },
+      });
+    const first = await post(multi.questions[0].id);
+    expect(first.json().data).toMatchObject({
+      pointsEarned: 50,
+      streakDays: 6,
+      badgeUnlocked: null,
+    });
+    const second = await post(multi.questions[1].id);
+    expect(second.json().data).toMatchObject({
+      pointsEarned: 50,
+      streakDays: 7,
+      badgeUnlocked: 'streak_7',
+      bonusPercent: 120,
+    });
+    expect(await prisma.streakDay.count({ where: { userId } })).toBe(1);
+    expect(await prisma.userBadge.count({ where: { userId, badgeId: 'streak_7' } })).toBe(1);
+    expect((await post(multi.questions[1].id)).json().data).toMatchObject({
+      pointsEarned: 0,
+      badgeUnlocked: null,
+    });
+    const next = await prisma.task.create({
+      data: {
+        roomId,
+        title: 'Next task',
+        taskOrder: 3,
+        contentMdx: 'New',
+        questions: {
+          create: {
+            questionText: 'Bonus',
+            answerHash: createHash('sha256').update(answer).digest('hex'),
+            pointsReward: 50,
+          },
+        },
+      },
+      include: { questions: true },
+    });
+    expect((await post(next.questions[0].id, next.id)).json().data.pointsEarned).toBe(60);
+    expect(await prisma.streakDay.count({ where: { userId } })).toBe(1);
   });
 });

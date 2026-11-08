@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validTimezone } from '../streak/streak.policy.js';
 
 export const usernameParamSchema = z.object({
   username: z
@@ -12,6 +13,7 @@ export const updateProfileSchema = z.object({
   specialty: z.string().max(100, 'Specialty cannot exceed 100 characters').optional(),
   isPublic: z.boolean().optional(),
   avatarUrl: z.string().url('Invalid avatar URL').nullable().optional(),
+  timezone: z.string().max(64).refine(validTimezone, 'Invalid IANA timezone').optional(),
 });
 
 export type UsernameParamInput = z.infer<typeof usernameParamSchema>;
@@ -61,6 +63,7 @@ export interface UserDossierResponse {
   rankTier?: string;
   expPoints?: number;
   streakDays?: number;
+  timezone?: string | null;
   bio?: string | null;
   specialty?: string | null;
   memberSince?: string;

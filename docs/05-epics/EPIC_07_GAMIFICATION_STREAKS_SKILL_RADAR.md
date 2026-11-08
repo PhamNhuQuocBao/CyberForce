@@ -7,7 +7,7 @@
 #### Story US-07.01: Là một học viên, tôi muốn hệ thống ghi nhận chuỗi ngày học liên tục (Daily Streak) khi tôi hoàn thành ít nhất một bài tập mới trong ngày theo đúng múi giờ địa phương của tôi, để tôi duy trì thói quen học tập đều đặn và nhận các phần thưởng hệ số nhân điểm EXP.
 * **Business Rules (Ràng buộc nghiệp vụ):**
   - Múi giờ chuẩn xác: Chu kỳ 1 ngày học được tính từ `00:00:00` đến `23:59:59` theo đúng Múi giờ địa phương (Local Timezone) đã lưu trong hồ sơ của học viên (mặc định lấy từ trình duyệt khi đăng nhập).
-  - Tiêu chí tăng/giữ Streak: Chỉ được tính khi học viên giải thành công **ít nhất 01 Task mới lần đầu tiên** (chưa từng giải trước đó). Việc giải lại các Task cũ đã hoàn thành từ trước chỉ mang tính chất ôn tập và nhận EXP ôn tập, tuyệt đối không tính để duy trì chuỗi Streak.
+  - Tiêu chí tăng/giữ Streak: Chỉ được tính khi học viên giải đúng toàn bộ câu hỏi của **ít nhất 01 Task mới lần đầu tiên** trong ngày. Việc giải lại các Task cũ không cộng thêm EXP hoặc duy trì chuỗi Streak, theo quy tắc chống cày điểm hiện hành của CF-203.
   - Phần thưởng Streak:
     + Đạt chuỗi 7 ngày: Mở khóa huy hiệu "7-Day Warrior" và kích hoạt hệ số thưởng `1.2x EXP Multiplier` cho toàn bộ bài tập trong 24 giờ tiếp theo.
     + Đạt chuỗi 30 ngày: Mở khóa huy hiệu "Cyber Habit Master" và kích hoạt hệ số thưởng `1.5x EXP Multiplier` trong 48 giờ.
@@ -22,7 +22,7 @@
   - **Scenario 2 (Ngoại lệ - Học viên giải lại task cũ đã hoàn thành từ trước trong ngày):**
     - **Given** Học viên đang có chuỗi Streak 5 ngày và chưa giải bài mới nào trong ngày hôm nay.
     - **When** Học viên mở lại phòng lab đã giải tuần trước và nộp lại cờ của Task cũ đó.
-    - **Then** Hệ thống thông báo nộp cờ đúng và chỉ cộng điểm EXP ôn tập.
+    - **Then** Hệ thống thông báo câu hỏi đã hoàn thành trước đó và không cộng thêm EXP.
     - **And** Số ngày Streak vẫn giữ nguyên ở mức 5 ngày và hiển thị lời nhắc nhở: "You solved a previously completed task! Solve at least 1 new task today before 23:59 to keep your streak burning".
 
 ---

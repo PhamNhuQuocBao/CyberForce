@@ -166,6 +166,37 @@ describe('Users & Profiles API Integration Tests (CF-104 / US-01.03)', () => {
       expect(json.error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('accepts a valid IANA timezone and rejects an invalid value', async () => {
+      const url = '/api/v1/users/me/profile';
+      const headers = { Authorization: `Bearer ${publicToken}` };
+      const invalid = await app.inject({
+        method: 'PATCH',
+        url,
+        headers,
+        payload: { timezone: 'not/a-zone' },
+      });
+      expect(invalid.statusCode).toBe(400);
+      const valid = await app.inject({
+        method: 'PATCH',
+        url,
+        headers,
+        payload: { timezone: 'America/New_York' },
+      });
+      expect(valid.statusCode).toBe(200);
+      expect(valid.json().data.timezone).toBe('America/New_York');
+      const own = await app.inject({
+        method: 'GET',
+        url: `/api/v1/users/${publicUser.username}/profile`,
+        headers,
+      });
+      expect(own.json().data.timezone).toBe('America/New_York');
+      const visitor = await app.inject({
+        method: 'GET',
+        url: `/api/v1/users/${publicUser.username}/profile`,
+      });
+      expect(visitor.json().data.timezone).toBeUndefined();
+    });
+
     it('should update bio, specialty, and toggle isPublic to false', async () => {
       const updateRes = await app.inject({
         method: 'PATCH',

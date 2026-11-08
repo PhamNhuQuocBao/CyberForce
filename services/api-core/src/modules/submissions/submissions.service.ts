@@ -10,6 +10,8 @@ import {
 } from './flag-validator.service.js';
 import { submissionLimit, submissionLocked } from './submission-limit.js';
 import { remainingReward } from '../hints/hints.policy.js';
+import { boostedPoints } from '../streak/streak.policy.js';
+import { completeTaskForStreak, streakSummary } from '../streak/streak.service.js';
 
 const validator = new FlagValidatorService();
 type SubmitInput = { questionId: string; answer: string; labInstanceId?: string };
@@ -65,6 +67,18 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
     const result = await prisma.$transaction(async (tx) => {
       // Serialize rewards for this user so concurrent retries cannot award EXP twice.
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
+      const currentUser = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: {
+          id: true,
+          timezone: true,
+          streakDays: true,
+          lastStreakDate: true,
+          streakBonusUntil: true,
+          streakBonusPercent: true,
+        },
+      });
+      const now = new Date();
       const completed = await tx.submission.findFirst({
         where: { userId, questionId: question.id, isCorrect: true },
         select: { id: true },
@@ -72,6 +86,7 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
       let pointsEarned = 0;
       let retryAfterSeconds = 0;
       let isCorrect = Boolean(completed);
+      let badgeUnlocked: string | null = null;
       if (!completed) {
         const lockedFor = await submissionLimit(userId, question.id, 'check');
         if (lockedFor) throw submissionLocked(lockedFor);
@@ -85,7 +100,12 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
             where: { userId, questionId: question.id },
             select: { pointsDeducted: true },
           });
-          pointsEarned = remainingReward(question.pointsReward, unlocks);
+          const basePoints = remainingReward(question.pointsReward, unlocks);
+          const activePercent =
+            currentUser.streakBonusUntil && currentUser.streakBonusUntil > now
+              ? currentUser.streakBonusPercent
+              : 100;
+          pointsEarned = boostedPoints(basePoints, activePercent);
         }
         if (!isCorrect) retryAfterSeconds = await submissionLimit(userId, question.id, 'incorrect');
         await tx.submission.create({
@@ -97,6 +117,10 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
             pointsEarned,
           },
         });
+        if (isCorrect) {
+          const award = await completeTaskForStreak(tx, currentUser, taskId, now);
+          badgeUnlocked = award?.badgeUnlocked ?? null;
+        }
         if (pointsEarned)
           await tx.user.update({
             where: { id: userId },
@@ -105,7 +129,14 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
       }
       const user = await tx.user.findUniqueOrThrow({
         where: { id: userId },
-        select: { expPoints: true },
+        select: {
+          expPoints: true,
+          streakDays: true,
+          lastStreakDate: true,
+          timezone: true,
+          streakBonusUntil: true,
+          streakBonusPercent: true,
+        },
       });
       return {
         questionId: question.id,
@@ -113,6 +144,13 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
         alreadyCompleted: Boolean(completed),
         pointsEarned,
         totalExp: user.expPoints,
+        streakDays: streakSummary(user, now),
+        lastStreakDate: user.lastStreakDate,
+        badgeUnlocked,
+        bonusPercent:
+          user.streakBonusUntil && user.streakBonusUntil > now ? user.streakBonusPercent : 100,
+        bonusUntil:
+          user.streakBonusUntil && user.streakBonusUntil > now ? user.streakBonusUntil : null,
         retryAfterSeconds,
       };
     });
