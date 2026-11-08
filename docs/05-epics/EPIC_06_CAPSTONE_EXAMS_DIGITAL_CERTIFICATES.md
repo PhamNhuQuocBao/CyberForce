@@ -26,19 +26,21 @@
 
 ---
 
-#### Story US-06.02: Là một học viên vượt qua kỳ thi Capstone với điểm số đạt chuẩn, tôi muốn hệ thống tự động cấp Chứng chỉ số PDF có mã QR và chữ ký số mật mã trong vòng vài giây sau khi nộp bài, để tôi có thể lưu trữ bản mềm chính thức và chia sẻ thành tích lên LinkedIn.
+#### Story US-06.02: Là một học viên vượt qua kỳ thi Capstone với điểm số đạt chuẩn, tôi muốn hệ thống tự động cấp Chứng chỉ số PDF có mã QR và chữ ký số mật mã sau khi bài thi kết thúc, để tôi có thể lưu trữ bản mềm chính thức và chia sẻ thành tích lên LinkedIn.
 * **Business Rules (Ràng buộc nghiệp vụ):**
-  - Tiêu chí vượt qua bài thi (Passing Grade): Đạt điểm số $\ge$ ngưỡng chuẩn (ví dụ: $\ge 70/100$ điểm).
+  - Tiêu chí vượt qua bài thi: điểm phiên thi đạt `passingScore` đã cấu hình cho chính bài thi đó.
+  - Học viên xác nhận họ tên in trên chứng chỉ trước khi thi; phiên thi lưu bản chụp tên. Phiên cũ đạt điểm nhưng thiếu tên cần xác nhận trước khi cấp.
   - Tự động sinh tệp tin PDF chứng chỉ vector chất lượng cao lưu trữ tại MinIO/S3.
-  - Quy chuẩn định danh chứng chỉ: Mã định danh duy nhất theo cấu trúc chuẩn `CF-CERT-YYYY-[UUID-6-CHAR]` (ví dụ: `CF-CERT-2026-8891A`).
-  - Đảm bảo tính toàn vẹn mật mã: Nhúng chữ ký số (Digital Signature) bằng thuật toán RSA-SHA256 hoặc HMAC-SHA256 được ký bởi Private Key của CyberForce Certificate Authority; có mã QR dẫn trực tiếp tới trang tra cứu công khai `https://cyberforce.io/verify/[CERT_ID]`.
-  - Tích hợp nút chia sẻ 1-click lên mạng xã hội nghề nghiệp LinkedIn (Add to Profile với Organization ID và Certificate URL chuẩn hóa).
+  - Quy chuẩn định danh chứng chỉ: mã duy nhất `CF-CERT-YYYY-XXXXXX` (6 ký tự thập lục phân).
+  - PDF chứa chữ ký số nhúng RSA-4096/SHA-256 từ khóa PKCS#12 của CyberForce Certificate Authority, kèm QR dẫn tới `/verify/[CERT_ID]`. Khóa riêng chỉ ở dịch vụ ký số; file lưu trong bucket riêng tư và chỉ chủ sở hữu được tải qua API.
+  - Cấp phát bền vững: một chứng chỉ trên mỗi phiên thi, thử lại khi lỗi ký/lưu trữ và hiển thị trạng thái chờ/lỗi/đã cấp.
+  - Cung cấp nút mở biểu mẫu thêm chứng chỉ trên LinkedIn; học viên nhập thông tin chứng chỉ vì LinkedIn không còn tự điền các trường từ liên kết.
 * **Acceptance Criteria:**
-  - **Scenario 1 (Thành công - Cấp chứng chỉ số tức thì cho học viên đạt điểm chuẩn):**
+  - **Scenario 1 (Thành công - Tự động cấp chứng chỉ số cho học viên đạt điểm chuẩn):**
     - **Given** Học viên hoàn thành bài thi Capstone và đạt 85/100 điểm.
     - **When** Học viên nhấn nút "Finish & Submit Exam" (hoặc đồng hồ đếm ngược bài thi kết thúc).
     - **Then** Hệ thống chốt điểm và hiển thị màn hình chúc mừng "Congratulations! You passed with 85/100".
-    - **And** Trong vòng $< 30$ giây, hệ thống hoàn tất việc sinh file PDF chứng chỉ có chữ ký số và mã định danh duy nhất `CF-CERT-2026-8891A`.
+    - **And** Hệ thống tự xử lý cấp chứng chỉ, hiển thị trạng thái trong lúc chờ, và cung cấp mã duy nhất khi PDF có chữ ký số đã được lưu thành công.
     - **And** Xuất hiện nút "Download Official Certificate (PDF)" và nút "Add to LinkedIn Profile".
   - **Scenario 2 (Ngoại lệ - Học viên không đạt điểm chuẩn trong kỳ thi):**
     - **Given** Học viên làm bài thi và chỉ đạt 55/100 điểm khi thời gian thi kết thúc.

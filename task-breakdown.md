@@ -423,14 +423,15 @@ gantt
 #### Task CF-602: Động cơ Sinh Chứng chỉ Số PDF & Ký Số Mật mã (RSA-4096 / SHA-256)
 * **Agent:** `backend-specialist` & `security-auditor` | **Skills:** `clean-code`, `api-patterns`
 * **Priority:** `P0 (Critical)` | **Dependencies:** CF-601
-* **Mô tả:** Khi thí sinh đạt $\ge 80\%$ điểm bài thi Capstone, tự động kích hoạt dịch vụ ký số:
-  1. Tạo mã định danh duy nhất: `CF-CERT-YYYY-XXXXX`.
-  2. Ký số cryptographic hash bằng RSA-4096 Private Key.
-  3. Render file PDF chứng chỉ chất lượng cao kèm mã QR trỏ tới URL tra cứu công khai.
-  4. Lưu trữ file PDF vào MinIO S3 bucket (Story `US-06.02`, TDD Mục 10).
+* **Mô tả:** Khi phiên thi Capstone kết thúc (nộp bài hoặc hết giờ) và điểm đạt `Exam.passingScore` của chính bài thi, tạo đúng một chứng chỉ cho phiên đó:
+  1. Học viên xác nhận họ tên trên chứng chỉ trước khi bắt đầu thi; hệ thống lưu tên tại phiên thi. Phiên cũ đã đạt nhưng thiếu tên cần xác nhận một lần trước khi cấp.
+  2. Ghi nhận trạng thái cấp phát bền vững, tự thử lại khi ký hoặc lưu trữ lỗi; chỉ tạo bản ghi chứng chỉ sau khi PDF đã ký được lưu thành công.
+  3. Tạo mã định danh duy nhất `CF-CERT-YYYY-XXXXXX`, render PDF vector có điểm, ngày cấp và QR trỏ tới `/verify/[code]`.
+  4. Nhúng chữ ký số PDF RSA-4096/SHA-256 bằng dịch vụ `cert-signer` riêng với khóa PKCS#12 được mount; lưu PDF trong bucket MinIO riêng tư, chỉ chủ sở hữu được tải qua API đã xác thực.
+  5. Hiển thị điểm đạt/trượt và trạng thái chờ/lỗi/đã cấp ở `/exams/[slug]/results`; liên kết tra cứu công khai sẽ hoạt động ở CF-603.
 * **INPUT:** `docs/02-architecture/TDD_CYBERFORCE.md` Mục 10 & Wireframe 6.2.
 * **OUTPUT:** Microservice `services/cert-signer/`, template chứng chỉ PDF, mã QR generator.
-* **VERIFY:** Nộp đủ điểm bài thi -> Hệ thống trả về mã chứng chỉ, tải về file PDF mở ra thấy rõ chữ ký số và quét mã QR dẫn đúng về trang tra cứu.
+* **VERIFY:** Nộp bài hoặc hết giờ và đủ điểm -> chỉ một chứng chỉ được cấp, tải PDF có chữ ký số hợp lệ, QR dẫn đúng URL; không đạt điểm -> không cấp; lỗi ký/lưu trữ -> thử lại; người khác không tải được PDF.
 
 #### Task CF-603: Xây dựng Cổng Tra Cứu & Xác Thực Chứng chỉ Công Khai (Public Portal)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `seo-fundamentals`

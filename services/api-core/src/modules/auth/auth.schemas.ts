@@ -65,6 +65,7 @@ export interface UserProfile {
   id: string;
   email: string;
   username: string;
+  certificateName?: string | null;
   avatarUrl: string | null;
   role: UserRole | string;
   expPoints: number;

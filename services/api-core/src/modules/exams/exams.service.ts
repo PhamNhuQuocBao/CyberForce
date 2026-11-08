@@ -5,6 +5,7 @@ import { AuthError } from '../auth/auth.service.js';
 import { orchestratorRequest } from '../rooms/lab.service.js';
 import { FlagValidatorService } from '../submissions/flag-validator.service.js';
 import { examDeadline, examEligibility } from './exams.policy.js';
+import { enqueueCertificate } from './certificates.service.js';
 
 const activeStatuses = ['provisioning', 'running'] as const;
 const imagePattern = /^cyberforce\/[a-z0-9][a-z0-9._/-]*:[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
@@ -109,7 +110,12 @@ export async function getExam(slug: string, userId: string) {
   };
 }
 
-export async function startExam(slug: string, userId: string, consent: boolean) {
+export async function startExam(
+  slug: string,
+  userId: string,
+  consent: boolean,
+  certificateName: string,
+) {
   if (!consent) throw new AuthError(400, 'Bạn cần đồng ý quy chế thi.', 'EXAM_CONSENT_REQUIRED');
   const exam = await prisma.exam.findUnique({ where: { slug }, include: examInclude });
   if (!exam || !exam.isPublished || !exam.path.isPublished)
@@ -166,8 +172,17 @@ export async function startExam(slug: string, userId: string, consent: boolean) 
   const startedAt = new Date();
   const expiresAt = examDeadline(startedAt, exam.durationHours as 6 | 12 | 24);
   try {
+    await prisma.user.update({ where: { id: userId }, data: { certificateName } });
     await prisma.examSession.create({
-      data: { id, examId: exam.id, userId, consentedAt: startedAt, startedAt, expiresAt },
+      data: {
+        id,
+        examId: exam.id,
+        userId,
+        consentedAt: startedAt,
+        startedAt,
+        expiresAt,
+        certificateName,
+      },
     });
   } catch (error) {
     const racing = await prisma.examSession.findFirst({
@@ -258,6 +273,8 @@ export async function getSession(id: string, userId: string) {
     return getSession(id, userId);
   }
   const status = session.status;
+  if ((status === 'finished' || status === 'expired') && session.score >= session.exam.passingScore)
+    await enqueueCertificate(session.id);
   return {
     id: session.id,
     exam: {
@@ -368,14 +385,16 @@ export async function finishExam(id: string, userId: string) {
   } catch (error) {
     console.error('Exam range cleanup will retry', error);
   }
+  await enqueueCertificate(id);
   return getSession(id, userId);
 }
 
 export async function expireSession(id: string) {
-  await prisma.examSession.updateMany({
+  const expired = await prisma.examSession.updateMany({
     where: { id, status: { in: [...activeStatuses] }, expiresAt: { lte: new Date() } },
     data: { status: 'expired', finishedAt: new Date() },
   });
+  if (expired.count) await enqueueCertificate(id);
   try {
     await orchestratorRequest(`/v1/exams/${id}`, 'DELETE');
     await prisma.examSession.update({ where: { id }, data: { rangeStoppedAt: new Date() } });

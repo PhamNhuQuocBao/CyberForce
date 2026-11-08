@@ -492,19 +492,20 @@ $$\text{DynamicFlag} = \text{"flag\{"} + \text{HexEncode}(\text{FlagPayload})[0:
 
 ```mermaid
 graph LR
-    ExamPassed[Học viên Đạt Điểm $\ge 80\%$] --> Signer[Crypto Signer Service]
-    Signer -->|Ký Private Key RSA-4096| Hash[SHA-256 Signature Hash]
-    Signer --> Generator[PDF Template Renderer]
-    Hash --> QR[Generate QR Code URL]
-    QR --> Generator
-    Generator --> S3[Upload MinIO / S3 Bucket]
-    S3 --> PublicPortal[Verify Endpoint: /verify/:code]
+    ExamPassed[Điểm đạt passingScore của bài thi] --> Queue[Durable issuance record]
+    Queue --> Signer[Crypto Signer Service]
+    Signer --> Generator[PDF vector và QR /verify/:code]
+    Generator --> Signature[Chữ ký PDF nhúng RSA-4096 / SHA-256]
+    Signature --> S3[MinIO private bucket]
+    S3 --> Certificate[Certificate: một bản ghi mỗi phiên thi]
+    Certificate --> PublicPortal[Verify portal: CF-603]
 ```
 
 - **Quy trình Xác thực:**
-  - Mã định danh chứng chỉ: `CF-CERT-YYYY-XXXXX`.
-  - Chữ ký số kiểm tra bằng Public Key của CyberForce.
-  - Cổng tra cứu công khai: `https://cyberforce.io/verify/CF-CERT-2026-8891A` render trang xác thực kèm nút "Add to LinkedIn" chuẩn OIDC OpenBadges.
+  - Mã định danh chứng chỉ: `CF-CERT-YYYY-XXXXXX`; họ tên do học viên xác nhận và được chụp tại phiên thi.
+  - Khóa PKCS#12 RSA-4096 chỉ được mount vào signer; PDF chứa chữ ký RSA-SHA256 có thể kiểm tra bằng chứng thư công khai.
+  - Cấp phát tự thử lại sau lỗi; API xác thực chủ sở hữu trước khi đọc PDF riêng tư.
+  - Cổng tra cứu công khai tại `/verify/[code]` là phạm vi CF-603; QR được tạo trước trong CF-602.
 
 ---
 

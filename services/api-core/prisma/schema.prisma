@@ -60,6 +60,13 @@ enum ExamSessionStatus {
   @@map("exam_session_status")
 }
 
+enum CertificateIssuanceStatus {
+  pending
+  processing
+  failed
+  issued
+}
+
 enum RoleRequestStatus {
   pending
   approved
@@ -75,6 +82,7 @@ model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(255)
   username     String    @unique @db.VarChar(50)
+  certificateName String? @map("certificate_name") @db.VarChar(120)
   passwordHash String?   @map("password_hash") @db.VarChar(255)
   avatarUrl    String?   @map("avatar_url") @db.Text
   role         UserRole  @default(student)
@@ -102,6 +110,7 @@ model User {
   kothParticipants KothParticipant[]
   kothTicks        KothTick[]
   examSessions     ExamSession[]
+  certificateIssuances CertificateIssuance[]
 
   @@map("users")
 }
@@ -388,10 +397,13 @@ model ExamSession {
   rangeStoppedAt DateTime? @map("range_stopped_at") @db.Timestamptz
   score       Int @default(0)
   targetInfo  Json? @map("target_info")
+  certificateName String? @map("certificate_name") @db.VarChar(120)
 
   exam        Exam @relation(fields: [examId], references: [id], onDelete: Restrict)
   user        User @relation(fields: [userId], references: [id], onDelete: Restrict)
   submissions ExamSubmission[]
+  certificate Certificate?
+  certificateIssuance CertificateIssuance?
 
   @@index([userId, status])
   @@index([status, expiresAt])
@@ -483,20 +495,45 @@ model Certificate {
   id               String   @id @default(uuid()) @db.Uuid
   certificateCode  String   @unique @map("certificate_code") @db.VarChar(50)
   userId           String   @map("user_id") @db.Uuid
+  examSessionId    String?  @unique @map("exam_session_id") @db.Uuid
   pathId           String   @map("path_id") @db.Uuid
   scorePercentage  Decimal  @map("score_percentage") @db.Decimal(5, 2)
   verificationHash String   @map("verification_hash") @db.VarChar(255)
   pdfS3Key         String   @map("pdf_s3_key") @db.Text
+  signingKeyId     String?  @map("signing_key_id") @db.VarChar(100)
+  payloadSignature String?  @map("payload_signature") @db.Text
+  recipientName    String?  @map("recipient_name") @db.VarChar(120)
   issuedAt         DateTime @default(now()) @map("issued_at") @db.Timestamptz
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   learningPath LearningPath @relation(fields: [pathId], references: [id])
+  examSession ExamSession? @relation(fields: [examSessionId], references: [id], onDelete: Restrict)
 
   @@index([pathId])
   @@index([userId])
   @@map("certificates")
+}
+
+model CertificateIssuance {
+  id String @id @default(uuid()) @db.Uuid
+  sessionId String @unique @map("session_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  certificateCode String @unique @map("certificate_code") @db.VarChar(50)
+  status CertificateIssuanceStatus @default(pending)
+  attemptCount Int @default(0) @map("attempt_count")
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz
+  claimedAt DateTime? @map("claimed_at") @db.Timestamptz
+  lastError String? @map("last_error") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  session ExamSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt])
+  @@map("certificate_issuances")
 }
 
 // A registration is independent of progress earned through submissions.
