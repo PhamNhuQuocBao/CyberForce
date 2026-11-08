@@ -67,6 +67,12 @@ enum CertificateIssuanceStatus {
   issued
 }
 
+enum CertificateRevocationReason {
+  academic_integrity
+  issued_in_error
+  other
+}
+
 enum RoleRequestStatus {
   pending
   approved
@@ -503,6 +509,9 @@ model Certificate {
   signingKeyId     String?  @map("signing_key_id") @db.VarChar(100)
   payloadSignature String?  @map("payload_signature") @db.Text
   recipientName    String?  @map("recipient_name") @db.VarChar(120)
+  signedPayload    Json?    @map("signed_payload")
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
+  revocationReason CertificateRevocationReason? @map("revocation_reason")
   issuedAt         DateTime @default(now()) @map("issued_at") @db.Timestamptz
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 

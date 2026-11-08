@@ -26,6 +26,11 @@ const envSchema = z.object({
     .default('localhost:51820'),
   CERT_SIGNER_URL: z.url().default('http://127.0.0.1:8083'),
   CERT_SIGNER_TOKEN: z.string().min(32).default('cyberforce_local_certificate_signer_token_2026'),
+  CERT_TRUSTED_CERTS_DIR: z
+    .string()
+    .default(
+      path.resolve(fileURLToPath(import.meta.url), '../../../../../.local-certificates/public'),
+    ),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),

@@ -20,6 +20,7 @@ x-api: &api
     WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     CERT_SIGNER_URL: http://cert-signer:8083
     CERT_SIGNER_TOKEN: ${CERT_SIGNER_TOKEN:-cyberforce_local_certificate_signer_token_2026}
+    CERT_TRUSTED_CERTS_DIR: /run/cert-trust
     JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-cyberforce_local_access_secret_at_least_32_characters}
     JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-cyberforce_local_refresh_secret_at_least_32_characters}
     JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
@@ -185,6 +186,8 @@ services:
     init: true
     ports:
       - '${API_PORT:-4000}:4000'
+    volumes:
+      - ${CERT_PUBLIC_CERTS_DIR:-./.local-certificates/public}:/run/cert-trust:ro
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -216,6 +219,8 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
     restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:4000/api/v1
     init: true
     ports:
       - '${WEB_PORT:-3000}:3000'

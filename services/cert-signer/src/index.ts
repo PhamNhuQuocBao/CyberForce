@@ -62,7 +62,7 @@ const s3 = new S3Client({
   forcePathStyle: true,
   credentials: { accessKeyId: env.accessKey, secretAccessKey: env.secretKey },
 });
-const codePattern = /^CF-CERT-\d{4}-[A-F0-9]{6}$/;
+const codePattern = /^CF-CERT-\d{4}-(?:[A-F0-9]{6}|[A-F0-9]{16})$/;
 const sessionPattern = /^[a-f0-9-]{36}$/;
 const keyFor = (code: string) => `certificates/${code}.pdf`;
 
@@ -247,7 +247,9 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'POST' && req.url === '/v1/certificates')
       return json(res, 201, await issue(await readJson(req)));
-    const match = /^\/v1\/certificates\/(CF-CERT-\d{4}-[A-F0-9]{6})\/pdf$/.exec(req.url ?? '');
+    const match = /^\/v1\/certificates\/(CF-CERT-\d{4}-(?:[A-F0-9]{6}|[A-F0-9]{16}))\/pdf$/.exec(
+      req.url ?? '',
+    );
     if (req.method === 'GET' && match) {
       const object = await s3.send(
         new GetObjectCommand({ Bucket: env.bucket, Key: keyFor(match[1]) }),
