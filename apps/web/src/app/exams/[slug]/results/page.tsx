@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/lib/auth-store';
 import { examsApi, type CertificateStatus, type ExamSessionView } from '@/lib/api';
+import { BadgeUnlockModal, type BadgeUnlock } from '@/components/profile/BadgeUnlockModal';
 
 function ResultsContent() {
   const { slug } = useParams<{ slug: string }>();
@@ -16,9 +17,26 @@ function ResultsContent() {
   const { accessToken, isLoading } = useAuthStore();
   const [session, setSession] = useState<ExamSessionView | null>(null);
   const [certificate, setCertificate] = useState<CertificateStatus | null>(null);
+  const [badgeAward, setBadgeAward] = useState<BadgeUnlock | null>(null);
+  const previousCertificateStatus = useRef<{ sessionId: string; status: string } | null>(null);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!certificate) return;
+    if (
+      previousCertificateStatus.current?.sessionId === id &&
+      previousCertificateStatus.current.status !== 'issued' &&
+      certificate.status === 'issued'
+    ) {
+      setBadgeAward({
+        title: 'Capstone Certified',
+        description: 'Chứng chỉ đã được cấp và huy hiệu được thêm vào hồ sơ.',
+        rankUp: false,
+      });
+    }
+    if (id) previousCertificateStatus.current = { sessionId: id, status: certificate.status };
+  }, [certificate, id]);
   useEffect(() => {
     if (!id || !accessToken) return;
     let live = true;
@@ -83,6 +101,7 @@ function ResultsContent() {
   const linkedInUrl = 'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME';
   return (
     <>
+      <BadgeUnlockModal award={badgeAward} onClose={() => setBadgeAward(null)} />
       <Navbar />
       <main id="main-content" className="page-container space-y-6">
         <Link href={`/exams/${slug}`} className="text-link">

@@ -12,6 +12,7 @@ import { submissionLimit, submissionLocked } from './submission-limit.js';
 import { remainingReward } from '../hints/hints.policy.js';
 import { boostedPoints } from '../streak/streak.policy.js';
 import { completeTaskForStreak, streakSummary } from '../streak/streak.service.js';
+import { highestRank, rankIndex, rankTiers } from '../ranks/rank.policy.js';
 
 const validator = new FlagValidatorService();
 type SubmitInput = { questionId: string; answer: string; labInstanceId?: string };
@@ -76,6 +77,8 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
           lastStreakDate: true,
           streakBonusUntil: true,
           streakBonusPercent: true,
+          expPoints: true,
+          rankTier: true,
         },
       });
       const now = new Date();
@@ -87,6 +90,7 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
       let retryAfterSeconds = 0;
       let isCorrect = Boolean(completed);
       let badgeUnlocked: string | null = null;
+      let rankUp: { previousRank: string; newRank: string; badgeIds: string[] } | null = null;
       if (!completed) {
         const lockedFor = await submissionLimit(userId, question.id, 'check');
         if (lockedFor) throw submissionLocked(lockedFor);
@@ -121,16 +125,38 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
           const award = await completeTaskForStreak(tx, currentUser, taskId, now);
           badgeUnlocked = award?.badgeUnlocked ?? null;
         }
-        if (pointsEarned)
+        if (pointsEarned) {
+          const earnedRank = highestRank(
+            currentUser.rankTier,
+            currentUser.expPoints + pointsEarned,
+          );
+          const previousIndex = rankIndex(currentUser.rankTier);
+          const earnedIndex = rankIndex(earnedRank.name);
           await tx.user.update({
             where: { id: userId },
-            data: { expPoints: { increment: pointsEarned } },
+            data: {
+              expPoints: { increment: pointsEarned },
+              ...(earnedIndex > previousIndex && { rankTier: earnedRank.name }),
+            },
           });
+          if (earnedIndex > previousIndex) {
+            const badgeIds = rankTiers
+              .slice(Math.max(1, previousIndex + 1), earnedIndex + 1)
+              .map((tier) => tier.badgeId)
+              .filter((id): id is NonNullable<typeof id> => id !== null);
+            await tx.userBadge.createMany({
+              data: badgeIds.map((badgeId) => ({ userId, badgeId, earnedAt: now })),
+              skipDuplicates: true,
+            });
+            rankUp = { previousRank: currentUser.rankTier, newRank: earnedRank.name, badgeIds };
+          }
+        }
       }
       const user = await tx.user.findUniqueOrThrow({
         where: { id: userId },
         select: {
           expPoints: true,
+          rankTier: true,
           streakDays: true,
           lastStreakDate: true,
           timezone: true,
@@ -144,6 +170,8 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
         alreadyCompleted: Boolean(completed),
         pointsEarned,
         totalExp: user.expPoints,
+        rankTier: user.rankTier,
+        rankUp,
         streakDays: streakSummary(user, now),
         lastStreakDate: user.lastStreakDate,
         badgeUnlocked,

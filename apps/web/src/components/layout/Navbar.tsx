@@ -15,6 +15,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { BecomeCreatorDialog } from '@/components/creator/BecomeCreatorDialog';
 import { ThemeToggle } from './ThemeToggle';
 import { VpnStatusBadge } from './VpnStatusBadge';
+import { rankRing } from '@/lib/rank-style';
 const links = [
   ['/paths', 'Lộ trình'],
   ['/#labs', 'Thực hành'],
@@ -79,6 +80,12 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" aria-label="Tài khoản">
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold ${rankRing[user.rankTier] ?? rankRing.Novice}`}
+                    >
+                      {user.username.charAt(0).toUpperCase()}
+                    </span>
                     <span className="hidden max-w-32 truncate sm:inline">{user.username}</span>
                     <span className="sm:hidden">Tài khoản</span>
                     <ChevronDown className="h-4 w-4" />

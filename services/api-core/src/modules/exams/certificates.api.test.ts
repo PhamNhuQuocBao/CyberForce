@@ -128,6 +128,9 @@ describe('CF-602 certificate issuance', () => {
     expect(status.status).toBe('issued');
     expect(status.code).toMatch(/^CF-CERT-\d{4}-[A-F0-9]{16}$/);
     expect(await prisma.certificate.count({ where: { examSessionId: session.id } })).toBe(1);
+    expect(await prisma.userBadge.count({ where: { userId, badgeId: 'capstone_certified' } })).toBe(
+      1,
+    );
     const pdf = await app.inject({ method: 'GET', url: `${url}/pdf`, headers });
     expect(pdf.statusCode).toBe(200);
     expect(pdf.headers['content-type']).toContain('application/pdf');

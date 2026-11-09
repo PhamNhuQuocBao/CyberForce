@@ -6,6 +6,7 @@ import { ApiError, submissionsApi, type SubmissionResult } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
 import { QuestionHints } from './QuestionHints';
+import { BadgeUnlockModal, type BadgeUnlock } from '@/components/profile/BadgeUnlockModal';
 
 interface Props {
   taskId: string;
@@ -25,6 +26,7 @@ export function QuestionAnswerForm({
   onCompleted,
 }: Props) {
   const [pending, setPending] = useState(false);
+  const [badgeAward, setBadgeAward] = useState<BadgeUnlock | null>(null);
   const [feedback, setFeedback] = useState<{
     text: string;
     tone: 'success' | 'error' | 'neutral';
@@ -74,25 +76,32 @@ export function QuestionAnswerForm({
           user: {
             ...current.user,
             expPoints: Math.max(current.user.expPoints, data.totalExp),
+            rankTier: data.rankTier,
             streakDays: data.streakDays,
             lastStreakDate: data.lastStreakDate,
             streakBonusPercent: data.bonusPercent,
             streakBonusUntil: data.bonusUntil,
           },
         });
-        if (data.badgeUnlocked)
-          toast.success(
-            data.badgeUnlocked === 'streak_30'
-              ? 'Cyber Habit Master: chuỗi 30 ngày!'
-              : '7-Day Warrior: chuỗi 7 ngày!',
-            {
-              description:
-                data.badgeUnlocked === 'streak_30'
-                  ? 'Thưởng 1,5× EXP trong 48 giờ tiếp theo.'
-                  : 'Thưởng 1,2× EXP trong 24 giờ tiếp theo.',
-            },
-          );
-        else if (data.streakDays > current.user.streakDays)
+        if (data.rankUp) {
+          setBadgeAward({
+            title: `${data.rankUp.previousRank} → ${data.rankUp.newRank}`,
+            description: data.badgeUnlocked
+              ? 'Bạn cũng vừa mở khóa một huy hiệu chuỗi học tập.'
+              : 'Huy hiệu cấp bậc mới đã được thêm vào hồ sơ.',
+            rankUp: true,
+          });
+        } else if (data.badgeUnlocked) {
+          setBadgeAward({
+            title: data.badgeUnlocked === 'streak_30' ? 'Cyber Habit Master' : '7-Day Warrior',
+            description:
+              data.badgeUnlocked === 'streak_30'
+                ? 'Chuỗi 30 ngày và thưởng 1,5× EXP trong 48 giờ.'
+                : 'Chuỗi 7 ngày và thưởng 1,2× EXP trong 24 giờ.',
+            rankUp: false,
+          });
+        }
+        if (!data.badgeUnlocked && data.streakDays > current.user.streakDays)
           toast.success(`Chuỗi học tập: ${data.streakDays} ngày liên tiếp`);
         onCompleted(data);
       } else
@@ -124,6 +133,7 @@ export function QuestionAnswerForm({
 
   return (
     <div className="space-y-3 border-t pt-4">
+      <BadgeUnlockModal award={badgeAward} onClose={() => setBadgeAward(null)} />
       <form onSubmit={submit} className="space-y-2">
         <label htmlFor={`answer-${question.id}`} className="block text-sm font-medium">
           Câu {questionNumber}: {question.text}

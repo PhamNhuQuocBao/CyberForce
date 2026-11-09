@@ -139,6 +139,61 @@ describe('CF-203 submission API', () => {
     });
   });
 
+  it('promotes across a threshold, records one rank badge, and never replays the event', async () => {
+    const username = `rank-${randomUUID()}`;
+    const learner = await prisma.user.create({
+      data: { email: `${username}@test.invalid`, username, expPoints: 950 },
+    });
+    const rankTask = await prisma.task.create({
+      data: {
+        roomId,
+        title: 'Rank crossing',
+        taskOrder: 2,
+        contentMdx: 'Read',
+        questions: {
+          create: {
+            questionText: 'Rank flag?',
+            answerHash: createHash('sha256').update(answer).digest('hex'),
+            pointsReward: 100,
+          },
+        },
+      },
+      include: { questions: true },
+    });
+    const rankSubmit = () =>
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/tasks/${rankTask.id}/submit`,
+        headers: { authorization: `Bearer ${generateTokens(learner).accessToken}` },
+        payload: { questionId: rankTask.questions[0].id, answer },
+      });
+    try {
+      const first = (await rankSubmit()).json().data;
+      expect(first).toMatchObject({
+        totalExp: 1050,
+        rankTier: 'Script Kiddie',
+        rankUp: {
+          previousRank: 'Novice',
+          newRank: 'Script Kiddie',
+          badgeIds: ['rank_script_kiddie'],
+        },
+      });
+      expect((await rankSubmit()).json().data.rankUp).toBeNull();
+      expect(
+        await prisma.userBadge.count({
+          where: { userId: learner.id, badgeId: 'rank_script_kiddie' },
+        }),
+      ).toBe(1);
+      await prisma.user.update({ where: { id: learner.id }, data: { expPoints: 990 } });
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: learner.id } })).rankTier).toBe(
+        'Script Kiddie',
+      );
+    } finally {
+      await prisma.user.delete({ where: { id: learner.id } });
+      await prisma.task.delete({ where: { id: rankTask.id } });
+    }
+  });
+
   it('locks on the fifth wrong answer, blocks correct retries, and isolates questions/users', async () => {
     const question = await prisma.question.create({
       data: {

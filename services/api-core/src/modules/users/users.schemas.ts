@@ -61,6 +61,8 @@ export interface UserDossierResponse {
   // If private and not self, other fields are withheld per Wireframe 2.2
   avatarUrl?: string | null;
   rankTier?: string;
+  nextRankTier?: string | null;
+  nextRankExp?: number | null;
   expPoints?: number;
   streakDays?: number;
   timezone?: string | null;
