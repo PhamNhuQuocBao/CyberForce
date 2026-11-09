@@ -92,6 +92,15 @@ export async function spawnLab(slug: string, userId: string) {
       spec && typeof spec === 'object' && !Array.isArray(spec) && 'image' in spec
         ? spec.image
         : null;
+    const specObject = spec && typeof spec === 'object' && !Array.isArray(spec) ? spec : {};
+    const cpuMillicores =
+      typeof specObject.cpuMillicores === 'number' ? specObject.cpuMillicores : 2000;
+    const memoryMb = typeof specObject.memoryMb === 'number' ? specObject.memoryMb : 2048;
+    const ports = Array.isArray(specObject.ports)
+      ? specObject.ports.filter((port): port is number => typeof port === 'number')
+      : typeof specObject.port === 'number'
+        ? [specObject.port]
+        : [];
     if (
       typeof image !== 'string' ||
       !/^cyberforce\/[a-z0-9][a-z0-9._/-]*:[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(image)
@@ -132,6 +141,9 @@ export async function spawnLab(slug: string, userId: string) {
       const response = await orchestratorRequest('/v1/instances', 'POST', {
         instanceId: id,
         image,
+        cpuMillicores,
+        memoryMb,
+        ports,
         ...(dynamicFlag ? { dynamicFlag } : {}),
       });
       const data = (await response.json()) as {

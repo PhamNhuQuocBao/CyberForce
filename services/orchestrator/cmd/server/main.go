@@ -20,10 +20,21 @@ type labSpawner interface {
 	Stop(context.Context, string) error
 }
 
+type configuredSpawner interface {
+	SpawnConfigured(context.Context, string, string, string, labdocker.LabResources) (labdocker.Instance, error)
+}
+
+type imageInspector interface {
+	ImageAvailable(context.Context, string) (bool, error)
+}
+
 type spawnRequest struct {
-	InstanceID  string `json:"instanceId"`
-	Image       string `json:"image"`
-	DynamicFlag string `json:"dynamicFlag"`
+	InstanceID    string `json:"instanceId"`
+	Image         string `json:"image"`
+	DynamicFlag   string `json:"dynamicFlag"`
+	CPUMillicores int    `json:"cpuMillicores"`
+	MemoryMb      int    `json:"memoryMb"`
+	Ports         []int  `json:"ports"`
 }
 
 type terminalOpener interface {
@@ -209,6 +220,26 @@ func handler(spawner labSpawner, token string) http.Handler {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("/v1/images/available", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		inspector, ok := spawner.(imageInspector)
+		if !ok {
+			http.Error(w, "image inspection unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		available, err := inspector.ImageAvailable(ctx, r.URL.Query().Get("name"))
+		if err != nil {
+			http.Error(w, "image inspection failed", http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"available": available})
+	})
 	mux.HandleFunc("/v1/instances", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -222,7 +253,20 @@ func handler(spawner labSpawner, token string) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
-		instance, err := spawner.Spawn(ctx, input.InstanceID, input.Image, input.DynamicFlag)
+		var instance labdocker.Instance
+		var err error
+		if configured, ok := spawner.(configuredSpawner); ok {
+			resources := labdocker.LabResources{CPUMillicores: input.CPUMillicores, MemoryMb: input.MemoryMb, Ports: input.Ports}
+			if resources.CPUMillicores == 0 {
+				resources.CPUMillicores = 2000
+			}
+			if resources.MemoryMb == 0 {
+				resources.MemoryMb = 2048
+			}
+			instance, err = configured.SpawnConfigured(ctx, input.InstanceID, input.Image, input.DynamicFlag, resources)
+		} else {
+			instance, err = spawner.Spawn(ctx, input.InstanceID, input.Image, input.DynamicFlag)
+		}
 		if err != nil {
 			log.Printf("spawn failed: %v", err)
 			http.Error(w, "lab spawn failed", http.StatusBadGateway)

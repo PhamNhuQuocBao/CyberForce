@@ -320,13 +320,14 @@ gantt
 * **VERIFY:** Tích lũy từ 950 lên 1.050 EXP -> giao diện công bố thăng từ `Novice` lên `Script Kiddie` kèm huy hiệu mới; trừ EXP xuống dưới 1.000 vẫn giữ cấp; nộp lại không mở khóa lần hai.
 * **Trạng thái triển khai:** Đã thêm thang cấp, cập nhật cấp và huy hiệu cùng giao dịch nhận EXP, huy hiệu Capstone khi chứng chỉ được cấp, bộ sưu tập dựa trên bản ghi thật và modal có tùy chọn âm thanh. Người dùng cũ được xét cấp khi nhận EXP tiếp theo, không tự truy hồi huy hiệu lịch sử. 153 API và 14 web tests qua; typecheck, lint, build qua. [Handoff](cf-702-rank-badges.md).
 
-#### Task CF-801: Xây dựng Admin CMS Quản trị Nội dung Toàn diện (Phase 1 Management)
+#### [x] Task CF-801: Xây dựng Admin CMS Quản trị Nội dung Toàn diện (Phase 1 Management)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `nextjs-react-expert`, `api-patterns`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-003, CF-105
-* **Mô tả:** Xây dựng cổng quản trị `/admin/cms` cho Admin thực hiện CRUD: Learning Paths, Modules, Rooms, Tasks, Questions và gán cấu hình Docker Image mục tiêu (US-08.01, Wireframe 8.1).
+* **Mô tả:** Xây dựng cổng quản trị `/admin/cms` cho Admin thực hiện CRUD: Learning Paths, Modules, Rooms, Tasks, Questions, quản lý bản nháp/xuất bản/lưu trữ và cấu hình Docker Image, CPU/RAM, cổng nội bộ (US-08.01, Wireframe 8.1). Module là thực thể riêng; nội dung cũ được gắn Module bằng script backfill khi rollout. Chỉ xuất bản phòng lab khi image đã có trên Docker host của orchestrator, phòng có ít nhất một task và câu hỏi hợp lệ, và các cấp cha đã xuất bản.
 * **INPUT:** `docs/05-epics/EPIC_08_LAB_CREATOR_STUDIO_ANALYTICS.md` (US-08.01) & Wireframe 8.1.
-* **OUTPUT:** Nhóm trang `apps/web/src/app/admin/cms/**`, APIs quản trị tương ứng có bảo vệ quyền Admin.
-* **VERIFY:** Admin tạo phòng lab mới với tiêu đề, nội dung MDX, Docker image `cyberforce/lab-sqli:v1` -> Phòng xuất hiện ngay lập tức trên catalog của học viên.
+* **OUTPUT:** Nhóm trang `apps/web/src/app/admin/cms/**`, APIs quản trị có bảo vệ quyền Admin, schema/module/backfill, kiểm tra image và giới hạn tài nguyên ở orchestrator. Cờ static được băm khi lưu và không trả qua API.
+* **VERIFY:** Admin tạo và xuất bản lộ trình → module → phòng lab (task, câu hỏi, nội dung MDX, Docker image `cyberforce/lab-sqli:v1`) → phòng xuất hiện trên catalog của học viên. Kiểm tra lỗi EXP/image, quyền truy cập, xung đột phiên bản, lưu trữ và chống lộ cờ bằng test tích hợp. Image phải hiện diện trên orchestrator host để chạy acceptance thật.
+* **Trạng thái triển khai:** Đã triển khai trong PR CF-801 và kiểm thử trên database cô lập. Script backfill chưa chạy trên database hiện có; rollout và migration cần phê duyệt riêng. [Kế hoạch và bàn giao](cf-801-admin-cms.md).
 
 ---
 

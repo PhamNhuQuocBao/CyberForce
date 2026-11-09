@@ -1,5 +1,77 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+export type CmsKind = 'paths' | 'modules' | 'rooms' | 'tasks' | 'questions';
+export type CmsStatus = 'draft' | 'published' | 'archived';
+export interface CmsItem {
+  id: string;
+  title?: string;
+  questionText?: string;
+  slug?: string;
+  status: CmsStatus;
+  updatedAt: string;
+  pathId?: string;
+  moduleId?: string;
+  roomId?: string;
+  taskId?: string;
+  [key: string]: unknown;
+}
+
+export const cmsApi = {
+  list(
+    kind: CmsKind,
+    token: string,
+    query: {
+      page?: number;
+      search?: string;
+      status?: string;
+      parentId?: string;
+      limit?: number;
+    } = {},
+  ) {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    });
+    return request<{
+      success: true;
+      data: { items: CmsItem[]; page: number; limit: number; total: number; totalPages: number };
+    }>(`/admin/cms/${kind}?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  get(kind: CmsKind, id: string, token: string) {
+    return request<{ success: true; data: CmsItem }>(`/admin/cms/${kind}/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  create(kind: CmsKind, data: Record<string, unknown>, token: string) {
+    return request<{ success: true; data: CmsItem }>(`/admin/cms/${kind}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  update(kind: CmsKind, id: string, version: string, data: Record<string, unknown>, token: string) {
+    return request<{ success: true; data: CmsItem }>(`/admin/cms/${kind}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ version, data }),
+    });
+  },
+  status(kind: CmsKind, id: string, version: string, status: CmsStatus, token: string) {
+    return request<{ success: true; data: CmsItem }>(`/admin/cms/${kind}/${id}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ version, status }),
+    });
+  },
+  delete(kind: CmsKind, id: string, version: string, token: string) {
+    return request<{ success: true }>(`/admin/cms/${kind}/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ version }),
+    });
+  },
+};
+
 export interface VpnStatus {
   configured: boolean;
   address?: string;

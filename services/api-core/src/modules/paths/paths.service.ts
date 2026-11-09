@@ -71,6 +71,7 @@ export class PathsService {
   async listPaths(userId?: string, query?: ListPathsQuery) {
     const whereClause: Record<string, unknown> = {
       isPublished: true,
+      status: 'published',
     };
 
     if (query?.category && query.category.toLowerCase() !== 'all') {
@@ -103,11 +104,18 @@ export class PathsService {
           select: { enrolledAt: true },
         },
         rooms: {
+          where: {
+            status: 'published',
+            publishedAt: { lte: new Date() },
+            OR: [{ moduleId: null }, { module: { status: 'published' } }],
+          },
           orderBy: [{ moduleOrder: 'asc' }, { orderIndex: 'asc' }],
           include: {
             tasks: {
+              where: { status: 'published' },
               include: {
                 questions: {
+                  where: { status: 'published' },
                   select: { id: true, pointsReward: true },
                 },
               },
@@ -256,6 +264,11 @@ export class PathsService {
           select: { enrolledAt: true },
         },
         rooms: {
+          where: {
+            status: 'published',
+            publishedAt: { lte: new Date() },
+            OR: [{ moduleId: null }, { module: { status: 'published' } }],
+          },
           orderBy: [{ moduleOrder: 'asc' }, { orderIndex: 'asc' }],
           include: {
             prerequisiteRoom: {
@@ -264,16 +277,19 @@ export class PathsService {
                 title: true,
                 slug: true,
                 tasks: {
+                  where: { status: 'published' },
                   include: {
-                    questions: { select: { id: true } },
+                    questions: { where: { status: 'published' }, select: { id: true } },
                   },
                 },
               },
             },
             tasks: {
+              where: { status: 'published' },
               orderBy: { taskOrder: 'asc' },
               include: {
                 questions: {
+                  where: { status: 'published' },
                   select: { id: true, pointsReward: true },
                 },
               },
@@ -283,7 +299,7 @@ export class PathsService {
       },
     });
 
-    if (!path || !path.isPublished) {
+    if (!path || !path.isPublished || path.status !== 'published') {
       throw new AuthError(404, `Learning path with slug "${slug}" not found`, 'PATH_NOT_FOUND');
     }
 

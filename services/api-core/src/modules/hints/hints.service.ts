@@ -6,7 +6,7 @@ import { hintCost, parseHints, remainingReward } from './hints.policy.js';
 
 async function accessibleQuestion(questionId: string, userId: string) {
   const question = await prisma.question.findUnique({
-    where: { id: questionId },
+    where: { id: questionId, status: 'published', task: { status: 'published' } },
     select: {
       id: true,
       pointsReward: true,

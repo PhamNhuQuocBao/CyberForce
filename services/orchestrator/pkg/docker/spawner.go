@@ -34,6 +34,37 @@ type Instance struct {
 	TargetIP    string `json:"targetIp"`
 }
 
+type LabResources struct {
+	CPUMillicores int   `json:"cpuMillicores"`
+	MemoryMb      int   `json:"memoryMb"`
+	Ports         []int `json:"ports"`
+}
+
+func (r LabResources) valid() bool {
+	if r.CPUMillicores < 250 || r.CPUMillicores > 2000 || r.MemoryMb < 256 || r.MemoryMb > 2048 || len(r.Ports) > 8 {
+		return false
+	}
+	seen := map[int]bool{}
+	for _, port := range r.Ports {
+		if port < 1 || port > 65535 || seen[port] {
+			return false
+		}
+		seen[port] = true
+	}
+	return true
+}
+
+func (s *Spawner) ImageAvailable(ctx context.Context, image string) (bool, error) {
+	if !imagePattern.MatchString(image) {
+		return false, nil
+	}
+	_, err := s.cli.ImageInspect(ctx, image)
+	if errdefs.IsNotFound(err) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 type Spawner struct {
 	cli             *client.Client
 	guacdName       string
@@ -74,14 +105,23 @@ func subnet(id string, attempt uint32) string {
 }
 
 func config(image, id, networkName string) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+	return configWithResources(image, id, networkName, LabResources{CPUMillicores: 2000, MemoryMb: 2048})
+}
+
+func configWithResources(image, id, networkName string, resources LabResources) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
 	pids := int64(512)
 	labels := map[string]string{labelOwner: id}
-	return &container.Config{Image: image, Labels: labels},
+	ports := network.PortSet{}
+	for _, port := range resources.Ports {
+		parsed, _ := network.ParsePort(fmt.Sprintf("%d/tcp", port))
+		ports[parsed] = struct{}{}
+	}
+	return &container.Config{Image: image, Labels: labels, ExposedPorts: ports},
 		&container.HostConfig{
 			NetworkMode: container.NetworkMode(networkName),
 			CapDrop:     []string{"ALL"},
 			SecurityOpt: []string{"no-new-privileges:true"},
-			Resources:   container.Resources{Memory: 2 * 1024 * 1024 * 1024, MemorySwap: 2 * 1024 * 1024 * 1024, NanoCPUs: 2_000_000_000, PidsLimit: &pids},
+			Resources:   container.Resources{Memory: int64(resources.MemoryMb) * 1024 * 1024, MemorySwap: int64(resources.MemoryMb) * 1024 * 1024, NanoCPUs: int64(resources.CPUMillicores) * 1_000_000, PidsLimit: &pids},
 		},
 		&network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{networkName: {}}}
 }
@@ -110,7 +150,11 @@ func (s *Spawner) inspect(ctx context.Context, id string) (Instance, error) {
 }
 
 func (s *Spawner) Spawn(ctx context.Context, id, image, dynamicFlag string) (Instance, error) {
-	if !instanceIDPattern.MatchString(id) || !imagePattern.MatchString(image) || (dynamicFlag != "" && !dynamicFlagPattern.MatchString(dynamicFlag)) {
+	return s.SpawnConfigured(ctx, id, image, dynamicFlag, LabResources{CPUMillicores: 2000, MemoryMb: 2048})
+}
+
+func (s *Spawner) SpawnConfigured(ctx context.Context, id, image, dynamicFlag string, resources LabResources) (Instance, error) {
+	if !instanceIDPattern.MatchString(id) || !imagePattern.MatchString(image) || (dynamicFlag != "" && !dynamicFlagPattern.MatchString(dynamicFlag)) || !resources.valid() {
 		return Instance{}, errors.New("invalid instance ID, image or dynamic flag")
 	}
 	containerName, networkName := names(id)
@@ -159,7 +203,7 @@ func (s *Spawner) Spawn(ctx context.Context, id, image, dynamicFlag string) (Ins
 		}
 	}()
 
-	containerConfig, hostConfig, networkingConfig := config(image, id, networkName)
+	containerConfig, hostConfig, networkingConfig := configWithResources(image, id, networkName, resources)
 	created, err := s.cli.ContainerCreate(ctx, client.ContainerCreateOptions{Config: containerConfig, HostConfig: hostConfig, NetworkingConfig: networkingConfig, Name: containerName})
 	if err != nil {
 		return Instance{}, fmt.Errorf("create lab container: %w", err)

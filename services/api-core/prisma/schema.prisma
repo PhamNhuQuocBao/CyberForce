@@ -41,6 +41,14 @@ enum FlagType {
   @@map("flag_type")
 }
 
+enum ContentStatus {
+  draft
+  published
+  archived
+
+  @@map("content_status")
+}
+
 enum InstanceStatus {
   provisioning
   running
@@ -260,15 +268,34 @@ model LearningPath {
   estimatedHours  Int      @default(20) @map("estimated_hours")
   orderIndex      Int      @default(0) @map("order_index")
   isPublished     Boolean  @default(false) @map("is_published")
+  status          ContentStatus @default(published)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
   enrollments  PathEnrollment[]
   rooms        Room[]
+  modules      Module[]
   certificates Certificate[]
   exams        Exam[]
 
   @@map("learning_paths")
+}
+
+model Module {
+  id        String @id @default(uuid()) @db.Uuid
+  pathId    String @map("path_id") @db.Uuid
+  title     String @db.VarChar(150)
+  orderIndex Int @default(1) @map("order_index")
+  status    ContentStatus @default(published)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  learningPath LearningPath @relation(fields: [pathId], references: [id], onDelete: Restrict)
+  rooms Room[]
+
+  @@index([pathId, orderIndex])
+  @@map("modules")
 }
 
 // -----------------------------------------------------------------------------
@@ -277,6 +304,7 @@ model LearningPath {
 model Room {
   id                 String    @id @default(uuid()) @db.Uuid
   pathId             String?   @map("path_id") @db.Uuid
+  moduleId           String?   @map("module_id") @db.Uuid
   moduleName         String    @default("Core Module") @map("module_name") @db.VarChar(150)
   moduleOrder        Int       @default(1) @map("module_order")
   orderIndex         Int       @default(0) @map("order_index")
@@ -291,11 +319,14 @@ model Room {
   estimatedMinutes   Int       @default(45) @map("estimated_minutes")
   prerequisiteRoomId String?   @map("prerequisite_room_id") @db.Uuid
   publishedAt        DateTime? @map("published_at") @db.Timestamptz
+  status             ContentStatus @default(published)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
   requiredForCapstone Boolean @default(true) @map("required_for_capstone")
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
   learningPath     LearningPath? @relation(fields: [pathId], references: [id], onDelete: SetNull)
+  module           Module? @relation(fields: [moduleId], references: [id], onDelete: Restrict)
   prerequisiteRoom Room?         @relation("RoomPrerequisites", fields: [prerequisiteRoomId], references: [id], onDelete: SetNull)
   dependentRooms   Room[]        @relation("RoomPrerequisites")
   tasks            Task[]
@@ -303,6 +334,7 @@ model Room {
   kothMatches      KothMatch[]
 
   @@index([pathId])
+  @@index([moduleId])
   @@index([prerequisiteRoomId])
   @@map("rooms")
 }
@@ -316,6 +348,8 @@ model Task {
   taskOrder  Int      @map("task_order")
   title      String   @db.VarChar(255)
   contentMdx String   @map("content_mdx") @db.Text
+  status     ContentStatus @default(published)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
@@ -336,6 +370,8 @@ model Question {
   flagType     FlagType @default(static) @map("flag_type")
   hintTiers    Json?    @map("hint_tiers")
   pointsReward Int      @default(50) @map("points_reward")
+  status       ContentStatus @default(published)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
