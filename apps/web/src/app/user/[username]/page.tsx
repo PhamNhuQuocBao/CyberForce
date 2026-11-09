@@ -19,6 +19,7 @@ import { ProfileSettingsDialog } from '@/components/profile/ProfileSettingsDialo
 import { userApi, type UserDossierResponse } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
+import { rankRing } from '@/lib/rank-style';
 const skills = [
   ['webExploitation', 'Web Exploitation'],
   ['cloudSecurity', 'Cloud Security'],
@@ -203,6 +204,12 @@ export default function UserProfilePage() {
                 Hồ sơ năng lực · {dossier.isPublic ? 'Công khai' : 'Riêng tư'}
               </p>
               <h1 className="break-words text-3xl font-semibold tracking-tight">
+                <span
+                  aria-hidden="true"
+                  className={`mr-3 inline-flex h-10 w-10 align-middle items-center justify-center rounded-full border-2 text-base ${rankRing[dossier.rankTier ?? 'Novice'] ?? rankRing.Novice}`}
+                >
+                  {dossier.username.charAt(0).toUpperCase()}
+                </span>
                 {dossier.username}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -240,6 +247,18 @@ export default function UserProfilePage() {
               </div>
             ))}
           </dl>
+          {dossier.nextRankTier &&
+            dossier.nextRankExp !== null &&
+            dossier.nextRankExp !== undefined && (
+              <p className="mt-5 text-sm text-muted-foreground">
+                Còn{' '}
+                {Math.max(0, dossier.nextRankExp - (dossier.expPoints ?? 0)).toLocaleString(
+                  'vi-VN',
+                )}{' '}
+                EXP để đạt {dossier.nextRankTier} (mốc {dossier.nextRankExp.toLocaleString('vi-VN')}{' '}
+                EXP).
+              </p>
+            )}
         </Card>
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <Card>

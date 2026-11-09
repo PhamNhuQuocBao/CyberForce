@@ -75,6 +75,8 @@ export interface UserDossierResponse {
   username: string;
   avatarUrl?: string | null;
   rankTier?: string;
+  nextRankTier?: string | null;
+  nextRankExp?: number | null;
   expPoints?: number;
   streakDays?: number;
   timezone?: string | null;
@@ -741,6 +743,8 @@ export interface SubmissionResult {
   alreadyCompleted: boolean;
   pointsEarned: number;
   totalExp: number;
+  rankTier: string;
+  rankUp: { previousRank: string; newRank: string; badgeIds: string[] } | null;
   streakDays: number;
   lastStreakDate: string | null;
   badgeUnlocked: 'streak_7' | 'streak_30' | null;

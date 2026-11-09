@@ -311,13 +311,14 @@ gantt
 * **OUTPUT:** `StreakDay`/`UserBadge` và tóm tắt streak trên User, worker quét mỗi phút, tích hợp giao dịch chấm bài, múi giờ hồ sơ và trạng thái header/thông báo mốc.
 * **VERIFY:** Hoàn thành Task nhiều câu lúc 23:00 GMT+7 -> Streak tăng từ 6 lên 7 ngày đúng một lần, thưởng chỉ áp dụng bài tiếp theo; nộp lại không nhận EXP; bỏ lỡ ngày hiển thị 0; biên ngày và DST được kiểm thử.
 
-#### Task CF-702: Hệ thống Thăng tiến Cấp bậc (Rank Tiers) & Bộ sưu tập Huy hiệu
+#### [x] Task CF-702: Hệ thống Thăng tiến Cấp bậc (Rank Tiers) & Bộ sưu tập Huy hiệu
 * **Agent:** `backend-specialist` & `frontend-specialist` | **Skills:** `clean-code`, `frontend-design`
 * **Priority:** `P2 (Medium)` | **Dependencies:** CF-701
-* **Mô tả:** Thiết lập 6 bậc xếp hạng (Novice, Apprentice, Specialist, Operator, Elite, Cyber Master) tính theo tổng điểm EXP. Dựng giao diện Modal mở khóa huy hiệu (Badges) kèm âm thanh tinh tế (US-07.03).
+* **Mô tả:** Thiết lập 6 bậc theo US-07.03 và wireframe Tiến độ: Novice (0), Script Kiddie (1.000), Hacker (5.000), Pro Hacker (15.000), Elite Hacker (35.000), Cyber Guru (70.000 EXP). Rank chỉ tăng, không giảm khi trừ EXP. Huy hiệu chỉ mở khi có bản ghi thành tích thật: thăng cấp, streak 7/30 ngày hoặc chứng chỉ Capstone đã cấp. First Blood và KotH Champion giữ khóa đến khi có sự kiện thắng tương ứng. Dựng modal mở khóa với âm thanh có thể tắt và hiệu ứng tôn trọng reduced motion.
 * **INPUT:** `docs/05-epics/EPIC_07_GAMIFICATION_STREAKS_SKILL_RADAR.md` (US-07.03).
-* **OUTPUT:** Bảng tính Rank Tier thresholds, Component `BadgeUnlockModal.tsx`, Audio notification sound.
-* **VERIFY:** Tích lũy đủ EXP vượt ngưỡng -> Giao diện kích hoạt animation thăng cấp từ `Novice` lên `Apprentice` kèm icon huy hiệu mới.
+* **OUTPUT:** Chính sách Rank Tier thresholds, huy hiệu trong `UserBadge`, component `BadgeUnlockModal.tsx`, âm thanh browser và tiến độ mốc tiếp theo trên hồ sơ.
+* **VERIFY:** Tích lũy từ 950 lên 1.050 EXP -> giao diện công bố thăng từ `Novice` lên `Script Kiddie` kèm huy hiệu mới; trừ EXP xuống dưới 1.000 vẫn giữ cấp; nộp lại không mở khóa lần hai.
+* **Trạng thái triển khai:** Đã thêm thang cấp, cập nhật cấp và huy hiệu cùng giao dịch nhận EXP, huy hiệu Capstone khi chứng chỉ được cấp, bộ sưu tập dựa trên bản ghi thật và modal có tùy chọn âm thanh. Người dùng cũ được xét cấp khi nhận EXP tiếp theo, không tự truy hồi huy hiệu lịch sử. 153 API và 14 web tests qua; typecheck, lint, build qua. [Handoff](cf-702-rank-badges.md).
 
 #### Task CF-801: Xây dựng Admin CMS Quản trị Nội dung Toàn diện (Phase 1 Management)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `nextjs-react-expert`, `api-patterns`

@@ -192,6 +192,10 @@ async function processIssuance(id: string) {
         where: { id },
         data: { status: 'issued', lastError: null },
       });
+      await tx.userBadge.createMany({
+        data: [{ userId: session.userId, badgeId: 'capstone_certified', earnedAt: issuedAt }],
+        skipDuplicates: true,
+      });
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown signing failure';

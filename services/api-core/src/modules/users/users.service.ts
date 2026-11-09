@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { AuthError } from '../auth/auth.service.js';
 import { streakSummary } from '../streak/streak.service.js';
+import { nextRank, rankTiers } from '../ranks/rank.policy.js';
 import type {
   UpdateProfileInput,
   UserDossierResponse,
@@ -51,7 +52,7 @@ export class UsersService {
 
     // Full Public or Self view (Wireframe 2.1)
     const telemetry = this.computeSkillTelemetry(user.expPoints);
-    const badges = this.computeBadges(user.expPoints, user.badgeAwards);
+    const badges = this.computeBadges(user.badgeAwards);
     const certificates = this.formatCertificates(user.certificates);
     const completedPaths = this.formatLearningPaths(user.expPoints);
 
@@ -61,6 +62,8 @@ export class UsersService {
       username: user.username,
       avatarUrl: user.avatarUrl,
       rankTier: user.rankTier,
+      nextRankTier: nextRank(user.rankTier)?.name ?? null,
+      nextRankExp: nextRank(user.rankTier)?.minExp ?? null,
       expPoints: user.expPoints,
       streakDays: streakSummary(user),
       ...(isSelf && { timezone: user.timezone }),
@@ -143,66 +146,53 @@ export class UsersService {
   }
 
   /**
-   * Helper: Calculate unlocked badges based on user progression
+   * Show achievements only when their award is recorded.
    */
-  private computeBadges(
-    exp: number,
-    awards: Array<{ badgeId: string; earnedAt: Date }>,
-  ): BadgeItem[] {
+  private computeBadges(awards: Array<{ badgeId: string; earnedAt: Date }>): BadgeItem[] {
     const awardFor = (id: string) => awards.find((award) => award.badgeId === id);
-    return [
-      {
-        id: 'first_blood',
-        name: 'First Blood',
-        description: 'Captured the first flag on a live competition room',
-        icon: '🗡️',
-        isUnlocked: exp >= 50,
-      },
+    const definitions = [
+      ...rankTiers.slice(1).map((tier) => ({
+        id: tier.badgeId!,
+        name: tier.name,
+        description: `Đạt cấp ${tier.name} từ ${tier.minExp.toLocaleString('vi-VN')} EXP`,
+        icon: '✦',
+      })),
       {
         id: 'streak_7',
         name: '7-Day Warrior',
         description: 'Maintained active hacking streak for 7 consecutive days',
         icon: '🔥',
-        isUnlocked: Boolean(awardFor('streak_7')),
-        unlockedAt: awardFor('streak_7')?.earnedAt.toISOString(),
       },
       {
         id: 'streak_30',
         name: 'Cyber Habit Master',
         description: 'Maintained a 30-day learning streak',
         icon: '🔥',
-        isUnlocked: Boolean(awardFor('streak_30')),
-        unlockedAt: awardFor('streak_30')?.earnedAt.toISOString(),
       },
       {
-        id: 'koth_king',
-        name: 'KotH King',
-        description: 'Held the King of the Hill hill for over 10 consecutive ticks',
+        id: 'capstone_certified',
+        name: 'Capstone Certified',
+        description: 'Được cấp chứng chỉ sau khi vượt qua kỳ thi Capstone',
+        icon: '🎓',
+      },
+      {
+        id: 'first_blood',
+        name: 'First Blood',
+        description: 'Là người đầu tiên giải một đề CTF',
+        icon: '🗡️',
+      },
+      {
+        id: 'koth_champion',
+        name: 'King of the Hill Champion',
+        description: 'Chiến thắng một trận King of the Hill',
         icon: '👑',
-        isUnlocked: exp >= 300,
-      },
-      {
-        id: 'root_shell',
-        name: 'Root Shell',
-        description: 'Escalated privileges to NT AUTHORITY\\SYSTEM or UID 0',
-        icon: '💻',
-        isUnlocked: exp >= 150,
-      },
-      {
-        id: 'cloud_guardian',
-        name: 'Cloud Guardian',
-        description: 'Hardened Kubernetes cluster against privilege escalation',
-        icon: '☁️',
-        isUnlocked: exp >= 600,
-      },
-      {
-        id: 'zero_day_hunter',
-        name: 'Zero-Day Hunter',
-        description: 'Identified an undocumented binary memory corruption vulnerability',
-        icon: '🎯',
-        isUnlocked: exp >= 1200,
       },
     ];
+    return definitions.map((badge) => ({
+      ...badge,
+      isUnlocked: Boolean(awardFor(badge.id)),
+      unlockedAt: awardFor(badge.id)?.earnedAt.toISOString(),
+    }));
   }
 
   /**

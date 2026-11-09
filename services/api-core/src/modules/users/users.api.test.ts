@@ -95,6 +95,10 @@ describe('Users & Profiles API Integration Tests (CF-104 / US-01.03)', () => {
       expect(dossier.telemetry.webExploitation).toBeGreaterThanOrEqual(0);
       expect(dossier.badges).toBeDefined();
       expect(Array.isArray(dossier.badges)).toBe(true);
+      expect(dossier.badges.every((badge: { isUnlocked: boolean }) => !badge.isUnlocked)).toBe(
+        true,
+      );
+      expect(dossier.nextRankTier).toBe('Script Kiddie');
 
       // Security check: visitor cannot see user's email
       expect(dossier.email).toBeUndefined();
