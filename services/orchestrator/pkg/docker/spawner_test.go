@@ -155,6 +155,17 @@ func TestSandboxPolicy(t *testing.T) {
 	}
 }
 
+func TestConfiguredLabResourcesStayIsolated(t *testing.T) {
+	resources := LabResources{CPUMillicores: 500, MemoryMb: 512, Ports: []int{80, 8080}}
+	if !resources.valid() || (LabResources{CPUMillicores: 3000, MemoryMb: 512}).valid() || (LabResources{CPUMillicores: 500, MemoryMb: 512, Ports: []int{80, 80}}).valid() {
+		t.Fatal("resource validation failed")
+	}
+	containerConfig, hostConfig, _ := configWithResources("cyberforce/test:v1", "11111111-1111-4111-8111-111111111111", "cf-lab-net-test", resources)
+	if hostConfig.Resources.NanoCPUs != 500_000_000 || hostConfig.Resources.Memory != 512*1024*1024 || len(containerConfig.ExposedPorts) != 2 || len(hostConfig.PortBindings) != 0 {
+		t.Fatal("configured resources or internal-only ports were not applied")
+	}
+}
+
 func TestTerminalPolicy(t *testing.T) {
 	id := "11111111-1111-4111-8111-111111111111"
 	config, host, networking := terminalConfig(id, "cf-lab-net-"+id)

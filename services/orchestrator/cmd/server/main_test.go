@@ -14,6 +14,7 @@ type fakeSpawner struct {
 	spawned, stopped              bool
 	vpnConnected, vpnDisconnected bool
 	flag                          string
+	resources                     labdocker.LabResources
 }
 
 func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.Instance, error) {
@@ -22,6 +23,13 @@ func (f *fakeSpawner) Spawn(_ context.Context, id, _, flag string) (labdocker.In
 	return labdocker.Instance{ID: id, ContainerID: "container", TargetIP: "100.64.0.2"}, nil
 }
 func (f *fakeSpawner) Stop(_ context.Context, _ string) error { f.stopped = true; return nil }
+func (f *fakeSpawner) SpawnConfigured(ctx context.Context, id, image, flag string, resources labdocker.LabResources) (labdocker.Instance, error) {
+	f.resources = resources
+	return f.Spawn(ctx, id, image, flag)
+}
+func (f *fakeSpawner) ImageAvailable(_ context.Context, image string) (bool, error) {
+	return image == "cyberforce/test:v1", nil
+}
 func (f *fakeSpawner) KothSnapshot(_ context.Context, _ string) (labdocker.KothSnapshot, error) {
 	return labdocker.KothSnapshot{King: "Player1", Healthy: true}, nil
 }
@@ -51,6 +59,16 @@ func TestPrivateAPI(t *testing.T) {
 	h.ServeHTTP(created, req)
 	if created.Code != http.StatusCreated || !fake.spawned || fake.flag != flag || strings.Contains(created.Body.String(), flag) {
 		t.Fatalf("spawn failed: %d", created.Code)
+	}
+	if fake.resources.CPUMillicores != 2000 || fake.resources.MemoryMb != 2048 {
+		t.Fatal("legacy spawn did not receive safe resource defaults")
+	}
+	imageReq := httptest.NewRequest(http.MethodGet, "/v1/images/available?name=cyberforce/test:v1", nil)
+	imageReq.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))
+	imageResponse := httptest.NewRecorder()
+	h.ServeHTTP(imageResponse, imageReq)
+	if imageResponse.Code != http.StatusOK || !strings.Contains(imageResponse.Body.String(), `"available":true`) {
+		t.Fatal("image availability check failed")
 	}
 	connect := httptest.NewRequest(http.MethodPost, "/v1/instances/"+id+"/vpn-network", nil)
 	connect.Header.Set("Authorization", "Bearer "+strings.Repeat("s", 32))

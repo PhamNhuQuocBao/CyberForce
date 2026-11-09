@@ -127,6 +127,11 @@ export function Navbar() {
                   )}
                   {['org_admin', 'superadmin'].includes(user.role) && (
                     <DropdownMenuItem asChild>
+                      <Link href="/admin/cms">Quản trị nội dung</Link>
+                    </DropdownMenuItem>
+                  )}
+                  {['org_admin', 'superadmin'].includes(user.role) && (
+                    <DropdownMenuItem asChild>
                       <Link href="/admin/roles">Duyệt quyền Creator</Link>
                     </DropdownMenuItem>
                   )}

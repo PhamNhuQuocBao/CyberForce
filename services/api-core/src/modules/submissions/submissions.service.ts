@@ -57,7 +57,7 @@ async function validateAnswer(
 
 export async function submitAnswer(taskId: string, userId: string, input: SubmitInput) {
   const question = await prisma.question.findFirst({
-    where: { id: input.questionId, taskId },
+    where: { id: input.questionId, taskId, status: 'published', task: { status: 'published' } },
     include: { task: { select: { roomId: true, room: { select: { slug: true } } } } },
   });
   if (!question)

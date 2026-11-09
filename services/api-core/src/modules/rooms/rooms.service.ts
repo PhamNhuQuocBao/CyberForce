@@ -15,18 +15,24 @@ export async function getRoom(slug: string, userId: string) {
       pointsReward: true,
       isFree: true,
       publishedAt: true,
+      status: true,
       targetTemplateSpec: true,
-      learningPath: { select: { title: true, slug: true, isPublished: true } },
+      module: { select: { status: true } },
+      learningPath: { select: { title: true, slug: true, isPublished: true, status: true } },
       prerequisiteRoom: {
         select: {
           id: true,
           slug: true,
           title: true,
           publishedAt: true,
-          tasks: { select: { questions: { select: { id: true } } } },
+          tasks: {
+            where: { status: 'published' },
+            select: { questions: { where: { status: 'published' }, select: { id: true } } },
+          },
         },
       },
       tasks: {
+        where: { status: 'published' },
         orderBy: [{ taskOrder: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
@@ -34,6 +40,7 @@ export async function getRoom(slug: string, userId: string) {
           taskOrder: true,
           contentMdx: true,
           questions: {
+            where: { status: 'published' },
             orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
@@ -49,8 +56,11 @@ export async function getRoom(slug: string, userId: string) {
   if (
     !room ||
     !room.publishedAt ||
+    room.status !== 'published' ||
+    (room.module?.status !== undefined && room.module.status !== 'published') ||
     room.publishedAt > new Date() ||
-    (room.learningPath && !room.learningPath.isPublished)
+    (room.learningPath &&
+      (!room.learningPath.isPublished || room.learningPath.status !== 'published'))
   ) {
     throw new AuthError(404, 'Không tìm thấy phòng học đã xuất bản.', 'ROOM_NOT_FOUND');
   }
