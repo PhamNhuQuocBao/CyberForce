@@ -186,7 +186,7 @@ journey
 | **Xác thực & Người dùng** | - OAuth2 Google/GitHub<br>- Email/Password + JWT<br>- Phân quyền RBAC cơ bản                                                        | - 2FA (TOTP Authenticator)<br>- Quản lý phiên đăng nhập                                                                 | - SSO SAML cho Doanh nghiệp<br>- Đăng nhập qua Web3 ví                                                    | - Đăng nhập bằng sinh trắc học thiết bị |
 | **LMS & Nội dung**        | - Lộ trình học (Learning Paths)<br>- Phòng lab tương tác (Rooms/Tasks)<br>- Trình hiển thị Markdown/MDX<br>- Chấm cờ Static & Regex | - Hệ thống gợi ý có trừ điểm<br>- Tự động mở Walkthrough khi xong                                                       | - Tích hợp AI Tutor hỗ trợ học tập<br>- Bình luận & Thảo luận phòng học                                   | - Trình tạo video bài giảng tự động     |
 | **Môi trường Thực hành**  | - Khởi tạo Docker Lab 1-Click<br>- Web Terminal nhúng (xterm.js)<br>- Thời hạn thuê lab 60 phút + nút gia hạn                       | - WireGuard VPN Gateway<br>- Kali AttackBox trên trình duyệt<br>- Dynamic Salted Flags<br>- MicroVMs cho Rootkit/Kernel | - Kịch bản mạng đa mục tiêu (Multi-node Range)<br>- Snapshot & Rollback trạng thái máy                    | - Giả lập phần cứng IoT chuyên dụng     |
-| **Thi đấu & Arena**       | - Bảng xếp hạng điểm EXP toàn cầu                                                                                                   | - Jeopardy CTF Engine<br>- Dynamic Decay Scoring<br>- Đóng băng Scoreboard giải đấu                                     | - Đấu trường King of the Hill (KotH)<br>- Tick Engine tính điểm thời gian thực<br>- Chế độ Attack-Defense | - Giải đấu thực tế ảo VR Cyber Arena    |
+| **Thi đấu & Arena**       | - Bảng xếp hạng điểm EXP toàn cầu                                                                                                   | - Jeopardy CTF Engine<br>- Điểm cố định, phá hòa theo thời điểm đạt điểm<br>- Đóng băng Scoreboard giải đấu                                     | - Đấu trường King of the Hill (KotH)<br>- Tick Engine tính điểm thời gian thực<br>- Chế độ Attack-Defense | - Giải đấu thực tế ảo VR Cyber Arena    |
 | **Khảo thí & Chứng chỉ**  | - Theo dõi tiến độ hoàn thành lộ trình                                                                                              | - Kỳ thi Capstone thực hành 6h-12h<br>- Sinh chứng chỉ PDF có mã QR<br>- Cổng tra cứu `verify.cyberforce.io`            | - OpenBadges & 1-Click LinkedIn<br>- Thu hồi & Tái cấp chứng chỉ                                          | - Giám thị thi bằng AI quét khuôn mặt   |
 | **Quản trị & B2B**        | - Dashboard quản trị viên CRUD nội dung                                                                                             | - Lab Creator Studio cơ bản                                                                                             | - Cổng Doanh nghiệp & Đại học<br>- Skill Gap Analytics Matrix                                             | - Tích hợp hệ thống tính lương HR       |
 
@@ -414,19 +414,19 @@ Feature: King of the Hill Match Lifecycle
     And Áp dụng hình phạt: Trừ điểm tick hiện tại và tự động khóa tài khoản (Block Account) trong 3 ngày sau khi trận đấu kết thúc nếu tái phạm
 ```
 
-##### User Story 5.2: Tính điểm Động (Dynamic Decay Scoring) trong Jeopardy CTF
+##### User Story 5.2: Điểm cố định và phá hòa theo thời gian trong Jeopardy CTF
 
 > **Là một** thí sinh tham gia giải CTF,  
-> **Tôi muốn** điểm số của bài thi tự động giảm dần khi có nhiều người giải được,  
-> **Để** đảm bảo sự công bằng và phản ánh chính xác độ khó thực tế của thử thách.
+> **Tôi muốn** điểm số thử thách giữ nguyên sau khi công bố và thứ hạng bằng điểm được phân định bằng thời điểm đạt điểm,
+> **Để** hiểu rõ điểm mình nhận và cạnh tranh theo cùng một quy tắc.
 
 ```
-Feature: Dynamic Decay Scoring
-  Scenario: Điểm thử thách giảm khi có thêm lượt giải thành công
-    Given Thử thách "Binary Pwn 01" có điểm ban đầu là 500 điểm (1 lượt giải)
-    When Có thêm 9 người giải thành công thử thách này (tổng 10 lượt)
-    Then Điểm số của thử thách tự động tính toán lại giảm còn 340 điểm
-    And Điểm số của tất cả 10 người đã giải trước đó tự động cập nhật về mức 340 điểm
+Feature: Fixed CTF Scoring
+  Scenario: Điểm giữ nguyên và phá hòa bằng thời gian
+    Given Thử thách "Binary Pwn 01" có điểm công bố là 500 điểm
+    When Có 10 người giải thành công thử thách này
+    Then Mỗi người nhận 500 điểm và điểm thử thách vẫn là 500
+    And Nếu hai người bằng tổng điểm, ai đạt tổng điểm đó sớm hơn đứng trước
 ```
 
 ---
@@ -584,7 +584,7 @@ Cung cấp công cụ cho giảng viên biên soạn bài lab (Giai đoạn 2) v
 
 ### 8.2. Quy tắc Chấm điểm & Gợi ý (Scoring & Hint Policy)
 
-1. **Điểm thưởng cơ bản:** Mỗi câu hỏi có mức điểm thưởng cố định hoặc tính theo Dynamic Decay.
+1. **Điểm thưởng cơ bản:** Câu hỏi học tập có điểm theo cấu hình riêng; thử thách CTF có điểm cố định sau khi công bố và không cộng vào EXP học tập.
 2. **Khấu trừ điểm khi mở gợi ý:**
    - Mở Gợi ý cấp 1: Trừ $10\%$ tổng điểm câu hỏi.
    - Mở Gợi ý cấp 2: Trừ thêm $20\%$ tổng điểm câu hỏi.

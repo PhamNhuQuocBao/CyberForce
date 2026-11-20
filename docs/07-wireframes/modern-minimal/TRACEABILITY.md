@@ -73,7 +73,7 @@ Nguồn: [EPIC_05_WIREFRAMES_CTF_KOTH.md](../EPIC_05_WIREFRAMES_CTF_KOTH.md).
 | 5.3: KotH Live Combat HUD | [CTF-03](05-competition.md#ctf-03) |
 | 5.4: KotH SLA Service Outage Alert & Auto-Heal Daemon HUD | [CTF-03](05-competition.md#ctf-03) |
 | 5.5: Anti-Sabotage Disciplinary Penalty Modal | [CTF-03](05-competition.md#ctf-03) |
-| 5.6: Jeopardy CTF Challenge Matrix & Dynamic Decay Popover | [CTF-04](05-competition.md#ctf-04) |
+| 5.6: Jeopardy CTF fixed points & reached-at tie-break | [CTF-04](05-competition.md#ctf-04) |
 | 5.7: Late-Game Scoreboard Freeze Banner & Personal Progress View | [CTF-04](05-competition.md#ctf-04) |
 | 5.8: Grand Finale Unfreeze Ceremony, Top 3 Podium & Trophy Card | [CTF-05](05-competition.md#ctf-05) |
 

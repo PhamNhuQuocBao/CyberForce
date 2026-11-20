@@ -51,7 +51,7 @@
 - **US-05.01**: Tham gia Đấu trường King of the Hill (KotH Match Lifecycle & Tick Engine)
 - **US-05.02**: Giám sát SLA Dịch vụ & Cơ chế Tự Phục hồi Máy chủ (Service Auto-Heal Daemon)
 - **US-05.03**: Chống Phá hoại Hệ thống & Kỷ luật Vi phạm KotH (Anti-Sabotage & Disciplinary)
-- **US-05.04**: Thi đấu Jeopardy CTF & Tính điểm Suy giảm Động (Dynamic Decay Scoring)
+- **US-05.04**: Thi đấu Jeopardy CTF, điểm cố định, phá hòa theo thời gian và đóng băng bảng điểm
 
 ### Epic 6: Practical Capstone Exams & Verifiable Digital Certificates
 - **US-06.01**: Tham gia Kỳ thi Khảo thí Thực hành Độc lập (Hands-on Capstone Exam Session)

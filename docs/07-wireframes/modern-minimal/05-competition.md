@@ -146,19 +146,19 @@ Không đưa hoạt ảnh đổi ngôi hoặc âm thanh bắt buộc. +10 điể
 
 ## CTF-04 — Thử thách Jeopardy CTF
 
-**Đường dẫn thiết kế:** `/ctf/[event]`. **Nguồn nghiệp vụ:** US-05.04.
+**Đường dẫn thiết kế:** `/arena/[slug]`. **Nguồn nghiệp vụ:** US-05.04.
 
-**Ưu tiên:** Thử thách, điểm hiện tại, lượt giải và nộp cờ.
+**Ưu tiên:** Thử thách, điểm cố định, thời điểm đạt điểm và nộp cờ.
 
 ### Desktop
 
 ```text
 Tên giải · Giờ kết thúc · Điểm cá nhân
 [Thử thách | Bảng điểm]  [Kỹ năng] [Chưa giải]
-Tên / Kỹ năng / Điểm hiện tại / Số lượt giải / Trạng thái
+Tên / Kỹ năng / Điểm cố định / Trạng thái
 Thử thách được chọn mở panel:
 Đề bài / tệp đính kèm / target nếu có
-Điểm khởi đầu → hiện tại → tối thiểu; giải thích suy giảm
+Điểm công bố giữ nguyên trong suốt giải
 Flag [________________________] [Nộp]
 Phản hồi
 ```
@@ -177,7 +177,7 @@ Flag [________] [Nộp]
 
 ### Hành vi và thông tin cần giữ
 
-Chọn thử thách không làm mất bộ lọc/dòng đang xem. Điểm suy giảm hồi tố cho mọi người giải, trình bày giải thích tại panel thay huy hiệu. Tệp đính kèm có tên/loại/dung lượng khi dữ liệu có. Bảng điểm độc lập với xác nhận nộp cá nhân.
+Chọn thử thách không làm mất bộ lọc/dòng đang xem. Điểm công bố không đổi khi có thêm người giải. Bảng điểm hiển thị “Đạt điểm lúc” để giải thích thứ tự khi bằng điểm; xác nhận nộp cá nhân độc lập với bảng điểm công khai.
 
 ### Trạng thái riêng
 
@@ -185,7 +185,7 @@ Chọn thử thách không làm mất bộ lọc/dòng đang xem. Điểm suy gi
 |---|---|
 | Freeze | Banner nêu bảng công khai dừng cập nhật từ giờ nào; nộp cờ vẫn hoạt động. |
 | Đúng trong freeze | Hiện đã chấp nhận và thời điểm, không suy ra thứ hạng mới hoặc tiết lộ điểm ẩn. |
-| Điểm thay đổi | Cập nhật giá trị server, giải thích do số lượt giải tăng. |
+| Bằng điểm | Người đạt tổng điểm sớm hơn đứng trước; người chưa có điểm đồng hạng. |
 | Hết giờ | Khóa nộp theo server, giữ khả năng đọc đề và kết quả. |
 | Nộp lỗi/mất mạng | Giữ đáp án, đối chiếu trạng thái trước thử lại; không báo đã nhận khi chưa có xác nhận. |
 

@@ -31,7 +31,7 @@ Các điểm này không được coi là thay đổi nghiệp vụ đã đượ
 - [ ] Không mất nháp/phiên khi chuyển tab mobile hoặc resize workspace; offline không báo nộp thành công giả.
 - [ ] Lab: xung đột target, gia hạn hết lượt, grace, thu hồi và reconnect được kiểm tra bằng trạng thái backend.
 - [ ] Thi: không gợi ý, không đổi VPN, deadline server, kết thúc không gửi trùng, PDF pending/error tách khỏi kết quả thi.
-- [ ] CTF: suy giảm điểm và freeze không tiết lộ thứ hạng chưa công bố; KotH không cộng điểm từ timer client.
+- [ ] CTF: điểm cố định, phá hòa theo lúc đạt điểm và freeze không tiết lộ thứ hạng chưa công bố; KotH không cộng điểm từ timer client.
 - [ ] Quyền riêng tư và RBAC: khách/private/Student/Creator/Admin/tổ chức không thấy dữ liệu ngoài quyền.
 - [ ] CMS và Creator: validation, test, gửi duyệt, duyệt đồng thời và bản nháp không mất khi lỗi.
 - [ ] B2B: người chưa học không bị đánh giá là năng lực 0; đơn vị/benchmark có nguồn rõ ràng.
