@@ -33,12 +33,14 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "nanoid": "^6.0.1",
+    "pdfkit": "0.15.2",
     "ws": "^8.22.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.13.9",
+    "@types/pdfkit": "0.17.7",
     "@types/ws": "^8.18.2",
     "prisma": "6.19.3",
     "tsx": "^4.19.3",

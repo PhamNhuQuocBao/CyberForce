@@ -459,10 +459,10 @@ gantt
 #### Task CF-803: Bảng Điều Khiển Phân Tích Lỗ Hổng Kỹ Năng Doanh Nghiệp (Skill Gap Matrix)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `frontend-design`, `api-patterns`
 * **Priority:** `P2 (Medium)` | **Dependencies:** CF-703
-* **Mô tả:** Xây dựng cổng B2B dành cho Doanh nghiệp & Trường đại học tại `/org/analytics`. Hiển thị ma trận kỹ năng tổng hợp của toàn bộ nhân viên/sinh viên theo phòng ban, phát hiện các điểm yếu kiến thức (ví dụ: Cloud Security còn yếu) để đề xuất lộ trình đào tạo phù hợp (Story `US-08.03`, Wireframe 8.3).
+* **Mô tả:** Quản trị viên được gán vào tổ chức xem ma trận 8 kỹ năng của thành viên theo phòng ban/lớp tại `/org/analytics`. Điểm thành thạo 0–100 dựa trên EXP kỹ năng thực nhận từ CF-703 so với EXP của nội dung đã xuất bản, có tính cả thành viên chưa hoạt động. Phát hiện kỹ năng yếu, gợi ý lộ trình phù hợp và xuất báo cáo PDF/CSV. Bổ sung tổ chức, nhóm, thành viên và quyền truy cập riêng từng tổ chức (Story `US-08.03`, Wireframe 8.3).
 * **INPUT:** `docs/05-epics/EPIC_08_LAB_CREATOR_STUDIO_ANALYTICS.md` (US-08.03) & Wireframe 8.3.
-* **OUTPUT:** Trang `apps/web/src/app/(dashboard)/org/analytics/page.tsx`, component `SkillGapMatrixTable.tsx`.
-* **VERIFY:** Quản trị viên doanh nghiệp truy cập -> Xem biểu đồ phân bố kỹ năng của 50 học viên trong tổ chức và xuất báo cáo PDF thành công.
+* **OUTPUT:** `/org/analytics`, `SkillGapMatrixTable.tsx`, API `/api/v1/org/organizations/**`, schema/SQL tổ chức và báo cáo PDF/CSV.
+* **VERIFY:** 50 học viên được tính đúng theo nhóm; nhóm 30 người chưa có điểm hiển thị 0/100; quản trị viên tổ chức khác bị chặn cả dữ liệu và file xuất; PDF mở được và CSV chống công thức độc hại.
 
 ---
 
