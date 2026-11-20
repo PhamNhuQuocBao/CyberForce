@@ -16,6 +16,207 @@ export interface CmsItem {
   [key: string]: unknown;
 }
 
+export interface CreatorQuestion {
+  id: string;
+  taskId: string;
+  questionText: string;
+  flagType: 'static' | 'regex' | 'dynamic_hmac';
+  flagPattern: string | null;
+  answerConfigured: boolean;
+  pointsReward: number;
+  hintTiers: unknown;
+  status: CmsStatus;
+  updatedAt: string;
+}
+export interface CreatorTask {
+  id: string;
+  roomId: string;
+  title: string;
+  taskOrder: number;
+  contentMdx: string;
+  status: CmsStatus;
+  updatedAt: string;
+  questions: CreatorQuestion[];
+}
+export interface CreatorAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+export interface CreatorRoom extends CmsItem {
+  pathId: string;
+  moduleId: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  difficulty: string;
+  roomType: string;
+  isFree: boolean;
+  pointsReward: number;
+  estimatedMinutes: number;
+  orderIndex: number;
+  prerequisiteRoomId: string | null;
+  requiredForCapstone: boolean;
+  targetTemplateSpec: {
+    image?: string;
+    cpuMillicores?: number;
+    memoryMb?: number;
+    ports?: number[];
+  };
+  reviewStatus: 'editing' | 'pending_review' | 'changes_requested' | 'rejected' | 'approved';
+  reviewFeedback: string | null;
+  tasks: CreatorTask[];
+  creatorAttachments: CreatorAttachment[];
+}
+export interface CreatorTestStatus {
+  instanceId: string | null;
+  targetIp: string | null;
+  status: string;
+  expiresAt: string | null;
+  validRevision: boolean;
+  verifiedQuestionIds: string[];
+  verifiedCount: number;
+  requiredCount: number;
+  passed: boolean;
+}
+
+const creatorEndpoint = (id: string) => `/creator/rooms/${encodeURIComponent(id)}`;
+const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+export const creatorApi = {
+  catalog: (token: string) =>
+    request<{
+      success: true;
+      data: Array<{ id: string; title: string; modules: Array<{ id: string; title: string }> }>;
+    }>('/creator/catalog', { headers: auth(token) }),
+  list: (token: string) =>
+    request<{ success: true; data: CreatorRoom[] }>('/creator/rooms', { headers: auth(token) }),
+  get: (id: string, token: string) =>
+    request<{ success: true; data: CreatorRoom }>(creatorEndpoint(id), { headers: auth(token) }),
+  create: (data: Record<string, unknown>, token: string) =>
+    request<{ success: true; data: CreatorRoom }>('/creator/rooms', {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, version: string, data: Record<string, unknown>, token: string) =>
+    request<{ success: true; data: CreatorRoom }>(creatorEndpoint(id), {
+      method: 'PUT',
+      headers: auth(token),
+      body: JSON.stringify({ version, data }),
+    }),
+  createTask: (id: string, data: Record<string, unknown>, token: string) =>
+    request<{ success: true; data: CreatorRoom }>(`${creatorEndpoint(id)}/tasks`, {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify(data),
+    }),
+  updateTask: (
+    id: string,
+    taskId: string,
+    version: string,
+    data: Record<string, unknown>,
+    token: string,
+  ) =>
+    request<{ success: true; data: CreatorRoom }>(`${creatorEndpoint(id)}/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: auth(token),
+      body: JSON.stringify({ version, data }),
+    }),
+  createQuestion: (id: string, data: Record<string, unknown>, token: string) =>
+    request<{ success: true; data: CreatorRoom }>(`${creatorEndpoint(id)}/questions`, {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify(data),
+    }),
+  updateQuestion: (
+    id: string,
+    questionId: string,
+    version: string,
+    data: Record<string, unknown>,
+    token: string,
+  ) =>
+    request<{ success: true; data: CreatorRoom }>(
+      `${creatorEndpoint(id)}/questions/${questionId}`,
+      { method: 'PUT', headers: auth(token), body: JSON.stringify({ version, data }) },
+    ),
+  upload: (id: string, file: File, token: string) =>
+    request<{ success: true; data: CreatorAttachment }>(
+      `${creatorEndpoint(id)}/attachments?${new URLSearchParams({ filename: file.name, mime: file.type || 'application/octet-stream' })}`,
+      {
+        method: 'POST',
+        headers: { ...auth(token), 'Content-Type': 'application/octet-stream' },
+        body: file,
+      },
+    ),
+  removeAttachment: (id: string, fileId: string, token: string) =>
+    request<{ success: true }>(`${creatorEndpoint(id)}/attachments/${fileId}`, {
+      method: 'DELETE',
+      headers: auth(token),
+    }),
+  async download(id: string, fileId: string, token: string) {
+    const current = tokenExpiresSoon(token) ? await refreshSession() : token;
+    const response = await fetch(`${API_BASE_URL}${creatorEndpoint(id)}/attachments/${fileId}`, {
+      headers: auth(current),
+      credentials: 'include',
+    });
+    if (!response.ok) throw new ApiError(response.status, 'Không tải được tệp đính kèm.');
+    return response.blob();
+  },
+  testStatus: (id: string, token: string) =>
+    request<{ success: true; data: CreatorTestStatus }>(`${creatorEndpoint(id)}/test`, {
+      headers: auth(token),
+    }),
+  startTest: (id: string, token: string) =>
+    request<{ success: true; data: CreatorTestStatus }>(`${creatorEndpoint(id)}/test`, {
+      method: 'POST',
+      headers: auth(token),
+    }),
+  stopTest: (id: string, token: string) =>
+    request<{ success: true; data: CreatorTestStatus }>(`${creatorEndpoint(id)}/test`, {
+      method: 'DELETE',
+      headers: auth(token),
+    }),
+  checkFlag: (id: string, questionId: string, answer: string, token: string) =>
+    request<{ success: true; data: CreatorTestStatus & { correct: boolean } }>(
+      `${creatorEndpoint(id)}/test/flags/${questionId}`,
+      { method: 'POST', headers: auth(token), body: JSON.stringify({ answer }) },
+    ),
+  terminalTicket: (id: string, token: string) =>
+    request<{ success: true; data: { ticket: string } }>(
+      `${creatorEndpoint(id)}/test/terminal-ticket`,
+      { method: 'POST', headers: auth(token) },
+    ),
+  submit: (id: string, token: string) =>
+    request<{ success: true; data: { reviewStatus: string } }>(
+      `${creatorEndpoint(id)}/submit-review`,
+      { method: 'POST', headers: auth(token) },
+    ),
+  queue: (token: string) =>
+    request<{
+      success: true;
+      data: Array<{
+        id: string;
+        title: string;
+        slug: string;
+        reviewSubmittedAt: string;
+        creator: { username: string };
+        tasks: CreatorTask[];
+      }>;
+    }>('/admin/creator-reviews', { headers: auth(token) }),
+  decide: (
+    id: string,
+    decision: 'approved' | 'changes_requested' | 'rejected',
+    feedback: string,
+    token: string,
+  ) =>
+    request<{ success: true; data: { status: string; reviewStatus: string } }>(
+      `/admin/creator-reviews/${id}/decision`,
+      { method: 'POST', headers: auth(token), body: JSON.stringify({ decision, feedback }) },
+    ),
+};
+
 export const cmsApi = {
   list(
     kind: CmsKind,
@@ -683,6 +884,7 @@ export interface RoomDetail {
   path: { title: string; slug: string } | null;
   totalQuestions: number;
   completedQuestions: number;
+  attachments: Array<{ id: string; filename: string; mimeType: string; sizeBytes: number }>;
   tasks: Array<{
     id: string;
     title: string;
@@ -729,6 +931,15 @@ export const vpnApi = {
 };
 
 export const roomsApi = {
+  async downloadAttachment(slug: string, fileId: string, token: string) {
+    const current = tokenExpiresSoon(token) ? await refreshSession() : token;
+    const response = await fetch(
+      `${API_BASE_URL}/rooms/${encodeURIComponent(slug)}/attachments/${fileId}`,
+      { headers: auth(current), credentials: 'include' },
+    );
+    if (!response.ok) throw new ApiError(response.status, 'Không tải được tệp đính kèm.');
+    return response.blob();
+  },
   getRoom(slug: string, accessToken: string) {
     return request<{ success: true; data: RoomDetail }>(`/rooms/${encodeURIComponent(slug)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },

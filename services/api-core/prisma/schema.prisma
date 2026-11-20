@@ -49,6 +49,16 @@ enum ContentStatus {
   @@map("content_status")
 }
 
+enum CreatorReviewStatus {
+  editing
+  pending_review
+  changes_requested
+  rejected
+  approved
+
+  @@map("creator_review_status")
+}
+
 enum InstanceStatus {
   provisioning
   running
@@ -131,6 +141,9 @@ model User {
   certificateIssuances CertificateIssuance[]
   streakDaysHistory StreakDay[]
   badgeAwards UserBadge[]
+  createdRooms Room[] @relation("CreatorRooms")
+  creatorTestRuns CreatorTestRun[]
+  creatorAttachments CreatorAttachment[]
 
   @@map("users")
 }
@@ -323,6 +336,11 @@ model Room {
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
   requiredForCapstone Boolean @default(true) @map("required_for_capstone")
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  creatorId          String?   @map("creator_id") @db.Uuid
+  reviewStatus       CreatorReviewStatus @default(editing) @map("review_status")
+  reviewFingerprint  String?   @map("review_fingerprint") @db.VarChar(64)
+  reviewSubmittedAt  DateTime? @map("review_submitted_at") @db.Timestamptz
+  reviewFeedback     String?   @map("review_feedback") @db.Text
 
   // Relations
   learningPath     LearningPath? @relation(fields: [pathId], references: [id], onDelete: SetNull)
@@ -332,11 +350,50 @@ model Room {
   tasks            Task[]
   labInstances     LabInstance[]
   kothMatches      KothMatch[]
+  creator User? @relation("CreatorRooms", fields: [creatorId], references: [id], onDelete: SetNull)
+  creatorTestRuns CreatorTestRun[]
+  creatorAttachments CreatorAttachment[]
 
   @@index([pathId])
   @@index([moduleId])
   @@index([prerequisiteRoomId])
+  @@index([creatorId, reviewStatus])
   @@map("rooms")
+}
+
+model CreatorTestRun {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @map("room_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  labInstanceId String @unique @map("lab_instance_id") @db.Uuid
+  fingerprint String @db.VarChar(64)
+  verifiedQuestionIds Json @default("[]") @map("verified_question_ids")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  labInstance LabInstance @relation(fields: [labInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@map("creator_test_runs")
+}
+
+model CreatorAttachment {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @map("room_id") @db.Uuid
+  uploaderId String @map("uploader_id") @db.Uuid
+  objectKey String @unique @map("object_key") @db.Text
+  filename String @db.VarChar(255)
+  mimeType String @map("mime_type") @db.VarChar(100)
+  sizeBytes Int @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@map("creator_attachments")
 }
 
 // -----------------------------------------------------------------------------
@@ -402,6 +459,7 @@ model LabInstance {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  creatorTestRun CreatorTestRun?
 
   @@index([userId, status])
   @@index([roomId])

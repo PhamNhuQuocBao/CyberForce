@@ -89,6 +89,11 @@ export default function CmsPage() {
             <h1 className="text-3xl font-semibold">Admin CMS</h1>
           </div>
           {isAdmin && (
+            <Button asChild variant="outline">
+              <Link href="/admin/cms/queue">Bài Creator chờ duyệt</Link>
+            </Button>
+          )}
+          {isAdmin && (
             <Button asChild>
               <Link href={`/admin/cms/${kind}/new?from=${returnTo}`}>
                 Tạo {labels[kind].toLowerCase()}

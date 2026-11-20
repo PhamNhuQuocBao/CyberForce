@@ -122,7 +122,7 @@ export function Navbar() {
                   )}
                   {['creator', 'instructor', 'org_admin', 'superadmin'].includes(user.role) && (
                     <DropdownMenuItem asChild>
-                      <Link href="/#creator-studio">Creator Studio</Link>
+                      <Link href="/creator">Creator Studio</Link>
                     </DropdownMenuItem>
                   )}
                   {['org_admin', 'superadmin'].includes(user.role) && (

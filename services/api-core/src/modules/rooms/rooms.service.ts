@@ -17,6 +17,7 @@ export async function getRoom(slug: string, userId: string) {
       publishedAt: true,
       status: true,
       targetTemplateSpec: true,
+      creatorAttachments: { select: { id: true, filename: true, mimeType: true, sizeBytes: true } },
       module: { select: { status: true } },
       learningPath: { select: { title: true, slug: true, isPublished: true, status: true } },
       prerequisiteRoom: {
@@ -125,5 +126,6 @@ export async function getRoom(slug: string, userId: string) {
     totalQuestions: questions.length,
     completedQuestions: questions.filter((question) => question.isCompleted).length,
     tasks,
+    attachments: room.creatorAttachments,
   };
 }
