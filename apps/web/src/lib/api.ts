@@ -328,6 +328,38 @@ export interface SkillTelemetry {
   cloud_devsecops: number;
 }
 
+export type SkillAxis = keyof SkillTelemetry;
+export interface OrgAnalytics {
+  organization: { id: string; name: string; slug: string };
+  selectedGroupId: string | null;
+  groups: Array<{ id: string; name: string }>;
+  memberCount: number;
+  hasActivity: boolean;
+  availableExp: SkillTelemetry;
+  averages: SkillTelemetry;
+  belowBenchmark: SkillTelemetry;
+  gaps: Array<{
+    skill: SkillAxis;
+    average: number;
+    belowBenchmarkPercent: number;
+    paths: Array<{ id: string; title: string; slug: string }>;
+  }>;
+  page: number;
+  limit: number;
+  totalPages: number;
+  members: Array<{
+    userId: string;
+    username: string;
+    displayName: string;
+    groupId: string | null;
+    groupName: string | null;
+    skillExp: SkillTelemetry;
+    scores: SkillTelemetry;
+    overall: number;
+  }>;
+  generatedAt: string;
+}
+
 export interface BadgeItem {
   id: string;
   name: string;
@@ -1213,6 +1245,36 @@ export const examsApi = {
       );
     }
     if (!response.ok) throw new Error('Không tải được chứng chỉ. Vui lòng thử lại.');
+    return response.blob();
+  },
+};
+
+export const orgApi = {
+  list: (token: string) =>
+    request<{ success: true; data: Array<{ id: string; name: string; slug: string }> }>(
+      '/org/organizations',
+      { headers: auth(token) },
+    ),
+  analytics: (orgId: string, groupId: string | null, page: number, token: string) =>
+    request<{ success: true; data: OrgAnalytics }>(
+      `/org/organizations/${encodeURIComponent(orgId)}/analytics?page=${page}&limit=50${groupId ? `&groupId=${encodeURIComponent(groupId)}` : ''}`,
+      { headers: auth(token) },
+    ),
+  async export(orgId: string, groupId: string | null, format: 'csv' | 'pdf', token: string) {
+    const endpoint = `/org/organizations/${encodeURIComponent(orgId)}/analytics.${format}${groupId ? `?groupId=${encodeURIComponent(groupId)}` : ''}`;
+    let currentToken = tokenExpiresSoon(token) ? await refreshSession() : token;
+    let response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: auth(currentToken),
+      credentials: 'include',
+    });
+    if (response.status === 401) {
+      currentToken = await refreshSession();
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: auth(currentToken),
+        credentials: 'include',
+      });
+    }
+    if (!response.ok) throw new Error('Không tải được báo cáo.');
     return response.blob();
   },
 };
