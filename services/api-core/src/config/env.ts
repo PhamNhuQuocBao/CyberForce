@@ -31,6 +31,13 @@ const envSchema = z.object({
     .default(
       path.resolve(fileURLToPath(import.meta.url), '../../../../../.local-certificates/public'),
     ),
+  CREATOR_S3_ENDPOINT: z.url().default('http://127.0.0.1:9000'),
+  CREATOR_S3_BUCKET: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9.-]{2,62}$/)
+    .default('cyberforce-creator-files'),
+  CREATOR_S3_ACCESS_KEY: z.string().min(3).default('cyberforce_minio'),
+  CREATOR_S3_SECRET_KEY: z.string().min(8).default('cyberforce_minio_dev'),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),

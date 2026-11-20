@@ -14,7 +14,7 @@ const activeStatuses = ['provisioning', 'running', 'terminating'] as const;
 const localToken = 'cyberforce_local_orchestrator_token_2026';
 const releaseLockScript = `if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end`;
 
-async function withUserLock<T>(userId: string, action: () => Promise<T>) {
+export async function withUserLock<T>(userId: string, action: () => Promise<T>) {
   const key = `lab:lock:${userId}`;
   const token = randomUUID();
   const acquired = await redis.set(key, token, 'PX', 30000, 'NX');

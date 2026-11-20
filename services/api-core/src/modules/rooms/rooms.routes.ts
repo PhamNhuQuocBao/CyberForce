@@ -3,6 +3,8 @@ import { authenticate } from '../../middleware/authenticate.js';
 import { assertNoActiveExam } from '../exams/exams.service.js';
 import { pathSlugParamSchema } from '../paths/paths.schemas.js';
 import { getRoom } from './rooms.service.js';
+import { downloadPublishedAttachment } from '../creator/creator.storage.js';
+import { z } from 'zod';
 import { extendLab, spawnLab, stopLab } from './lab.service.js';
 import {
   attackBoxStatus,
@@ -16,6 +18,25 @@ import {
 } from './lab.terminal.js';
 
 export const roomsRoutes: FastifyPluginAsync = async (app) => {
+  app.get(
+    '/:slug/attachments/:fileId',
+    { preHandler: [authenticate, async (request) => assertNoActiveExam(request.user!.sub)] },
+    async (request, reply) => {
+      const { slug } = pathSlugParamSchema.parse(request.params);
+      const { fileId } = z.object({ fileId: z.uuid() }).parse(request.params);
+      const room = await getRoom(slug, request.user!.sub);
+      const { item, bytes } = await downloadPublishedAttachment(room.id, fileId);
+      return reply
+        .header('Content-Type', item.mimeType)
+        .header('Content-Length', String(bytes.length))
+        .header(
+          'Content-Disposition',
+          `attachment; filename="${item.filename.replace(/["\\\r\n]/g, '_')}"`,
+        )
+        .header('Cache-Control', 'private, no-store')
+        .send(bytes);
+    },
+  );
   app.get(
     '/:slug',
     { preHandler: [authenticate, async (request) => assertNoActiveExam(request.user!.sub)] },

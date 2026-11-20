@@ -128,6 +128,29 @@ export async function getCms(kind: Kind, id: string) {
 }
 
 type Tx = Prisma.TransactionClient;
+async function ensureNotCreatorContent(tx: Tx, kind: Kind, id: string) {
+  let creatorId: string | null | undefined;
+  if (kind === 'rooms')
+    creatorId = (await tx.room.findUnique({ where: { id }, select: { creatorId: true } }))
+      ?.creatorId;
+  if (kind === 'tasks')
+    creatorId = (
+      await tx.task.findUnique({
+        where: { id },
+        select: { room: { select: { creatorId: true } } },
+      })
+    )?.room.creatorId;
+  if (kind === 'questions')
+    creatorId = (
+      await tx.question.findUnique({
+        where: { id },
+        select: { task: { select: { room: { select: { creatorId: true } } } } },
+      })
+    )?.task.room.creatorId;
+  if (creatorId)
+    throw invalid('Nội dung Creator chỉ được sửa trong Creator Studio và hàng đợi duyệt.');
+}
+
 async function ensureParent(tx: Tx, kind: Kind, data: Record<string, unknown>, id?: string) {
   if (kind === 'modules') {
     if (
@@ -160,7 +183,7 @@ async function ensureParent(tx: Tx, kind: Kind, data: Record<string, unknown>, i
   }
 }
 
-function questionData(
+export function questionData(
   input: z.infer<typeof questionInput>,
   existing?: { answerHash: string | null; flagPattern: string | null; flagType: string },
 ) {
@@ -199,7 +222,10 @@ function questionData(
   };
 }
 
-function roomData(input: z.infer<typeof roomInput>, module: { title: string; orderIndex: number }) {
+export function roomData(
+  input: z.infer<typeof roomInput>,
+  module: { title: string; orderIndex: number },
+) {
   return {
     pathId: input.pathId,
     moduleId: input.moduleId,
@@ -294,10 +320,16 @@ export async function createCms(kind: Kind, payload: unknown, actorId: string) {
     } else if (kind === 'tasks') {
       const data = taskInput.parse(payload);
       await ensureParent(tx, kind, data);
+      await ensureNotCreatorContent(tx, 'rooms', data.roomId);
       row = await tx.task.create({ data: { ...data, status: 'draft' } });
     } else {
       const data = questionInput.parse(payload);
       await ensureParent(tx, kind, data);
+      const parent = await tx.task.findUniqueOrThrow({
+        where: { id: data.taskId },
+        select: { roomId: true },
+      });
+      await ensureNotCreatorContent(tx, 'rooms', parent.roomId);
       row = await tx.question.create({ data: { ...questionData(data), status: 'draft' } });
     }
     await tx.auditLog.create({
@@ -333,6 +365,7 @@ export async function updateCms(
 ) {
   return prisma.$transaction(async (tx) => {
     await assertVersion(tx, kind, id, version);
+    await ensureNotCreatorContent(tx, kind, id);
     if (kind === 'paths') {
       const data = pathInput.parse(payload);
       await tx.learningPath.update({ where: { id }, data });
@@ -353,6 +386,7 @@ export async function updateCms(
     } else if (kind === 'tasks') {
       const data = taskInput.parse(payload);
       await ensureParent(tx, kind, data, id);
+      await ensureNotCreatorContent(tx, 'rooms', data.roomId);
       const current = await tx.task.findUniqueOrThrow({
         where: { id },
         select: { roomId: true, status: true },
@@ -363,6 +397,11 @@ export async function updateCms(
     } else {
       const data = questionInput.parse(payload);
       await ensureParent(tx, kind, data, id);
+      const parent = await tx.task.findUniqueOrThrow({
+        where: { id: data.taskId },
+        select: { roomId: true },
+      });
+      await ensureNotCreatorContent(tx, 'rooms', parent.roomId);
       const existing = await tx.question.findUniqueOrThrow({
         where: { id },
         select: {
@@ -383,7 +422,7 @@ export async function updateCms(
   });
 }
 
-async function requirePublishable(tx: Tx, kind: Kind, id: string) {
+export async function requirePublishable(tx: Tx, kind: Kind, id: string) {
   if (kind === 'modules') {
     const module = await tx.module.findUniqueOrThrow({
       where: { id },
@@ -439,7 +478,7 @@ async function requirePublishable(tx: Tx, kind: Kind, id: string) {
   }
 }
 
-async function assertImageAvailable(image: string) {
+export async function assertImageAvailable(image: string) {
   const { env } = await import('../../config/env.js');
   const response = await fetch(
     `${env.ORCHESTRATOR_URL.replace(/\/$/, '')}/v1/images/available?name=${encodeURIComponent(image)}`,
@@ -479,6 +518,15 @@ export async function changeCmsStatus(
   }
   return prisma.$transaction(async (tx) => {
     const previousStatus = await assertVersion(tx, kind, id, version);
+    if (kind === 'tasks' || kind === 'questions') await ensureNotCreatorContent(tx, kind, id);
+    if (kind === 'rooms' && status === 'published') {
+      const room = await tx.room.findUniqueOrThrow({
+        where: { id },
+        select: { creatorId: true, reviewStatus: true },
+      });
+      if (room.creatorId && room.reviewStatus !== 'approved')
+        throw invalid('Bài của Creator cần được duyệt trước khi xuất bản.');
+    }
     if (status === 'published') await requirePublishable(tx, kind, id);
     if (previousStatus === 'published' && status !== 'published' && kind === 'tasks') {
       const task = await tx.task.findUniqueOrThrow({ where: { id }, select: { roomId: true } });
@@ -513,6 +561,7 @@ export async function deleteCms(kind: Kind, id: string, version: string, actorId
   return prisma.$transaction(async (tx) => {
     if ((await assertVersion(tx, kind, id, version)) !== 'draft')
       throw invalid('Chỉ có thể xóa bản nháp chưa được sử dụng. Hãy lưu trữ nội dung đã xuất bản.');
+    await ensureNotCreatorContent(tx, kind, id);
     const blocked =
       kind === 'paths'
         ? (

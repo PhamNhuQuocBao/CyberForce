@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { Button } from '@/components/ui/button';
 import { QuestionAnswerForm } from './QuestionAnswerForm';
-import type { RoomDetail, SubmissionResult } from '@/lib/api';
+import { roomsApi, type RoomDetail, type SubmissionResult } from '@/lib/api';
 import { LessonContent } from './LessonContent';
 import { readWorkspace } from './workspace-state';
 import { LabWorkspace } from './LabWorkspace';
@@ -23,6 +23,7 @@ export function SplitPaneWorkspace({
   const [state, setState] = useState(() => readWorkspace(null));
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState(false);
+  const [attachmentError, setAttachmentError] = useState(false);
   const [offline, setOffline] = useState(false);
   const [desktop, setDesktop] = useState(false);
   const [tab, setTab] = useState<'lesson' | 'lab'>('lesson');
@@ -132,6 +133,40 @@ export function SplitPaneWorkspace({
             }}
           >
             <h2 className="mb-4 text-xl font-semibold">Nhiệm vụ</h2>
+            {room.attachments?.length > 0 && (
+              <section className="mb-4 rounded-btn border border-input p-3">
+                <h3 className="mb-2 font-medium">Tệp đính kèm</h3>
+                {attachmentError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    Không tải được tệp. Vui lòng thử lại.
+                  </p>
+                )}
+                <ul className="space-y-2">
+                  {room.attachments.map((file) => (
+                    <li key={file.id}>
+                      <button
+                        className="text-link text-sm"
+                        onClick={() =>
+                          void roomsApi
+                            .downloadAttachment(room.slug, file.id, accessToken)
+                            .then((blob) => {
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = file.filename;
+                              link.click();
+                              setTimeout(() => URL.revokeObjectURL(url), 1000);
+                            })
+                            .catch(() => setAttachmentError(true))
+                        }
+                      >
+                        {file.filename}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {room.tasks.length === 0 && (
               <p className="text-muted-foreground">Phòng chưa có nhiệm vụ.</p>
             )}

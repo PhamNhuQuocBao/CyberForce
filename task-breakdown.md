@@ -451,10 +451,10 @@ gantt
 #### Task CF-802: Trình Soạn Thảo Bài Lab Trực Quan cho Giảng viên (MDX Live Preview)
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-architecture`, `clean-code`
 * **Priority:** `P2 (Medium)` | **Dependencies:** CF-801
-* **Mô tả:** Xây dựng giao diện Creator Studio dành riêng cho người dùng có vai trò `Creator`/`Instructor`. Tích hợp trình soạn thảo MDX 2 màn hình (Split Editor & Live Preview), cấu hình các bài tập, câu hỏi, cờ và tải file đính kèm trực tiếp (Story `US-08.02`, Wireframe 8.2).
+* **Mô tả:** Creator/Instructor tạo bài lab riêng ở trạng thái nháp, soạn nội dung Markdown/MDX an toàn với hai khung soạn và xem trước, cấu hình môi trường, task, câu hỏi/cờ và file đính kèm riêng tư. Tác giả chạy thử lab thật và xác minh toàn bộ cờ trên đúng phiên bản nội dung trước khi gửi quản trị viên duyệt; bài chỉ hiện cho học viên sau khi được duyệt và xuất bản (Story `US-08.02`, Wireframe 8.2).
 * **INPUT:** `docs/05-epics/EPIC_08_LAB_CREATOR_STUDIO_ANALYTICS.md` (US-08.02) & Wireframe 8.2.
-* **OUTPUT:** Trang `apps/web/src/app/(dashboard)/creator/studio/**`, component `MdxLiveEditor.tsx`.
-* **VERIFY:** Giảng viên soạn nội dung MDX có chèn bảng, callout và code block -> Khung preview bên cạnh cập nhật tức thì theo thời gian thực.
+* **OUTPUT:** `/creator`, `/creator/rooms/[id]`, `MdxLiveEditor.tsx`, API Creator và hàng đợi duyệt `/admin/cms/queue`, schema/SQL bổ sung cho quyền sở hữu, bằng chứng chạy thử và file đính kèm.
+* **VERIFY:** Preview hiển thị bảng, callout và code block; người khác không đọc/sửa được bản nháp hoặc tải file; sửa bài làm mất hiệu lực bằng chứng chạy thử; chạy thử không cộng EXP; quản trị viên chỉ duyệt được bản đã vượt qua kiểm tra cờ và ảnh lab có sẵn; học viên chỉ thấy bài đã xuất bản.
 
 #### Task CF-803: Bảng Điều Khiển Phân Tích Lỗ Hổng Kỹ Năng Doanh Nghiệp (Skill Gap Matrix)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `frontend-design`, `api-patterns`
