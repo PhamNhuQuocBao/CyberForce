@@ -54,6 +54,13 @@ enum SkillAxis {
   @@map("skill_axis")
 }
 
+enum OrgMemberRole {
+  admin
+  member
+
+  @@map("org_member_role")
+}
+
 enum ContentStatus {
   draft
   published
@@ -158,6 +165,7 @@ model User {
   creatorTestRuns CreatorTestRun[]
   creatorAttachments CreatorAttachment[]
   skillAwards SkillAward[]
+  orgMemberships OrgMembership[]
 
   @@map("users")
 }
@@ -448,6 +456,49 @@ model SkillAward {
   @@unique([userId, taskId, skill])
   @@index([userId, skill])
   @@map("skill_awards")
+}
+
+model Organization {
+  id String @id @default(uuid()) @db.Uuid
+  name String @db.VarChar(150)
+  slug String @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  groups OrgGroup[]
+  memberships OrgMembership[]
+
+  @@map("organizations")
+}
+
+model OrgGroup {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @map("organization_id") @db.Uuid
+  name String @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships OrgMembership[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("org_groups")
+}
+
+model OrgMembership {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @map("organization_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  groupId String? @map("group_id") @db.Uuid
+  role OrgMemberRole @default(member)
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group OrgGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId])
+  @@index([groupId])
+  @@map("org_memberships")
 }
 
 model Question {
