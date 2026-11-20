@@ -92,7 +92,7 @@ describe('Users & Profiles API Integration Tests (CF-104 / US-01.03)', () => {
       expect(dossier.isPublic).toBe(true);
       expect(dossier.isSelf).toBe(false);
       expect(dossier.telemetry).toBeDefined();
-      expect(dossier.telemetry.webExploitation).toBeGreaterThanOrEqual(0);
+      expect(dossier.telemetry.web).toBeGreaterThanOrEqual(0);
       expect(dossier.badges).toBeDefined();
       expect(Array.isArray(dossier.badges)).toBe(true);
       expect(dossier.badges.every((badge: { isUnlocked: boolean }) => !badge.isUnlocked)).toBe(

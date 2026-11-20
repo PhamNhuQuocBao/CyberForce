@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { skillAxes } from '../skills/skill.policy.js';
 
 export const cmsKind = z.enum(['paths', 'modules', 'rooms', 'tasks', 'questions']);
 export const cmsStatus = z.enum(['draft', 'published', 'archived']);
@@ -100,8 +101,13 @@ export const taskInput = z
     title: title(255),
     taskOrder: order,
     contentMdx: z.string().max(100000),
+    skillTags: z.array(z.enum(skillAxes)).max(8).optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => !value.skillTags || new Set(value.skillTags).size === value.skillTags.length, {
+    path: ['skillTags'],
+    message: 'Mỗi kỹ năng chỉ được chọn một lần.',
+  });
 export const questionInput = z
   .object({
     taskId: uuid,

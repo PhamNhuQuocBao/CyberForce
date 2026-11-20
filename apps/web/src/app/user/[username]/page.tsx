@@ -21,14 +21,14 @@ import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
 import { rankRing } from '@/lib/rank-style';
 const skills = [
-  ['webExploitation', 'Web Exploitation'],
-  ['cloudSecurity', 'Cloud Security'],
-  ['networkPentest', 'Network Pentest'],
-  ['devSecOps', 'DevSecOps'],
-  ['cryptography', 'Cryptography'],
-  ['reverseEngineering', 'Reverse Engineering'],
-  ['osint', 'OSINT'],
-  ['binaryExploitation', 'Binary Exploitation'],
+  ['web', 'Web Application Security'],
+  ['network', 'Network Penetration Testing'],
+  ['binary', 'Binary Exploitation & Pwn'],
+  ['crypto', 'Cryptography & PKI'],
+  ['forensics', 'Digital Forensics & IR'],
+  ['windows_ad', 'Windows & AD'],
+  ['defensive', 'Defensive & Blue Team'],
+  ['cloud_devsecops', 'Cloud & DevSecOps'],
 ] as const;
 export default function UserProfilePage() {
   const params = useParams();
@@ -160,14 +160,14 @@ export default function UserProfilePage() {
       </>
     );
   const telemetry = dossier.telemetry || {
-    webExploitation: 0,
-    cloudSecurity: 0,
-    networkPentest: 0,
-    devSecOps: 0,
-    cryptography: 0,
-    reverseEngineering: 0,
-    osint: 0,
-    binaryExploitation: 0,
+    web: 0,
+    network: 0,
+    binary: 0,
+    crypto: 0,
+    forensics: 0,
+    windows_ad: 0,
+    defensive: 0,
+    cloud_devsecops: 0,
   };
   return (
     <div className="min-h-screen">

@@ -34,6 +34,16 @@ export interface CreatorTask {
   title: string;
   taskOrder: number;
   contentMdx: string;
+  skillTags: Array<
+    | 'web'
+    | 'network'
+    | 'binary'
+    | 'crypto'
+    | 'forensics'
+    | 'windows_ad'
+    | 'defensive'
+    | 'cloud_devsecops'
+  >;
   status: CmsStatus;
   updatedAt: string;
   questions: CreatorQuestion[];
@@ -308,14 +318,14 @@ export interface UserProfile {
 }
 
 export interface SkillTelemetry {
-  webExploitation: number;
-  cloudSecurity: number;
-  networkPentest: number;
-  devSecOps: number;
-  cryptography: number;
-  reverseEngineering: number;
-  osint: number;
-  binaryExploitation: number;
+  web: number;
+  network: number;
+  binary: number;
+  crypto: number;
+  forensics: number;
+  windows_ad: number;
+  defensive: number;
+  cloud_devsecops: number;
 }
 
 export interface BadgeItem {

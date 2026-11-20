@@ -379,10 +379,10 @@ gantt
 #### Task CF-703: Biểu Diễn Biểu Đồ Năng Lực 8 Trục Kỹ Năng (8-Axis Cyber Radar)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `frontend-design`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-104, CF-203
-* **Mô tả:** Xây dựng biểu đồ Radar 8 trục (Web, Network, Binary, Crypto, Forensics, Windows/AD, Defensive, Cloud/DevSecOps). Áp dụng quy tắc **Điểm tích lũy tuyệt đối (Absolute Cumulative EXP)** và hỗ trợ **Cộng điểm song song đa kỹ năng (Multi-tag Parallel Scoring)** khi giải task tích hợp (Story `US-07.02`).
+* **Mô tả:** Gắn tối đa 8 nhãn kỹ năng cho mỗi task. Khi học viên hoàn thành task lần đầu, lưu điểm EXP kỹ năng thực nhận vào từng nhãn của task; task General không cộng điểm kỹ năng và giải lại không cộng thêm. Radar hồ sơ đọc điểm tích lũy thật từ các lượt thưởng, không suy ra từ tổng EXP (Story `US-07.02`).
 * **INPUT:** `docs/05-epics/EPIC_07_GAMIFICATION_STREAKS_SKILL_RADAR.md` (US-07.02) & Wireframe 7.1.
-* **OUTPUT:** Component `CyberRadarChart.tsx` (dùng SVG / Recharts), API `/api/v1/user/:id/radar`.
-* **VERIFY:** Giải 1 task gán đồng thời 2 tag "Cloud" và "Network" (mỗi tag 100 EXP) -> Cả 2 trục trên biểu đồ radar cùng tăng +100 điểm tương ứng.
+* **OUTPUT:** `SkillRadarChart.tsx`, API `/api/v1/users/:username/radar`, bảng `skill_awards`, nhãn kỹ năng trong Admin CMS và Creator Studio.
+* **VERIFY:** Giải task gán Cloud và Network trị giá 100 EXP -> hai trục cùng tăng 100; giải lại không tăng; task General chỉ tăng tổng EXP. Dữ liệu cũ không có nhãn giữ điểm kỹ năng bằng 0 thay vì ước tính.
 
 ---
 

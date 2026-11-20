@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma.js';
 import { AuthError } from '../auth/auth.service.js';
 import { streakSummary } from '../streak/streak.service.js';
 import { nextRank, rankTiers } from '../ranks/rank.policy.js';
+import { emptySkills } from '../skills/skill.policy.js';
 import type {
   UpdateProfileInput,
   UserDossierResponse,
@@ -51,7 +52,7 @@ export class UsersService {
     }
 
     // Full Public or Self view (Wireframe 2.1)
-    const telemetry = this.computeSkillTelemetry(user.expPoints);
+    const telemetry = await getSkillTelemetry(user.id);
     const badges = this.computeBadges(user.badgeAwards);
     const certificates = this.formatCertificates(user.certificates);
     const completedPaths = this.formatLearningPaths(user.expPoints);
@@ -125,23 +126,6 @@ export class UsersService {
       isPublic: updated.isPublic,
       lastActiveAt: updated.lastActiveAt,
       createdAt: updated.createdAt,
-    };
-  }
-
-  /**
-   * Helper: Calculate 8-axis cyber radar metrics
-   */
-  private computeSkillTelemetry(exp: number): SkillTelemetry {
-    const factor = Math.floor(exp / 100);
-    return {
-      webExploitation: Math.min(95, Math.max(30, 45 + factor * 5)),
-      cloudSecurity: Math.min(92, Math.max(25, 35 + factor * 4)),
-      networkPentest: Math.min(88, Math.max(20, 40 + factor * 4)),
-      devSecOps: Math.min(82, Math.max(15, 30 + factor * 3)),
-      cryptography: Math.min(85, Math.max(10, 25 + factor * 3)),
-      reverseEngineering: Math.min(78, Math.max(10, 20 + factor * 2)),
-      osint: Math.min(80, Math.max(15, 35 + factor * 3)),
-      binaryExploitation: Math.min(75, Math.max(5, 15 + factor * 2)),
     };
   }
 
@@ -245,3 +229,14 @@ export class UsersService {
 }
 
 export const usersService = new UsersService();
+
+export async function getSkillTelemetry(userId: string): Promise<SkillTelemetry> {
+  const telemetry = emptySkills();
+  const awards = await prisma.skillAward.groupBy({
+    by: ['skill'],
+    where: { userId },
+    _sum: { pointsEarned: true },
+  });
+  for (const award of awards) telemetry[award.skill] = award._sum.pointsEarned ?? 0;
+  return telemetry;
+}

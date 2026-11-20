@@ -1,13 +1,13 @@
 import type { SkillTelemetry } from '@/lib/api';
 const axes: [keyof SkillTelemetry, string][] = [
-  ['webExploitation', 'Web'],
-  ['cloudSecurity', 'Cloud'],
-  ['networkPentest', 'Network'],
-  ['devSecOps', 'DevSecOps'],
-  ['cryptography', 'Crypto'],
-  ['reverseEngineering', 'Reverse'],
-  ['osint', 'OSINT'],
-  ['binaryExploitation', 'Binary'],
+  ['web', 'Web'],
+  ['network', 'Network'],
+  ['binary', 'Binary'],
+  ['crypto', 'Crypto'],
+  ['forensics', 'DFIR'],
+  ['windows_ad', 'Win/AD'],
+  ['defensive', 'Blue'],
+  ['cloud_devsecops', 'Cloud'],
 ];
 export function SkillRadarChart({
   telemetry,
@@ -18,6 +18,7 @@ export function SkillRadarChart({
   size?: number;
   className?: string;
 }) {
+  const maxExp = Math.max(100, ...axes.map(([key]) => telemetry[key] ?? 0));
   const point = (i: number, scale: number) => {
     const angle = (i * Math.PI) / 4 - Math.PI / 2;
     return [180 + 112 * scale * Math.cos(angle), 180 + 112 * scale * Math.sin(angle)];
@@ -55,9 +56,7 @@ export function SkillRadarChart({
       })}
       <polygon
         points={axes
-          .map(([key], i) =>
-            point(i, Math.max(0, Math.min(100, telemetry[key] ?? 0)) / 100).join(','),
-          )
+          .map(([key], i) => point(i, Math.max(0, telemetry[key] ?? 0) / maxExp).join(','))
           .join(' ')}
         fill="#A3EA2A"
         fillOpacity=".18"

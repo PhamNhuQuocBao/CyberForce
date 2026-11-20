@@ -41,6 +41,19 @@ enum FlagType {
   @@map("flag_type")
 }
 
+enum SkillAxis {
+  web
+  network
+  binary
+  crypto
+  forensics
+  windows_ad
+  defensive
+  cloud_devsecops
+
+  @@map("skill_axis")
+}
+
 enum ContentStatus {
   draft
   published
@@ -144,6 +157,7 @@ model User {
   createdRooms Room[] @relation("CreatorRooms")
   creatorTestRuns CreatorTestRun[]
   creatorAttachments CreatorAttachment[]
+  skillAwards SkillAward[]
 
   @@map("users")
 }
@@ -405,6 +419,7 @@ model Task {
   taskOrder  Int      @map("task_order")
   title      String   @db.VarChar(255)
   contentMdx String   @map("content_mdx") @db.Text
+  skillTags SkillAxis[] @default([]) @map("skill_tags")
   status     ContentStatus @default(published)
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -413,9 +428,26 @@ model Task {
   room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   questions Question[]
   streakDays StreakDay[]
+  skillAwards SkillAward[]
 
   @@index([roomId])
   @@map("tasks")
+}
+
+model SkillAward {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  taskId String @map("task_id") @db.Uuid
+  skill SkillAxis
+  pointsEarned Int @map("points_earned")
+  earnedAt DateTime @default(now()) @map("earned_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId, skill])
+  @@index([userId, skill])
+  @@map("skill_awards")
 }
 
 model Question {
