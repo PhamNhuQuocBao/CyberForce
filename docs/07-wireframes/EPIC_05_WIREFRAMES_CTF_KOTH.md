@@ -30,7 +30,7 @@
 3. [Wireframe 5.3: KotH Live Combat HUD (45:00 Match, 60s Tick Ring, King Crown)](#wireframe-53-koth-live-combat-hud)
 4. [Wireframe 5.4: KotH SLA Service Outage Alert & 15-Second Auto-Heal Daemon HUD](#wireframe-54-koth-sla-service-outage-alert--auto-heal-hud)
 5. [Wireframe 5.5: Anti-Sabotage Disciplinary Penalty Modal (Phạt Trừ Điểm & Khóa 3 Ngày)](#wireframe-55-anti-sabotage-disciplinary-penalty-modal)
-6. [Wireframe 5.6: Jeopardy CTF Challenge Matrix & Dynamic Decay Popover](#wireframe-56-jeopardy-ctf-challenge-matrix--dynamic-decay)
+6. [Wireframe 5.6: Jeopardy CTF Fixed Points & Time Tie-break](#wireframe-56-jeopardy-ctf-fixed-points--time-tie-break)
 7. [Wireframe 5.7: Late-Game Scoreboard Freeze Banner & Personal Progress View](#wireframe-57-late-game-scoreboard-freeze-banner)
 8. [Wireframe 5.8: Grand Finale Unfreeze Ceremony, Top 3 Podium & Trophy Card](#wireframe-58-grand-finale-unfreeze-ceremony-top-3-podium)
 
@@ -205,49 +205,25 @@
 
 ---
 
-## Wireframe 5.6: Jeopardy CTF Challenge Matrix & Dynamic Decay Popover
+## Wireframe 5.6: Jeopardy CTF Fixed Points & Time Tie-break
 > **Tương ứng User Flow:** Sub-flow 2.1 (US-05.04)  
-> **URL:** `/ctf/cyberforce-open-2026/challenges`  
-> **Topology:** Matrix Grid with Dynamic Decay Math & Modal Flag Submission
+> **URL:** `/arena/[slug]`
+> **Topology:** Thử thách cùng bảng điểm theo điểm và thời gian đạt điểm
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [LOGO]  Paths   Rooms   CTF & KotH [ACTIVE]        CYBERFORCE OPEN CTF 2026        TIME LEFT: 14:22:10 │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ CHALLENGES MATRIX // CATEGORIES                                            SCOREBOARD: [UNFROZEN ●]    │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ WEB EXPLOITATION (4)      PWN & BINARY (3)           CRYPTOGRAPHY (3)           FORENSICS & OSINT (3)  │
-│ ┌──────────────────────┐ ┌──────────────────────┐   ┌──────────────────────┐   ┌─────────────────────┐ │
-│ │ 💉 SQLi Mastermind   │ │ 💥 Buffer Overrun 101│   │ 🔐 RSA Fault Attack  │   │ 🕵️ Memory Dump Vol3 │ │
-│ │ Points: 480 pts (📉) │ │ Points: 500 pts      │   │ Points: 320 pts (📉) │   │ Points: 250 pts     │ │
-│ │ Solves: 4 teams      │ │ Solves: 1 team       │   │ Solves: 12 teams     │   │ Solves: 18 teams    │ │
-│ │ [ SOLVE CHALLENGE ]  │ │ [ SOLVE CHALLENGE ]  │   │ [ SOLVED ✓ (320 pts)]│   │ [ SOLVE CHALLENGE ] │ │
-│ ├──────────────────────┤ ├──────────────────────┤   ├──────────────────────┤   ├─────────────────────┤ │
-│ │ 🪟 Deserialization   │ │ 🧬 Heap Feng Shui    │   │ 🧩 Lattice Breaker   │   │ 🌐 PCAP Exfiltration│ │
-│ │ Points: 500 pts      │ │ Points: 500 pts      │   │ Points: 490 pts      │   │ Points: 410 pts (📉)│ │
-│ │ Solves: 0 (Unsolved!)│ │ Solves: 0 (Unsolved!)│   │ Solves: 2 teams      │   │ Solves: 8 teams     │ │
-│ └──────────────────────┘ └──────────────────────┘   └──────────────────────┘   └─────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-[ POP-UP NỘP CỜ VÀ GIẢI THÍCH DYNAMIC DECAY ]
-┌──────────────────────────────────────────────────────────────────────────┐
-│ CHALLENGE: SQLI MASTERMIND (WEB EXPLOITATION)                        [X] │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Current Reward: 480 Points (Decaying dynamically as more teams solve)    │
-│ Target Instance: http://10.10.88.22:8000                                 │
-│                                                                          │
-│ Dynamic Decay Formula:                                                   │
-│ Base: 500 pts │ Minimum Floor: 100 pts │ Decay Rate: Standard Logarithmic│
-│ All past solvers will retroactively match the final decayed value.       │
-│                                                                          │
-│ Submit Flag:                                                             │
-│ ┌──────────────────────────────────────────────────────────────────────┐ │
-│ │ CF{sqli_bypass_union_waf_0x8892}                                     │ │
-│ └──────────────────────────────────────────────────────────────────────┘ │
-├──────────────────────────────────────────────────────────────────────────┤
-│ [ Cancel ]                                              [ SUBMIT FLAG ]  │
-└──────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│ TÊN GIẢI CTF · GIỜ BẮT ĐẦU / KẾT THÚC                                │
+├──────────────────────────────────┬────────────────────────────────────┤
+│ THỬ THÁCH                       │ BẢNG XẾP HẠNG                     │
+│ SQLi Mastermind · 500 điểm       │ Hạng  Người chơi  Điểm            │
+│ Mô tả và tài nguyên              │ #1    An          900             │
+│ Flag [________________] [Nộp]    │       Đạt điểm lúc 14:20          │
+│ Phản hồi đúng/sai/đã giải        │ #2    Bình        900             │
+│                                  │       Đạt điểm lúc 14:35          │
+└──────────────────────────────────┴────────────────────────────────────┘
 ```
+
+Điểm thử thách không đổi khi có thêm người giải. Trong giai đoạn đóng băng, banner nêu mốc giờ chốt; bài giải cá nhân vẫn được xác nhận nhưng điểm và thời điểm trên bảng công khai giữ tại mốc đó. Tên người chơi và điểm CTF không ảnh hưởng EXP học tập.
 
 ---
 
@@ -316,6 +292,6 @@
 - [x] **KotH Tick & King Mechanics:** Mô hình hóa trực quan chu kỳ 60s, banner King vương miện vàng và bảng xếp hạng Redis Sorted Set.
 - [x] **SLA Auto-Heal Daemon:** Cảnh báo nổi bật khi rớt port 22/80, hiển thị đếm ngược 15s tự phục hồi và đóng băng điểm an toàn.
 - [x] **Anti-Sabotage Protocol:** Modal kỷ luật trừ 50 điểm và cấm đấu trường 3 ngày khi cố ý phá hoại hệ điều hành.
-- [x] **Jeopardy Dynamic Decay:** Giao diện tính điểm suy giảm tự động và cập nhật hồi tố công bằng cho mọi đội đã giải.
+- [x] **Jeopardy Fixed Points:** Điểm mỗi thử thách giữ nguyên; bảng điểm có cột thời điểm đạt điểm để phá hòa.
 - [x] **Endgame Freeze & Ceremony:** Thiết kế trạng thái đóng băng tuyết 60 phút cuối và bục vinh quang Top 3 Podium khi Unfreeze.
 - [x] **Tài liệu lưu trữ:** Đã lưu trữ đầy đủ tại [`docs/06-user-flow/EPIC_05_WIREFRAMES_CTF_KOTH.md`](file:///home/quocbao/Documents/University/ChuyenDe4/CyberForge/docs/06-user-flow/EPIC_05_WIREFRAMES_CTF_KOTH.md).

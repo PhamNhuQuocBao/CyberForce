@@ -73,6 +73,7 @@ Mỗi Task bắt buộc tuân theo quy tắc:
 | CF-402 | [x] Cách ly VPN và lab local | Gateway iptables deny-by-default, grant đúng cặp peer–target và NAT giới hạn; Orchestrator nối/tháo network theo phiên, stop/reaper thu hồi. Hai client/hai lab smoke xác nhận chéo và egress bị chặn; Cilium chỉ là template cho Kubernetes. [Handoff](cf-402-network-isolation.md) |
 | CF-403 | [x] Badge trạng thái VPN desktop | Gateway lấy mẫu handshake mỗi giây, API stream có ticket một lần, badge hiện IP và tự cập nhật. Browser smoke qua; từ bật client đến sự kiện WebSocket đo 1005 ms. [Handoff](cf-403-vpn-live-status.md) |
 | CF-701 | [x] Streak ngày học theo múi giờ | Task nhiều câu chỉ tính khi hoàn thành, sổ ngày/huy hiệu bền vững, thưởng 7/30 ngày và reset theo ngày địa phương; 146 API tests và 14 web tests đạt trên DB/Redis test biệt lập. SQL cho DB hiện có chưa áp dụng. [Kế hoạch](cf-701-daily-streak.md) |
+| CF-504 | [x] Điểm CTF cố định và phá hòa theo thời gian | Triển khai trên nhánh `codex/cf-504-dynamic-scoring`; API/web tests, build và SQL trên DB cô lập qua. Chưa áp dụng SQL vào DB hiện có. [Bàn giao](cf-504-dynamic-scoring.md) |
 
 Ưu tiên người dùng: kiểm thử giao diện web desktop; không kiểm thử mobile trừ khi có yêu cầu. Không đánh dấu CF-901–904 hoàn thành chỉ vì đã chạy lint/build và kiểm tra một số luồng.
 
@@ -140,7 +141,7 @@ gantt
     section Phase 2: Cloud Range (Dec 2026)
     Epic 4: WireGuard VPN Gateway & Isolation :p2_1, 2026-11-05, 8d
     Epic 3: Guacamole Web AttackBox (Kali)    :p2_2, 2026-11-13, 7d
-    Epic 5: Jeopardy CTF & Dynamic Decay      :p2_3, 2026-11-20, 6d
+    Epic 5: Jeopardy CTF & Fixed Scoring      :p2_3, 2026-11-20, 6d
     Epic 7: 8-Axis Multi-Tag Skill Radar      :p2_4, 2026-11-26, 5d
     section Phase 3: Arena & Certs (Mar 2027)
     Epic 5: KotH Tick Engine & Auto-Heal      :p3_1, 2026-12-01, 10d
@@ -368,13 +369,14 @@ gantt
 * **OUTPUT:** `infra/guacd/`, component `apps/web/src/components/room/GuacamoleViewer.tsx`.
 * **VERIFY:** Nhấn "Start AttackBox" -> Giao diện Kali Linux desktop hiển thị đầy đủ thanh taskbar, mở terminal Kali và chạy `nmap` bình thường qua trình duyệt.
 
-#### Task CF-504: Triển khai Động cơ Tính Điểm Suy Giảm Động (Dynamic Decay Scoring) cho CTF
+#### [x] Task CF-504: Điểm CTF cố định, phá hòa theo thời gian và đóng băng bảng xếp hạng
 * **Agent:** `backend-specialist` | **Skills:** `api-patterns`, `clean-code`
 * **Priority:** `P1 (High)` | **Dependencies:** CF-203
-* **Mô tả:** Lập trình thuật toán tự động giảm điểm thử thách CTF khi số lượng người giải tăng lên: $Point = \text{Min} + (\text{Max} - \text{Min}) \times \left( \frac{\text{Decay}}{\text{Decay} + \text{Solves}} \right)$. Tự động tính toán lại điểm số cho toàn bộ người giải trước đó (Story `US-05.04`).
+* **Mô tả:** Theo phương án người dùng duyệt, mỗi thử thách CTF giữ nguyên điểm đã công bố. Xếp hạng theo tổng điểm giảm dần, nếu bằng điểm thì ai đạt tổng điểm đó sớm hơn đứng trước. Bảng điểm công khai có thể đóng băng trước khi kết thúc; bài giải trong thời gian đóng băng vẫn được ghi nhận và chỉ hiện khi mở lại. Điểm CTF độc lập với EXP học tập, streak, radar và KotH (Story `US-05.04` đã cập nhật).
 * **INPUT:** `docs/05-epics/EPIC_05_CTF_COMPETITIONS_KOTH_ARENA.md` (US-05.04).
-* **OUTPUT:** Service `DynamicScoringService`, API `/api/v1/ctf/challenges/:id/score`.
-* **VERIFY:** Thử thách ban đầu 500 điểm -> Giả lập 10 lượt giải thành công -> Điểm thử thách giảm còn 340 điểm và điểm của 10 người giải đều cập nhật về 340.
+* **OUTPUT:** Bảng sự kiện/thử thách/người chơi/lượt giải CTF, API `/api/v1/ctf/**`, trang `/arena` và `/arena/[slug]`.
+* **VERIFY:** Thử thách 500 điểm vẫn là 500 sau 10 lượt giải; hai người cùng 900 điểm xếp theo lúc đạt 900. Giải trong thời gian đóng băng không đổi bảng điểm công khai đến khi superadmin mở lại.
+* **Trạng thái triển khai:** API 166/166 test và web 14/14 test qua; SQL bổ sung áp dụng và so khớp Prisma trên schema cô lập. Chưa chạy migration trên DB hiện có. [Kế hoạch và bàn giao](cf-504-dynamic-scoring.md).
 
 #### Task CF-703: Biểu Diễn Biểu Đồ Năng Lực 8 Trục Kỹ Năng (8-Axis Cyber Radar)
 * **Agent:** `frontend-specialist` & `backend-specialist` | **Skills:** `frontend-design`, `clean-code`
@@ -548,7 +550,7 @@ gantt
 | **CF-501** | Epic 5 | US-05.01: KotH 60s Tick Runner & Scoreboard | `backend-specialist` | P0 |
 | **CF-502** | Epic 5 | US-05.02: SLA Monitor & Service Auto-Heal | `backend-specialist` | P0 |
 | **CF-503** | Epic 5 | US-05.03: Anti-Sabotage & 3-Day Block Penalty | `security-auditor` | P1 |
-| **CF-504** | Epic 5 | US-05.04: CTF Dynamic Decay Scoring Engine | `backend-specialist` | P1 |
+| **CF-504** | Epic 5 | US-05.04: Fixed CTF scoring, time tie-break & freeze | `backend-specialist` | P1 |
 | **CF-601** | Epic 6 | US-06.01: Hands-on Capstone Exam Session | `backend-specialist` | P0 |
 | **CF-602** | Epic 6 | US-06.02: RSA-4096 Signed PDF Certificate | `backend-specialist` | P0 |
 | **CF-603** | Epic 6 | US-06.03: Public Certificate Verify Portal | `frontend-specialist` | P1 |

@@ -1,5 +1,66 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+export interface CtfEventSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+}
+export interface CtfEventDetail extends CtfEventSummary {
+  frozen: boolean;
+  joined: boolean;
+  solvedIds: string[];
+  challenges: Array<{
+    id: string;
+    title: string;
+    description: string;
+    points: number;
+    orderIndex: number;
+  }>;
+}
+export interface CtfScoreboard {
+  frozen: boolean;
+  freezeAt: string | null;
+  entries: Array<{
+    rank: number;
+    username: string;
+    score: number;
+    reachedAt: string | null;
+    solved: number;
+  }>;
+}
+export const ctfApi = {
+  list: () => request<{ success: true; data: CtfEventSummary[] }>('/ctf/events'),
+  get: (slug: string, token?: string) =>
+    request<{ success: true; data: CtfEventDetail }>(
+      `/ctf/events/${encodeURIComponent(slug)}`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    ),
+  scoreboard: (slug: string) =>
+    request<{ success: true; data: CtfScoreboard }>(
+      `/ctf/events/${encodeURIComponent(slug)}/scoreboard`,
+    ),
+  join: (slug: string, token: string) =>
+    request<{ success: true; data: { joined: boolean } }>(
+      `/ctf/events/${encodeURIComponent(slug)}/join`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+    ),
+  submit: (slug: string, challengeId: string, answer: string, token: string) =>
+    request<{
+      success: true;
+      data: { status: 'accepted' | 'incorrect' | 'duplicate'; points: number; frozen: boolean };
+    }>(
+      `/ctf/events/${encodeURIComponent(slug)}/challenges/${encodeURIComponent(challengeId)}/submit`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer }),
+      },
+    ),
+};
+
 export type CmsKind = 'paths' | 'modules' | 'rooms' | 'tasks' | 'questions';
 export type CmsStatus = 'draft' | 'published' | 'archived';
 export interface CmsItem {

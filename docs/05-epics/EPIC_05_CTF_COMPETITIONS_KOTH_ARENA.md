@@ -73,20 +73,20 @@
 
 ---
 
-#### Story US-05.04: Là một thí sinh tham gia giải thi đấu Jeopardy CTF, tôi muốn hệ thống áp dụng cơ chế tính điểm suy giảm động (Dynamic Decay Scoring) và hỗ trợ đóng băng bảng xếp hạng trước giờ bế mạc, để phản ánh chính xác độ khó thực tế của thử thách và tạo sự kịch tính cho giải đấu.
+#### Story US-05.04: Là một thí sinh tham gia giải thi đấu Jeopardy CTF, tôi muốn mỗi thử thách giữ điểm đã công bố, dùng thời điểm đạt tổng điểm để phá hòa và hỗ trợ đóng băng bảng xếp hạng trước giờ bế mạc, để việc chấm điểm dễ hiểu và công bằng.
 * **Business Rules (Ràng buộc nghiệp vụ):**
-  - Mỗi thử thách bắt đầu với số điểm ban đầu (Initial Points, ví dụ: 500 điểm) và giảm dần về điểm tối thiểu (Minimum Points, ví dụ: 100 điểm) theo hàm suy giảm số lượng người giải thành công (Solves Decay Function).
-  - Khi có thêm một thí sinh giải thành công thử thách, điểm số của thử thách đó tự động giảm xuống và **hồi tố điểm số** cho tất cả các thí sinh đã giải được thử thách đó trước đây.
+  - Mỗi thử thách có điểm cố định do ban tổ chức công bố trước giờ bắt đầu (ví dụ: 500 điểm); nộp đúng chỉ ghi điểm một lần mỗi người, không đổi điểm của người giải trước.
+  - Xếp hạng theo tổng điểm giảm dần. Nếu bằng điểm, thí sinh đạt tổng điểm đó sớm hơn đứng trước; hiển thị cột “Đạt điểm lúc”. Người chưa ghi điểm được đồng hạng.
   - Hỗ trợ tính năng Đóng băng Bảng điểm (Scoreboard Freeze): Admin có thể cấu hình đóng băng bảng điểm công khai trước khi giải đấu kết thúc (ví dụ: trước 60 phút). Trong thời gian đóng băng, thí sinh vẫn nộp cờ và hệ thống vẫn chấm điểm ngầm, nhưng bảng điểm hiển thị công khai sẽ ngừng cập nhật để giữ bí mật kết quả đến phút chót.
 * **Acceptance Criteria:**
-  - **Scenario 1 (Thành công - Điểm thử thách suy giảm động và cập nhật hồi tố công bằng cho tất cả người giải):**
-    - **Given** Thử thách "Kernel Exploit 01" ban đầu có giá trị 500 điểm và mới chỉ có 1 người giải được.
-    - **When** Có thêm 9 thí sinh khác nộp đúng cờ của thử thách này (nâng tổng số lượt giải lên 10 người).
-    - **Then** Công thức Dynamic Decay tự động tính lại điểm của thử thách giảm về mức 340 điểm.
-    - **And** Điểm thưởng của cả 10 thí sinh đã giải câu này trên bảng xếp hạng đồng loạt được cập nhật về mức 340 điểm.
+  - **Scenario 1 (Điểm cố định và phá hòa theo thời gian):**
+    - **Given** Thử thách "Kernel Exploit 01" có giá trị 500 điểm.
+    - **When** Có 10 thí sinh nộp đúng cờ.
+    - **Then** Mỗi thí sinh được 500 điểm và giá trị thử thách vẫn là 500.
+    - **And** Hai thí sinh cùng đạt 900 điểm được xếp theo thời điểm mỗi người đạt 900 điểm; nộp lại không cộng điểm.
   - **Scenario 2 (Ngoại lệ - Nộp cờ trong giai đoạn đóng băng bảng xếp hạng Scoreboard Freeze):**
     - **Given** Ban tổ chức kích hoạt tính năng "Freeze Scoreboard" lúc 16:00 (giải kết thúc lúc 17:00).
     - **When** Thí sinh B nộp cờ thành công một bài 400 điểm vào lúc 16:30.
     - **Then** Giao diện cá nhân của Thí sinh B vẫn hiển thị thông báo "Flag Accepted! (Submitted during freeze period)".
     - **And** Cơ sở dữ liệu ghi nhận điểm ngầm cho Thí sinh B.
-    - **And** Bảng xếp hạng công cộng hiển thị huy hiệu "Scoreboard is Frozen" và không thay đổi thứ hạng cho đến khi Admin bấm "Unfreeze" sau khi bế mạc.
+    - **And** Bảng xếp hạng công cộng hiển thị huy hiệu "Scoreboard is Frozen", giữ cả điểm và thời điểm phá hòa tại mốc đóng băng cho đến khi Admin bấm "Unfreeze" sau khi bế mạc.

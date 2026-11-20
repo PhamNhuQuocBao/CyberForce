@@ -18,7 +18,7 @@ Toàn bộ trải nghiệm người dùng trong đấu trường đối kháng t
   - [Sub-flow 1.3: Giám sát Trạng thái Dịch vụ SLA & Tự Phục hồi Phòng Đấu (US-05.02)](#sub-flow-13-giám-sát-trạng-thái-dịch-vụ-sla--tự-phục-hồi-phòng-đấu-us-0502)
   - [Sub-flow 1.4: Tiếp nhận Cảnh báo Quy chế Thi đấu & Xử lý Vi phạm Phá hoại (US-05.03)](#sub-flow-14-tiếp-nhận-cảnh-báo-quy-chế-thi-đấu--xử-lý-vi-phạm-phá-hoại-us-0503)
 - **MODULE 2: THI ĐẤU JEOPARDY CTF & BẢNG XẾP HẠNG THỜI GIAN THỰC (JEOPARDY CTF & DYNAMIC SCOREBOARD)**
-  - [Sub-flow 2.1: Khám phá Thử thách CTF & Trải nghiệm Điểm số Suy giảm Động - Dynamic Decay (US-05.04)](#sub-flow-21-khám-phá-thử-thách-ctf--trải-nghiệm-điểm-số-suy-giảm-động---dynamic-decay-us-0504)
+  - [Sub-flow 2.1: Giải thử thách CTF với điểm cố định và phá hòa theo thời gian (US-05.04)](#sub-flow-21-giải-thử-thách-ctf-với-điểm-cố-định-và-phá-hòa-theo-thời-gian-us-0504)
   - [Sub-flow 2.2: Nộp Cờ trong Giai đoạn Đóng băng Bảng xếp hạng - Scoreboard Freeze (US-05.04)](#sub-flow-22-nộp-cờ-trong-giai-đoạn-đóng-băng-bảng-xếp-hạng---scoreboard-freeze-us-0504)
   - [Sub-flow 2.3: Công bố Bảng xếp hạng Chung cuộc & Vinh danh Trao giải (US-05.04)](#sub-flow-23-công-bố-bảng-xếp-hạng-chung-cuộc--vinh-danh-trao-giải-us-0504)
 
@@ -32,7 +32,7 @@ Toàn bộ trải nghiệm người dùng trong đấu trường đối kháng t
 2. **Cơ chế "No Dead End" (Không màn hình bế tắc):**
    - Mọi tình huống phòng thi đã đủ người, ghi danh sai cú pháp, dịch vụ gặp sự cố hoặc nhận thông báo xử lý vi phạm đều luôn có các lối thoát hiểm rõ ràng: *Đổi phòng đấu khác, Hướng dẫn sửa cú pháp, Theo dõi thanh tiến trình tự phục hồi, hoặc Quay về sảnh giải đấu*.
 3. **Cảm giác Kịch tính & Phản hồi Thời gian thực (Live Competition Feedback):**
-   - Mọi biến động về thứ hạng, thay đổi chủ nhân vương miện King hoặc suy giảm điểm động đều được truyền tải qua các hiệu ứng thị giác sinh động (huy hiệu vàng, thanh tiến trình đếm lùi, hiệu ứng đóng băng tuyết) để kích thích tinh thần tranh đua lành mạnh của đấu thủ.
+   - Mọi biến động về thứ hạng hoặc thay đổi chủ nhân vương miện King đều được truyền tải qua các hiệu ứng thị giác sinh động (huy hiệu vàng, thanh tiến trình đếm lùi, hiệu ứng đóng băng tuyết) để kích thích tinh thần tranh đua lành mạnh của đấu thủ.
 
 ---
 
@@ -246,60 +246,28 @@ flowchart TD
 
 ---
 
-### Sub-flow 2.1: Khám phá Thử thách CTF & Trải nghiệm Điểm số Suy giảm Động - Dynamic Decay (US-05.04)
+### Sub-flow 2.1: Giải thử thách CTF với điểm cố định và phá hòa theo thời gian (US-05.04)
 
-Học viên tham gia giải thi đấu Jeopardy CTF, quan sát bảng thử thách đa dạng, chứng kiến điểm số tự động điều chỉnh hồi tố công bằng theo số lượng người giải.
-
-#### Sơ đồ Flowchart (Mermaid)
+Người chơi vào `/arena`, chọn giải đã công bố, tham gia trước khi giải kết thúc và xem các thử thách sau giờ bắt đầu. Mỗi thử thách hiển thị điểm cố định. Nộp cờ sai cho phép thử lại theo giới hạn tần suất; nộp đúng ghi điểm đúng một lần và đánh dấu đã giải. Bảng xếp hạng sắp theo tổng điểm giảm dần, sau đó theo lúc người chơi đạt tổng điểm ấy tăng dần. Điểm CTF không thay đổi EXP học tập.
 
 ```mermaid
 flowchart TD
-    classDef startEnd fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef page fill:#1e293b,stroke:#475569,stroke-width:1.5px,color:#f8fafc;
-    classDef decision fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000000,font-weight:bold;
-    classDef errorState fill:#ef4444,stroke:#dc2626,stroke-width:1.5px,color:#ffffff;
-    classDef successState fill:#10b981,stroke:#059669,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef process fill:#334155,stroke:#64748b,stroke-width:1px,color:#f1f5f9;
-
-    START_CTF_BOARD(["Thí sinh mở Bảng Thử thách Giải đấu CTF"]):::startEnd --> P_CHALLENGE_GRID["Ma trận Thử thách theo Chủ đề:<br>- Web, Khai thác lỗ hổng, Mật mã, Điều tra số<br>- Điểm động hiện tại (Ví dụ: 500 điểm)<br>- Huy hiệu số lượt người đã giải (Ví dụ: 1 solve)"]:::page
-
-    P_CHALLENGE_GRID --> ACT_CLICK_CHALL["Nhấn chọn một thử thách muốn thử sức"]:::process
-
-    ACT_CLICK_CHALL --> P_CHALL_MODAL["Cửa sổ Chi tiết Thử thách:<br>- Đề bài, gợi ý và tệp đính kèm<br>- Ghi chú: Điểm số sẽ tự giảm dần khi có thêm người giải thành công<br>- Ô nhập chuỗi cờ đáp án (Flag)"]:::page
-
-    P_CHALL_MODAL --> ACT_SUBMIT_FLAG["Nhập chuỗi cờ và nhấn nút 'Submit Flag'"]:::process
-
-    ACT_SUBMIT_FLAG --> D_FLAG_VERIFY{"Kiểm tra tính chính xác của cờ?"}:::decision
-
-    %% Wrong Flag
-    D_FLAG_VERIFY -- "Cờ không chính xác" --> P_WRONG_TOAST["Thông báo màu đỏ: Cờ chưa chính xác, hãy thử lại!"]:::errorState
-    P_WRONG_TOAST --> |"Thử cách giải khác"| P_CHALL_MODAL
-
-    %% Correct Flag
-    D_FLAG_VERIFY -- "Cờ hoàn toàn chính xác" --> P_SOLVE_SUCCESS["Hiệu ứng pháo hoa chúc mừng:<br>Đã giải thành công thử thách!"]:::successState
-
-    P_SOLVE_SUCCESS --> D_DECAY_TRIGGER{"Lượt giải mới làm thay đổi mốc điểm của thử thách?"}:::decision
-
-    %% Decay triggered
-    D_DECAY_TRIGGER -- "Đạt mốc suy giảm điểm (Ví dụ: 10 người giải)" --> ACT_AUTO_DECAY["Hệ thống tự động tính toán lại điểm thử thách<br>(Ví dụ: Giảm từ 500 điểm xuống 340 điểm)"]:::process
-
-    ACT_AUTO_DECAY --> P_RETRO_UPDATE["Cập nhật hồi tố điểm số công bằng:<br>Toàn bộ 10 thí sinh đã giải câu này được đồng loạt áp dụng mức 340 điểm"]:::page
-
-    P_RETRO_UPDATE --> OUT_LEADERBOARD_UPDATED(["Bảng xếp hạng thời gian thực cập nhật điểm số chính xác"]):::startEnd
-
-    %% No decay change
-    D_DECAY_TRIGGER -- "Điểm giữ nguyên" --> OUT_LEADERBOARD_UPDATED
+    A[Mở danh sách giải CTF] --> B[Chọn giải và tham gia]
+    B --> C[Xem thử thách cùng điểm cố định]
+    C --> D[Nộp cờ]
+    D -->|Sai| E[Thông báo chưa đúng, cho thử lại]
+    D -->|Đúng lần đầu| F[Ghi điểm và thời điểm giải]
+    D -->|Đã giải| G[Không cộng điểm lần nữa]
+    F --> H[Xếp hạng theo tổng điểm, phá hòa theo lúc đạt điểm]
 ```
 
-#### Bảng State Transition Matrix (Sub-flow 2.1)
-
-| Bước | Màn hình / Trạng thái | Hành động người dùng | Điều kiện kiểm tra | Màn hình tiếp theo | Cơ chế thoát hiểm (No Dead End) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **2.1.1** | Ma trận Thử thách CTF | Chọn xem một bài tập | Giải đấu đang diễn ra | Cửa sổ chi tiết thử thách và ô nộp cờ | Nút đóng để chọn câu hỏi khác |
-| **2.1.2** | Cửa sổ Thử thách | Nhập cờ đáp án và bấm Submit | Chuỗi cờ sai | Thông báo màu đỏ "Cờ chưa chính xác" | Cho phép thử lại ngay, có gợi ý nếu có |
-| **2.1.3** | Cửa sổ Thử thách | Nhập cờ đáp án và bấm Submit | Chuỗi cờ chính xác | Hiệu ứng pháo hoa chúc mừng giải thành công | Thẻ bài tập chuyển sang màu xanh đánh dấu đã hoàn thành |
-| **2.1.4** | Bảng xếp hạng | Có thêm nhiều người cùng giải thành công câu đó | Số lượt giải vượt mốc suy giảm điểm | Điểm bài thi giảm xuống và hồi tố cho toàn bộ người đã giải | Đảm bảo tính công bằng theo độ khó thực tế của câu hỏi |
-| **2.1.5** | Ma trận Thử thách CTF | Rê chuột vào nhãn điểm số | Tò mò về điểm suy giảm | Bong bóng giải thích cách tính điểm suy giảm động hiển thị | Giúp người chơi hiểu rõ cơ chế giải đấu |
+| Trạng thái | Người chơi thấy | Quy tắc |
+| --- | --- | --- |
+| Chưa bắt đầu | Thông tin giải, chưa có thử thách | Không nhận cờ |
+| Đang diễn ra | Câu hỏi, điểm cố định, bảng điểm | Chỉ người tham gia được nộp |
+| Cờ đúng | Đã giải và điểm nhận | Mỗi người một lần mỗi câu |
+| Bằng tổng điểm | Cột “Đạt điểm lúc” | Người đạt mốc sớm hơn đứng trước; 0 điểm đồng hạng |
+| Hết giờ | Kết quả, nút nộp bị khóa | Không nhận lượt giải mới |
 
 ---
 

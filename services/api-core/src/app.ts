@@ -22,6 +22,7 @@ import { submissionsRoutes } from './modules/submissions/submissions.routes.js';
 import { hintsRoutes } from './modules/hints/hints.routes.js';
 import { vpnRoutes } from './modules/vpn/vpn.routes.js';
 import { kothRoutes, kothWebsocketRoutes } from './modules/koth/koth.routes.js';
+import { ctfRoutes, ctfAdminRoutes } from './modules/ctf/ctf.routes.js';
 import { examsRoutes } from './modules/exams/exams.routes.js';
 import { examAdminRoutes } from './modules/exams/exams.admin.js';
 import {
@@ -112,6 +113,8 @@ export function buildApp() {
   app.register(vpnRoutes, { prefix: '/api/v1/vpn' });
   app.register(kothRoutes, { prefix: '/api/v1/koth' });
   app.register(kothWebsocketRoutes, { prefix: '/ws/arena/koth' });
+  app.register(ctfRoutes, { prefix: '/api/v1/ctf' });
+  app.register(ctfAdminRoutes, { prefix: '/api/v1/admin/ctf' });
   app.register(examsRoutes, { prefix: '/api/v1/exams' });
   app.register(examAdminRoutes, { prefix: '/api/v1/admin/exams' });
   app.register(publicCertificateRoutes, { prefix: '/api/v1/certificates' });
