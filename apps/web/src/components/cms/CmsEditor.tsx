@@ -11,6 +11,16 @@ import { ApiError, cmsApi, type CmsItem, type CmsKind, type CmsStatus } from '@/
 import { useAuthStore } from '@/lib/auth-store';
 
 const kinds: CmsKind[] = ['paths', 'modules', 'rooms', 'tasks', 'questions'];
+const skillOptions = [
+  ['web', 'Web'],
+  ['network', 'Network'],
+  ['binary', 'Binary/Pwn'],
+  ['crypto', 'Crypto/PKI'],
+  ['forensics', 'DFIR'],
+  ['windows_ad', 'Windows/AD'],
+  ['defensive', 'Blue Team'],
+  ['cloud_devsecops', 'Cloud/DevSecOps'],
+] as const;
 const labels: Record<CmsKind, string> = {
   paths: 'Lộ trình',
   modules: 'Module',
@@ -75,7 +85,7 @@ const defaults: Record<CmsKind, Form> = {
     starterPattern: '',
     starterPoints: 50,
   },
-  tasks: { roomId: '', title: '', taskOrder: 1, contentMdx: '' },
+  tasks: { roomId: '', title: '', taskOrder: 1, contentMdx: '', skillTags: '' },
   questions: {
     taskId: '',
     questionText: '',
@@ -116,6 +126,8 @@ function fromItem(kind: CmsKind, item: CmsItem): Form {
     base.answer = '';
     base.hintTiers = JSON.stringify(item.hintTiers ?? []);
   }
+  if (kind === 'tasks')
+    base.skillTags = Array.isArray(item.skillTags) ? item.skillTags.join(',') : '';
   return base;
 }
 
@@ -177,6 +189,7 @@ function payload(kind: CmsKind, form: Form, isNew: boolean): Record<string, unkn
       title: form.title,
       taskOrder: Number(form.taskOrder),
       contentMdx: form.contentMdx,
+      skillTags: String(form.skillTags).split(',').filter(Boolean),
     };
   const hints = JSON.parse(String(form.hintTiers));
   return {
@@ -554,6 +567,33 @@ export function CmsEditor() {
                       {parent('roomId', 'Phòng', 'rooms')}
                       {field('title', 'Tên task', { required: true })}
                       {field('taskOrder', 'Thứ tự', { type: 'number', min: 0 })}
+                      <fieldset className="col-span-full space-y-2">
+                        <legend className="text-sm font-medium">
+                          Kỹ năng (bỏ trống nếu là bài General)
+                        </legend>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {skillOptions.map(([key, label]) => {
+                            const selected = String(form.skillTags).split(',').filter(Boolean);
+                            return (
+                              <label key={key} className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selected.includes(key)}
+                                  onChange={(event) =>
+                                    set(
+                                      'skillTags',
+                                      event.target.checked
+                                        ? [...selected, key].join(',')
+                                        : selected.filter((item) => item !== key).join(','),
+                                    )
+                                  }
+                                />
+                                {label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </fieldset>
                     </>
                   )}
                   {kind === 'questions' && (

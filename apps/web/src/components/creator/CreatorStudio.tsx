@@ -19,6 +19,16 @@ import { MdxLiveEditor, supportedMdxError } from './MdxLiveEditor';
 import { CreatorTerminal } from './CreatorTerminal';
 
 type Tab = 'content' | 'questions' | 'environment' | 'test';
+const skillOptions = [
+  ['web', 'Web'],
+  ['network', 'Network'],
+  ['binary', 'Binary/Pwn'],
+  ['crypto', 'Crypto/PKI'],
+  ['forensics', 'DFIR'],
+  ['windows_ad', 'Windows/AD'],
+  ['defensive', 'Blue Team'],
+  ['cloud_devsecops', 'Cloud/DevSecOps'],
+] as const;
 type Parent = { id: string; title: string; modules: Array<{ id: string; title: string }> };
 type RoomForm = {
   pathId: string;
@@ -123,6 +133,7 @@ export function CreatorStudio() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskOrder, setTaskOrder] = useState(1);
   const [content, setContent] = useState('');
+  const [skillTags, setSkillTags] = useState<CreatorTask['skillTags']>([]);
   const [questionId, setQuestionId] = useState('new');
   const [questionText, setQuestionText] = useState('');
   const [flagType, setFlagType] = useState<'static' | 'regex' | 'dynamic_hmac'>('static');
@@ -141,6 +152,7 @@ export function CreatorStudio() {
     setTaskTitle(task?.title ?? '');
     setTaskOrder(task?.taskOrder ?? source.length + 1);
     setContent(task?.contentMdx ?? '');
+    setSkillTags(task?.skillTags ?? []);
     setQuestionId('new');
     setQuestionText('');
     setAnswer('');
@@ -256,6 +268,7 @@ export function CreatorStudio() {
         title: taskTitle,
         taskOrder: Number(taskOrder),
         contentMdx: content,
+        skillTags,
       };
       const result =
         taskId === 'new'
@@ -571,6 +584,30 @@ export function CreatorStudio() {
                         />
                       </label>
                     </div>
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-medium">
+                        Kỹ năng (để trống nếu là bài General)
+                      </legend>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {skillOptions.map(([key, label]) => (
+                          <label key={key} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={skillTags.includes(key)}
+                              disabled={!editable || busy}
+                              onChange={(event) =>
+                                setSkillTags((current) =>
+                                  event.target.checked
+                                    ? [...current, key]
+                                    : current.filter((item) => item !== key),
+                                )
+                              }
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
                     <MdxLiveEditor
                       value={content}
                       onChange={setContent}

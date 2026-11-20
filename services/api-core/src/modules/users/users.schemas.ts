@@ -20,14 +20,14 @@ export type UsernameParamInput = z.infer<typeof usernameParamSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
 export interface SkillTelemetry {
-  webExploitation: number;
-  cloudSecurity: number;
-  networkPentest: number;
-  devSecOps: number;
-  cryptography: number;
-  reverseEngineering: number;
-  osint: number;
-  binaryExploitation: number;
+  web: number;
+  network: number;
+  binary: number;
+  crypto: number;
+  forensics: number;
+  windows_ad: number;
+  defensive: number;
+  cloud_devsecops: number;
 }
 
 export interface BadgeItem {

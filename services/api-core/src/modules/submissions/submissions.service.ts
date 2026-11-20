@@ -58,7 +58,9 @@ async function validateAnswer(
 export async function submitAnswer(taskId: string, userId: string, input: SubmitInput) {
   const question = await prisma.question.findFirst({
     where: { id: input.questionId, taskId, status: 'published', task: { status: 'published' } },
-    include: { task: { select: { roomId: true, room: { select: { slug: true } } } } },
+    include: {
+      task: { select: { roomId: true, skillTags: true, room: { select: { slug: true } } } },
+    },
   });
   if (!question)
     throw new AuthError(404, 'Không tìm thấy câu hỏi trong nhiệm vụ.', 'QUESTION_NOT_FOUND');
@@ -124,6 +126,28 @@ export async function submitAnswer(taskId: string, userId: string, input: Submit
         if (isCorrect) {
           const award = await completeTaskForStreak(tx, currentUser, taskId, now);
           badgeUnlocked = award?.badgeUnlocked ?? null;
+          if (question.task.skillTags.length) {
+            const questionCount = await tx.question.count({ where: { taskId } });
+            const solved = await tx.submission.findMany({
+              where: { userId, isCorrect: true, question: { taskId } },
+              orderBy: { createdAt: 'asc' },
+              distinct: ['questionId'],
+              select: { questionId: true, pointsEarned: true },
+            });
+            if (questionCount > 0 && solved.length === questionCount) {
+              const taskPoints = solved.reduce((sum, item) => sum + item.pointsEarned, 0);
+              await tx.skillAward.createMany({
+                data: question.task.skillTags.map((skill) => ({
+                  userId,
+                  taskId,
+                  skill,
+                  pointsEarned: taskPoints,
+                  earnedAt: now,
+                })),
+                skipDuplicates: true,
+              });
+            }
+          }
         }
         if (pointsEarned) {
           const earnedRank = highestRank(

@@ -65,6 +65,7 @@ export async function roomFingerprint(
       title: task.title,
       contentMdx: task.contentMdx,
       taskOrder: task.taskOrder,
+      skillTags: task.skillTags,
       status: task.status,
       questions: task.questions.map((question) => ({
         id: question.id,
@@ -252,7 +253,12 @@ export async function saveCreatorTask(
       if (!old) throw creatorMissing();
       const result = await tx.task.updateMany({
         where: { id: taskId, roomId, updatedAt: new Date(version!) },
-        data: { title: data.title, taskOrder: data.taskOrder, contentMdx: data.contentMdx },
+        data: {
+          title: data.title,
+          taskOrder: data.taskOrder,
+          contentMdx: data.contentMdx,
+          ...(data.skillTags && { skillTags: data.skillTags }),
+        },
       });
       if (!result.count) throw creatorConflict();
       id = taskId;
