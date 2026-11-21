@@ -1,0 +1,62 @@
+{
+  "task": "CF-902",
+  "date": "2026-11-21",
+  "base_commit": "06371e6",
+  "scope": "apps/web desktop interface, including CF-504 CTF pages",
+  "result": "passed_for_task_checks",
+  "checks": {
+    "purple_ban": {
+      "result": "pass",
+      "method": "Search apps/web/src for violet, purple and the three banned hex values after replacing the Elite Hacker rank color",
+      "matches": 0
+    },
+    "text_contrast": {
+      "result": "pass_for_checked_pairs",
+      "method": "WCAG relative luminance for the main light/dark design tokens and reviewed lime text usages",
+      "ratios": {
+        "light_foreground_on_background": 15.48,
+        "light_muted_foreground_on_background": 5.61,
+        "light_primary_foreground_on_primary": 11.65,
+        "light_destructive_foreground_on_destructive": 6.57,
+        "dark_foreground_on_background": 16.2,
+        "dark_muted_foreground_on_background": 9.4,
+        "dark_destructive_foreground_on_destructive": 7.71,
+        "lime_on_light_card_before_fix": 1.46,
+        "dark_green_on_light_card_after_fix": 6.19,
+        "lime_on_dark_card": 11.13
+      },
+      "threshold": "4.5:1 for normal text"
+    },
+    "touch_targets": {
+      "result": "pass_for_lab_controls_and_flag_submission",
+      "method": "Source review of shared Button minimum height and lab/learning/CTF submit controls",
+      "evidence": "Button has min-h-11 (44px), including size sm; the CTF flag input now has min-h-11"
+    },
+    "keyboard_and_labels": {
+      "result": "pass_for_reviewed_cases",
+      "method": "Source review of skip link, creator attachment input and native checkbox labels",
+      "evidence": "A skip link is present in the root layout; the file input has an accessible name; remaining checker flags are checkboxes wrapped in visible labels"
+    },
+    "static_scanners": {
+      "ux_audit": "50 files, 0 issues, 405 generic heuristic warnings",
+      "accessibility_checker": "56 files, 3 reported issues; manually reviewed as false positives for labeled checkboxes"
+    },
+    "browser_smoke": {
+      "result": "pass_for_available_routes",
+      "method": "Next.js production build served on localhost; checked /arena and /access/vpn in a desktop browser",
+      "evidence": "The skip link receives first Tab focus and Enter navigates to #main-content. The VPN heading renders rgb(72, 107, 22) on rgb(249, 249, 251)."
+    }
+  },
+  "fixes": [
+    "Replaced violet Elite Hacker rank color with teal",
+    "Moved the skip link into the root layout so authentication routes also have it",
+    "Added an accessible name to the Creator Studio attachment input",
+    "Replaced low-contrast lime text on light backgrounds in CTF, VPN and Creator screens",
+    "Raised the CTF flag input to a 44px minimum height"
+  ],
+  "limitations": [
+    "Static source checks, selected color pairs and browser smoke do not certify every rendered state against all WCAG 2.1 AA criteria",
+    "The local API was not running during browser smoke, so authenticated CTF, Creator and lab states were not exercised",
+    "The generic UX script warnings are heuristic suggestions, not 405 confirmed defects"
+  ]
+}

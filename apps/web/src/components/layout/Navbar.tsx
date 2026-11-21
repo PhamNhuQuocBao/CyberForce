@@ -49,12 +49,6 @@ export function Navbar() {
       : 0;
   return (
     <>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-card focus:p-3"
-      >
-        Đến nội dung chính
-      </a>
       <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
           <Link href="/" className="py-3 text-lg font-semibold tracking-tight">

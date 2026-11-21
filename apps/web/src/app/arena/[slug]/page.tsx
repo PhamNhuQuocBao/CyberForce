@@ -146,7 +146,7 @@ export default function CtfEventPage() {
                       {challenge.description}
                     </p>
                     {event.solvedIds.includes(challenge.id) ? (
-                      <p className="text-sm text-primary">Đã giải</p>
+                      <p className="text-sm text-[#486B16] dark:text-primary">Đã giải</p>
                     ) : (
                       event.joined &&
                       new Date(event.endsAt).getTime() > Date.now() && (
@@ -162,7 +162,7 @@ export default function CtfEventPage() {
                           </label>
                           <input
                             id={`flag-${challenge.id}`}
-                            className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2"
+                            className="min-h-11 min-w-0 flex-1 rounded-md border bg-background px-3 py-2"
                             value={answers[challenge.id] ?? ''}
                             onChange={(e) =>
                               setAnswers((current) => ({
