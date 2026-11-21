@@ -502,6 +502,7 @@ gantt
 #### Task CF-903: Kiểm Thử Tích Hợp Đầu Cuối (End-to-End Playwright Tests)
 * **Agent:** `test-engineer` | **Skills:** `webapp-testing`, `tdd-workflow`
 * **Priority:** `P1 (High)` | **Dependencies:** Hoàn thành hệ thống
+* **Trạng thái:** Đã triển khai và chạy qua hai lượt môi trường cô lập (4/4 bài test mỗi lượt). CF-502/503 vẫn được hoãn nên phạm vi hiện tại là luồng học và lab khả dụng.
 * **Mô tả:** Viết và chạy bộ test tự động E2E kiểm tra toàn bộ luồng người dùng chính:
   1. Đăng ký tài khoản mới -> Nhận 0 EXP, Novice tier.
   2. Mở phòng lab -> Nhấn Start Machine -> Nhận IP lab sau $< 3$s.
@@ -509,7 +510,7 @@ gantt
   4. Nộp Flag đúng -> EXP tăng, streak tăng lên 1 ngày.
 * **INPUT:** User Flow Playbook `docs/06-user-flow/`.
 * **OUTPUT:** Bộ test suites `tests/e2e/*.spec.ts`.
-* **VERIFY:** Chạy `npx playwright test` và tất cả các bài test đều Pass.
+* **VERIFY:** Chạy `pnpm test:e2e` từ thư mục gốc. Lệnh này build image lab mẫu, dựng Compose riêng với PostgreSQL/Redis/MinIO mới, tạo fixture, chạy `pnpm exec playwright test` và dọn tài nguyên thử nghiệm. Trên máy mới, cài Chromium bằng `pnpm exec playwright install chromium` trước. Hai lượt chạy độc lập ngày 21/11/2026 đều đạt 4/4 bài test; lượt thứ hai xác nhận IP dưới 3 giây.
 
 #### Task CF-904: Kiểm Tra Build Sản Phẩm & Đóng Gói Docker Images
 * **Agent:** `devops-engineer` | **Skills:** `bash-linux`, `server-management`
