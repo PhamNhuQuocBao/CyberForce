@@ -37,6 +37,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="min-h-screen font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[100] focus-visible:rounded-btn focus-visible:bg-card focus-visible:p-3"
+        >
+          Đến nội dung chính
+        </a>
         <AuthProvider>{children}</AuthProvider>
         <Toaster
           position="top-right"

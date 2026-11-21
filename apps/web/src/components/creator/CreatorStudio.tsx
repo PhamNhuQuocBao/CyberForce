@@ -423,7 +423,7 @@ export function CreatorStudio() {
               </Card>
             )}
             {message && (
-              <p className="text-sm text-primary" role="status">
+              <p className="text-sm text-[#486B16] dark:text-primary" role="status">
                 {message}
               </p>
             )}
@@ -759,6 +759,7 @@ export function CreatorStudio() {
                       {editable && (
                         <input
                           type="file"
+                          aria-label="Tải tệp đính kèm lên"
                           accept=".png,.jpg,.jpeg,.pdf,.txt,.zip"
                           disabled={busy}
                           onChange={(event) => {

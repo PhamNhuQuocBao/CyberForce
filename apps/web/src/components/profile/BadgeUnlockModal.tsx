@@ -82,7 +82,7 @@ export function BadgeUnlockModal({
     <Dialog open={Boolean(award)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-[#486B16] dark:text-primary">
             <Award aria-hidden="true" className="h-7 w-7" />
           </div>
           <DialogTitle>{award?.rankUp ? 'Thăng cấp!' : 'Huy hiệu mới!'}</DialogTitle>

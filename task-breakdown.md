@@ -484,7 +484,7 @@ gantt
   python .agents/skills/vulnerability-scanner/scripts/security_scan.py .
   ```
 
-#### Task CF-902: Kiểm Toán Giao Diện UX, Trợ Năng & Tuân Thủ Quy Chuẩn Màu
+#### [x] Task CF-902: Kiểm Toán Giao Diện UX, Trợ Năng & Tuân Thủ Quy Chuẩn Màu
 * **Agent:** `frontend-specialist` | **Skills:** `frontend-design`, `web-design-guidelines`
 * **Priority:** `P1 (High)` | **Dependencies:** Hoàn thành các task frontend
 * **Mô tả:** Kiểm toán toàn bộ giao diện:
@@ -495,8 +495,9 @@ gantt
 * **OUTPUT:** Báo cáo kiểm toán UX/UI `ux_audit_report.json`.
 * **VERIFY:** Chạy script:
   ```bash
-  python .agents/skills/frontend-design/scripts/ux_audit.py .
+  python3 .agents/skills/frontend-design/scripts/ux_audit.py apps/web
   ```
+* **Trạng thái triển khai:** Đã rà source desktop trên `main` có CF-504: bỏ màu tím của rank Elite Hacker, sửa chữ lime thiếu tương phản ở nền sáng, thêm tên truy cập cho tệp đính kèm và liên kết bỏ qua điều hướng toàn cục, bảo đảm ô nhập cờ CTF và các nút nộp/điều khiển lab cao tối thiểu 44px. Script UX: 50 tệp, 0 lỗi (405 cảnh báo heuristic); accessibility checker: 56 tệp, 3 cảnh báo checkbox đã đối chiếu là false positive vì nằm trong label có chữ. Browser smoke xác nhận skip link và màu chữ VPN; trạng thái cần API chưa kiểm tra trên browser. Web lint, 14 tests, typecheck và build qua. [Báo cáo](ux_audit_report.json). Kiểm tra này không phải chứng nhận toàn bộ WCAG 2.1 AA.
 
 #### Task CF-903: Kiểm Thử Tích Hợp Đầu Cuối (End-to-End Playwright Tests)
 * **Agent:** `test-engineer` | **Skills:** `webapp-testing`, `tdd-workflow`

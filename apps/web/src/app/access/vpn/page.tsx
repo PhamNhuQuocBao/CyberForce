@@ -89,7 +89,9 @@ export default function VpnAccessPage() {
       <Navbar />
       <main id="main-content" className="page-container space-y-8">
         <header className="space-y-3">
-          <p className="text-sm font-medium text-primary">Kết nối từ máy cá nhân</p>
+          <p className="text-sm font-medium text-[#486B16] dark:text-primary">
+            Kết nối từ máy cá nhân
+          </p>
           <h1 className="text-3xl font-semibold tracking-tight">Truy cập VPN</h1>
           <p className="max-w-2xl text-muted-foreground">
             Tạo cấu hình WireGuard riêng để kết nối với cổng VPN CyberForce.
